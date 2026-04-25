@@ -38,7 +38,11 @@ from pathlib import Path
 # Reuse the parsers from highlight_paper.py (same CLAIMS.md / VERIFICATION.md
 # format). Importing rather than duplicating keeps both renderers in sync.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from highlight_paper import parse_claims_md, parse_verification_md  # noqa: E402
+from highlight_paper import (  # noqa: E402
+    parse_claims_md,
+    parse_verification_md,
+    build_annotation_text,
+)
 
 # Canonical palette (graph_schema.md).
 HIGHLIGHT_COLORS = {
@@ -186,12 +190,22 @@ _PDF_RGB = {
 }
 
 
-def synthesize_pdf(text: str, ranges: list[tuple], out_path: Path, slug: str) -> dict:
-    """Synthesize a PDF from paper.txt with line-level highlight bands.
+def synthesize_pdf(
+    text: str,
+    ranges: list[tuple],
+    verdicts: dict,
+    out_path: Path,
+    slug: str,
+) -> dict:
+    """Synthesize a PDF from paper.txt with line-level highlight bands and a
+    margin sticky-note per highlighted claim describing the verdict.
 
     Layout is intentionally minimal: A4, single column, Helvetica 10pt, lines
     wrapped at ~85 characters. Any line that intersects a FAIL or
-    INCONCLUSIVE highlight range gets a colored band drawn behind it.
+    INCONCLUSIVE highlight range gets a colored band; the first line of each
+    flagged claim also gets a clickable sticky-note annotation whose content
+    is the full verdict + reasoning from VERIFICATION.md (built by
+    `build_annotation_text`).
     """
     try:
         import fitz  # PyMuPDF
@@ -209,10 +223,18 @@ def synthesize_pdf(text: str, ranges: list[tuple], out_path: Path, slug: str) ->
     MAX_CHARS = 85
 
     line_verdicts = line_verdict_map(text, ranges)
+
+    # First line per claim_id, for sticky-note placement.
+    first_line_per_cid: dict[str, int] = {}
+    for start, end, cid, _verdict, _conf in ranges:
+        sl, _ = char_range_to_lines(text, start, end)
+        first_line_per_cid.setdefault(cid, sl)
+
     counts = {
         "FAIL":              sum(1 for v in line_verdicts.values() if v == "FAIL"),
         "INCONCLUSIVE":      sum(1 for v in line_verdicts.values() if v == "INCONCLUSIVE"),
         "highlighted_lines": len(line_verdicts),
+        "annotations":       len(first_line_per_cid),
     }
 
     doc = fitz.open()
@@ -227,9 +249,18 @@ def synthesize_pdf(text: str, ranges: list[tuple], out_path: Path, slug: str) ->
     )
     y += LINE_H * 2
 
+    # We need to know which claims attach to which original line, so we emit
+    # the sticky note exactly once per claim at its first occurrence.
+    line_to_cids: dict[int, list[str]] = {}
+    for cid, ln in first_line_per_cid.items():
+        line_to_cids.setdefault(ln, []).append(cid)
+
+    placed_annots: set[str] = set()
+
     for orig_no, raw_line in enumerate(text.splitlines(), start=1):
         verdict = line_verdicts.get(orig_no)
-        for wrapped in _wrap_line(raw_line if raw_line else " ", MAX_CHARS):
+        wrapped_lines = _wrap_line(raw_line if raw_line else " ", MAX_CHARS)
+        for sub_idx, wrapped in enumerate(wrapped_lines):
             if y + LINE_H > PAGE_H - MARGIN:
                 page = doc.new_page(width=PAGE_W, height=PAGE_H)
                 y = MARGIN
@@ -247,6 +278,22 @@ def synthesize_pdf(text: str, ranges: list[tuple], out_path: Path, slug: str) ->
                 wrapped,
                 fontname=FONT_NAME, fontsize=FONT_SIZE,
             )
+
+            # Place sticky notes on the first wrapped sub-line of the original
+            # line that owns the claim's first occurrence.
+            if sub_idx == 0 and orig_no in line_to_cids:
+                for cid in line_to_cids[orig_no]:
+                    if cid in placed_annots:
+                        continue
+                    placed_annots.add(cid)
+                    v = verdicts.get(cid, {})
+                    note_point = fitz.Point(PAGE_W - MARGIN + 8, y - 4)
+                    annot = page.add_text_annot(note_point, build_annotation_text(cid, v))
+                    annot.set_info(title=f"Anderson · {cid}")
+                    rgb = _PDF_RGB.get(v.get("verdict", ""), (0.6, 0.6, 0.6))
+                    annot.set_colors(stroke=rgb)
+                    annot.update()
+
             y += LINE_H
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -347,7 +394,7 @@ def main() -> int:
 
     if not args.no_pdf:
         try:
-            pdf_counts = synthesize_pdf(text, ranges, pdf_out, slug)
+            pdf_counts = synthesize_pdf(text, ranges, verdicts, pdf_out, slug)
             print(f"wrote {pdf_out}")
             print(f"  highlighted lines: {pdf_counts}")
         except RuntimeError as e:

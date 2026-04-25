@@ -75,7 +75,7 @@ def parse_claims_md(path: Path) -> dict[str, dict]:
 
 
 def parse_verification_md(path: Path) -> dict[str, dict]:
-    """Return {claim_id: {verdict, confidence, method, reason}} from VERIFICATION.md.
+    """Return {claim_id: {verdict, confidence, method, reason, reasoning}}.
 
     Section format per methodology/05-artifacts.md:
 
@@ -84,7 +84,7 @@ def parse_verification_md(path: Path) -> dict[str, dict]:
         - reason: out_of_scope          (only on INCONCLUSIVE)
         - evidence:
           - paper.txt:142
-        - reasoning: …
+        - reasoning: prose explaining the verdict; may span multiple lines.
 
     Returns empty dict if the file does not exist.
     """
@@ -108,14 +108,46 @@ def parse_verification_md(path: Path) -> dict[str, dict]:
 
         method_m = re.search(r"^-\s*method\s*:\s*([\w_]+)", body, re.MULTILINE)
         reason_m = re.search(r"^-\s*reason\s*:\s*([\w_:.\-]+)", body, re.MULTILINE)
+        # Reasoning is prose, may span multiple lines until the next list item
+        # or the next section header.
+        reasoning_m = re.search(
+            r"^-\s*reasoning\s*:\s*(.+?)(?=\n-\s|\n##\s|\Z)",
+            body, re.MULTILINE | re.DOTALL,
+        )
+
+        reasoning = ""
+        if reasoning_m:
+            # Collapse continuation indents and trim trailing blank lines.
+            raw = reasoning_m.group(1)
+            reasoning = "\n".join(line.strip() for line in raw.splitlines()).strip()
 
         out[cid] = {
             "verdict": verdict,
             "confidence": confidence,
             "method": (method_m.group(1) if method_m else "").strip(),
             "reason": (reason_m.group(1) if reason_m else "").strip(),
+            "reasoning": reasoning,
         }
     return out
+
+
+def build_annotation_text(cid: str, v: dict) -> str:
+    """Compose the comment shown when a reader clicks a highlight.
+
+    Layered: header line first (cid + verdict + confidence), then mechanical
+    fields (method, reason), then the prose reasoning. Skips empty fields.
+    """
+    parts = [f"{cid} — VERDICT: {v.get('verdict', '')}"]
+    if v.get("confidence"):
+        parts[-1] += f" (confidence: {v['confidence']})"
+    if v.get("method"):
+        parts.append(f"method: {v['method']}")
+    if v.get("reason"):
+        parts.append(f"reason: {v['reason']}")
+    if v.get("reasoning"):
+        parts.append("")
+        parts.append(v["reasoning"])
+    return "\n".join(parts)
 
 
 def find_sentence_quads(page, sentence: str):
@@ -174,10 +206,7 @@ def annotate_pdf(
         annot = page.add_highlight_annot(rects)
         r, g, b = HIGHLIGHT_COLOR_RGB[verdict]
         annot.set_colors(stroke=(r, g, b))
-        annot.set_info(
-            title="Anderson",
-            content=f"{cid} — {verdict}" + (f" ({v['confidence']})" if v["confidence"] else ""),
-        )
+        annot.set_info(title="Anderson", content=build_annotation_text(cid, v))
         annot.update()
         counts["highlighted"] += 1
 

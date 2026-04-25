@@ -43,6 +43,13 @@ For each assigned claim:
 - A `PASS` without specific paper-internal or external pointers demotes to
   `INCONCLUSIVE` / `evidence_thin`.
 
+**The `reasoning:` field is the comment a reader sees on the highlighted
+PDF.** It must be self-contained prose explaining the problem (for FAIL /
+INCONCLUSIVE) — a reader looking at the marked-up sentence should know what
+is wrong with it from the comment alone, without having to open
+`VERIFICATION.md`. Aim for 1–4 sentences. Cite specific evidence by line
+or section reference inside the prose.
+
 ## Prompt template
 
 ```

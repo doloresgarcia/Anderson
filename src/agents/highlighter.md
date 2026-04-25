@@ -47,8 +47,17 @@ highlight bands behind any line containing a flagged sentence) **and**
 
 Both scripts apply the canonical palette from `conventions/graph_schema.md`
 (red `#E74C3C` for FAIL, yellow `#F1C40F` for INCONCLUSIVE) and produce
-per-highlight annotations referencing the `claim_id` and verdict so the
-reader can cross-reference `VERIFICATION.md`.
+per-highlight PDF annotations whose **comment text describes the problem**:
+
+- header line — `<claim_id> — VERDICT: <verdict> (confidence: <level>)`
+- mechanical fields — `method:`, `reason:` (for INCONCLUSIVE)
+- the prose `reasoning:` field from `VERIFICATION.md` verbatim
+
+This is the primary place a reader sees *why* a highlighted sentence is
+flagged. PASS / NOT_CHECKED claims get no annotation (no problem to describe).
+The annotation content is built once in `build_annotation_text` (in
+`highlight_paper.py`) and reused by both scripts so the format stays
+consistent across PDF and synthesized-PDF outputs.
 
 Note on granularity. The PDF-input script highlights at the exact sentence
 boundaries (PyMuPDF `page.search_for`). The text-input script highlights
