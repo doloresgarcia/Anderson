@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -46,6 +47,57 @@ REVIEWS = REPO_ROOT / "reviews"
 
 PHASES = ("phase1", "phase2", "phase3")
 PHASE_SUBDIRS = ("outputs", "agents", "review", "logs")
+
+
+def extract_pdf_text(pdf_path: Path, out_path: Path) -> str:
+    """Extract text from a PDF with page markers. Returns the backend used.
+
+    Tries PyMuPDF first (preserves layout best, used by highlight_paper.py
+    too), falls back to the `pdftotext` system binary, then `pypdf`. Page
+    boundaries are marked with `=== PAGE N ===` lines so downstream agents can
+    map line numbers back to PDF pages.
+    """
+    try:
+        import fitz  # PyMuPDF
+        doc = fitz.open(pdf_path)
+        chunks = []
+        for i, page in enumerate(doc, start=1):
+            chunks.append(f"=== PAGE {i} ===")
+            chunks.append(page.get_text())
+        doc.close()
+        out_path.write_text("\n".join(chunks))
+        return "pymupdf"
+    except ImportError:
+        pass
+
+    if shutil.which("pdftotext"):
+        with subprocess.Popen(
+            ["pdftotext", "-layout", str(pdf_path), "-"],
+            stdout=subprocess.PIPE,
+        ) as proc:
+            text, _ = proc.communicate()
+        if proc.returncode == 0:
+            out_path.write_text(text.decode("utf-8", errors="replace"))
+            return "pdftotext"
+
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(str(pdf_path))
+        chunks = []
+        for i, page in enumerate(reader.pages, start=1):
+            chunks.append(f"=== PAGE {i} ===")
+            chunks.append(page.extract_text() or "")
+        out_path.write_text("\n".join(chunks))
+        return "pypdf"
+    except ImportError:
+        pass
+
+    raise RuntimeError(
+        "no PDF text extractor available. Install one of:\n"
+        "  pip install pymupdf      (recommended, also used by highlight_paper.py)\n"
+        "  apt install poppler-utils  (provides pdftotext)\n"
+        "  pip install pypdf"
+    )
 
 
 def render_template(template_path: Path, slots: dict[str, str]) -> str:
@@ -125,7 +177,14 @@ def main() -> int:
         if not args.paper.exists():
             print(f"warning: --paper {args.paper} does not exist; copy skipped", file=sys.stderr)
         else:
-            shutil.copy(args.paper, review_dir / "paper" / "paper.pdf")
+            paper_pdf = review_dir / "paper" / "paper.pdf"
+            shutil.copy(args.paper, paper_pdf)
+            try:
+                backend = extract_pdf_text(paper_pdf, review_dir / "paper" / "paper.txt")
+                print(f"extracted paper.txt via {backend}")
+            except RuntimeError as e:
+                print(f"warning: paper.txt not produced: {e}", file=sys.stderr)
+                print("  (orchestrator will need to extract it as a phase-1 step.)", file=sys.stderr)
 
     if args.bib is not None:
         if not args.bib.exists():

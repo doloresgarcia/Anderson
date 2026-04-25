@@ -13,23 +13,37 @@ Produces the paper-with-highlights deliverable.
 ## Writes
 
 - `phase3/outputs/paper.highlighted.pdf`
-- `phase3/outputs/paper.highlighted.html`
+- `phase3/agents/highlighter/log.md`
 
 ## Behavior
 
-For each claim with verdict `FAIL` or `INCONCLUSIVE`:
+Invoke the bundled utility script — do **not** attempt to add highlights by
+hand-editing the PDF:
 
-1. Locate the originating sentence in `paper.pdf` using the page/line provenance
-   from `CLAIMS.md` (carried into the graph).
-2. Add a highlight using the canonical palette in `conventions/graph_schema.md`:
-   red `#E74C3C` for FAIL, yellow `#F1C40F` for INCONCLUSIVE.
-3. Attach a margin note (PDF) / tooltip (HTML) containing the verification verdict
-   and a link to the corresponding `VERIFICATION.md` anchor.
+```bash
+python3 ../../src/highlight_paper.py .
+```
+
+The script reads `paper/paper.pdf`, `phase1/outputs/CLAIMS.md`, and
+`phase2/outputs/VERIFICATION.md`, and writes
+`phase3/outputs/paper.highlighted.pdf`. It applies the canonical palette
+from `conventions/graph_schema.md` (red `#E74C3C` for FAIL, yellow `#F1C40F`
+for INCONCLUSIVE) and attaches a margin annotation per highlight that names
+the `claim_id` and verdict, so the reader can cross-reference
+`VERIFICATION.md`.
 
 Sentences that PASS or were not checked are not highlighted. (Green and gray in
 the graph translate to "no highlight" in the PDF — positive marking would be
-visual noise.) The highlighter does not invent annotations — every highlight
-maps to a verdict in `VERIFICATION.md`.
+visual noise.)
+
+If the script cannot match a sentence to a PDF location (text-extraction
+edge cases, hyphenation, soft line breaks), it skips that claim and reports
+the count in its output. Such skips appear in the highlighter's `log.md`
+and trigger a Category B finding for the reviewer to resolve — usually by
+the extractor producing a tighter `sentence` quote.
+
+For an HTML companion view, run the script's `--html` companion (deferred —
+not yet implemented; for v1 the highlighted output is PDF-only).
 
 ## Prompt template
 
@@ -44,7 +58,6 @@ Inputs:
 
 Output exactly:
 - phase3/outputs/paper.highlighted.pdf
-- phase3/outputs/paper.highlighted.html
 
 Red = FAIL, yellow = INCONCLUSIVE. Every highlight must trace to a verdict.
 ```

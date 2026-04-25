@@ -1,0 +1,11 @@
+# Anderson — orchestrator utility dependencies.
+# The orchestrator itself runs in Claude Code; these are the small Python
+# scripts under src/ that the orchestrator (and the user) call directly.
+
+# PyMuPDF — PDF text extraction (used by scaffold_review.py) and PDF
+# highlighting (used by highlight_paper.py).
+pymupdf>=1.24
+
+# Optional alternative PDF extractor (scaffold_review.py falls back to it
+# if pymupdf is not installed and the system has no `pdftotext`).
+# pypdf>=4.0

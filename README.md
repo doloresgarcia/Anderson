@@ -26,23 +26,43 @@ Per phase the orchestrator runs the loop **EXECUTE → REVIEW → CHECK → COMM
 ```
 anderson/
 ├── src/
-│   ├── methodology/       # phase definitions, orchestration loop, review protocol, artifact specs
-│   ├── agents/            # role specifications the orchestrator dispatches
-│   ├── conventions/       # graph schema, claim taxonomy, verification rules (USER-DEFINED)
-│   ├── templates/         # CLAUDE.md templates dropped into per-paper review dirs
-│   └── scaffold_review.py # creates a new reviews/<slug>/ tree wired to a paper
-└── reviews/               # one subdirectory per paper under review
+│   ├── methodology/         # phase definitions, orchestration loop, review protocol, artifact specs
+│   ├── agents/              # role specifications the orchestrator dispatches
+│   ├── conventions/         # graph schema, claim taxonomy, verification rules, confidence scale
+│   ├── templates/           # CLAUDE.md templates dropped into per-paper review dirs
+│   ├── scaffold_review.py   # creates a new reviews/<slug>/ tree wired to a paper
+│   ├── render_graph.py      # graph.json → graph.html (Cytoscape.js)
+│   └── highlight_paper.py   # paper.pdf + VERIFICATION.md → paper.highlighted.pdf
+├── requirements.txt
+└── reviews/                 # one subdirectory per paper under review
+```
+
+## Setup
+
+```bash
+pip install -r requirements.txt   # installs PyMuPDF for PDF extract + highlight
 ```
 
 ## Starting a review
 
 ```bash
-python src/scaffold_review.py --paper /path/to/paper.pdf --slug some-paper-slug
+python3 src/scaffold_review.py --paper /path/to/paper.pdf --slug some-paper-slug
 ```
 
 This creates `reviews/some-paper-slug/` with phase subdirectories, symlinks to
-`src/methodology/` and `src/conventions/`, and a root `CLAUDE.md` that boots the
-orchestrator with the paper as input.
+`src/methodology/`, `src/conventions/`, and `src/agents/`, a root `CLAUDE.md`
+that boots the orchestrator, and `paper/paper.txt` extracted from the PDF.
+
+Then `cd reviews/some-paper-slug/` and open Claude Code there. Claude Code
+reads `CLAUDE.md`, dispatches subagents per the role specs in `agents/`, and
+runs the three-phase loop. Phase 3 calls back into:
+
+```bash
+python3 ../../src/render_graph.py phase3/outputs/graph.final.json
+python3 ../../src/highlight_paper.py .
+```
+
+to produce `graph.final.html` and `paper.highlighted.pdf`.
 
 ## What is intentionally not yet specified
 

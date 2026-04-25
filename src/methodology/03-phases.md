@@ -60,9 +60,10 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 
 **Subagents dispatched.**
 
-- `highlighter` — reads `graph.v2.json` and `VERIFICATION.md`; produces
-  `paper.highlighted.pdf` with FAIL/INCONCLUSIVE sentences visibly marked, and
-  `paper.highlighted.html` for browser viewing.
+- `highlighter` — reads `graph.v2.json`, `VERIFICATION.md`, and `CLAIMS.md`;
+  invokes `src/highlight_paper.py` to produce `paper.highlighted.pdf` with
+  FAIL/INCONCLUSIVE sentences visibly marked and margin annotations linking
+  back to the verification anchors.
 - `graph_builder` — final pass; emits `graph.final.json`,
   `graph.final.html` (interactive Cytoscape.js viz, the primary visual
   deliverable), and `graph.final.svg` (static snapshot for inclusion in PDFs
@@ -74,9 +75,8 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 
 - `graph.final.json`
 - `graph.final.html`
-- `graph.final.svg`
+- `graph.final.svg` (deferred — HTML is the primary visual)
 - `paper.highlighted.pdf`
-- `paper.highlighted.html`
 - `REPORT.md`
 
 **Gate.** Human review of the highlighted PDF. Possible responses: APPROVE,

@@ -61,11 +61,20 @@ Phase 3:
 1. Copy `graph.v2.json` content into `graph.final.json` (no edits unless
    `REPORT.md` flags a final-pass correction; document any such correction in
    `log.md`).
-2. Render `graph.final.html` per the HTML output spec in
-   `conventions/graph_schema.md`: self-contained, Cytoscape.js inline,
-   `cose-bilkent` layout, default state shows groups only, click-to-expand
-   for claims.
-3. Render `graph.final.svg` as a static snapshot of the default state.
+2. Render `graph.final.html` by invoking the bundled utility script — do
+   **not** write the Cytoscape.js HTML by hand:
+
+   ```bash
+   python3 ../../src/render_graph.py phase3/outputs/graph.final.json
+   ```
+
+   The script reads the schema's color palette and produces a Cytoscape.js
+   compound-graph view. If you need to override styling, edit the script
+   rather than hand-rolling HTML — keeps one source of truth.
+3. Render `graph.final.svg` as a static snapshot. (The renderer does not yet
+   emit SVG directly; for now produce the SVG by opening `graph.final.html`
+   in a headless browser, or skip and log the gap. SVG is for static reports
+   only — the HTML is the primary visual.)
 
 ### Universal rules
 
