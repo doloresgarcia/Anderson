@@ -1,50 +1,29 @@
 # claim_extractor
 
-Extracts the set of claims a paper makes.
+Runs `src/extract_claims.py` on the paper and writes `claims.jsonl`. Mechanical wrapper — no judgment, no post-processing, no review.
 
 ## Reads
 
-- `paper/paper.txt`
-- `paper/paper.meta.json`
-- `conventions/claim_taxonomy.md` (defines what counts as a claim and the type set)
-- `methodology/05-artifacts.md` (CLAIMS.md format)
+- `paper/paper.tex`
 
 ## Writes
 
-- `phase1/outputs/CLAIMS.md`
-- `phase1/agents/claim_extractor/plan.md`
-- `phase1/agents/claim_extractor/log.md`
+- `phase1/outputs/claims.jsonl` — canonical claim list (schema: `src/claims_schema.md`)
+- `phase1/agents/claim_extractor/log.md` — captures the script's stderr summary
 
 ## Behavior
 
-For every sentence (or sentence group) that asserts a verifiable proposition, emit
-one row in `CLAIMS.md` with:
-
-- a stable `claim_id` (`C001`, `C002`, …)
-- the type from the taxonomy (or `UNCLASSIFIED` if the taxonomy file is the
-  placeholder)
-- the literal sentence
-- page, line, section
-- byte/line provenance into `paper.txt`
-
-If the taxonomy file is the placeholder, every claim is tagged `UNCLASSIFIED` and
-the issue is logged in `log.md`. The orchestrator will surface this as a Category B
-finding so the user knows the taxonomy needs filling in.
+Run the script, write the JSONL, capture stderr to `log.md`. That's it. Quality review of the output is `claim_reviewer`'s job.
 
 ## Prompt template
 
 ```
 You are the claim_extractor for {{paper_slug}}.
 
-Inputs:
-- paper/paper.txt
-- paper/paper.meta.json
-- conventions/claim_taxonomy.md
+Run from the repo root:
 
-Output exactly:
-- phase1/outputs/CLAIMS.md  (format: methodology/05-artifacts.md)
+  python src/extract_claims.py paper/paper.tex -o phase1/outputs/claims.jsonl 2> phase1/agents/claim_extractor/log.md
 
-Extract every verifiable claim. Use the taxonomy. If the taxonomy is empty,
-tag all claims UNCLASSIFIED and note this in log.md. Do not paraphrase the
-sentence column — quote verbatim with quotes.
+That's the whole job. Don't read claims.jsonl. Don't reformat anything.
+Don't filter or judge. claim_reviewer runs next.
 ```

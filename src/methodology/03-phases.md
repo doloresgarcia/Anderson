@@ -8,29 +8,36 @@ Three phases. Each phase ends with a commit; phase 2 has a review-arbiter gate; 
 **Goal.** Read the paper, list its claims, scan the literature for relevant prior
 work, and emit a first-pass claim graph.
 
-**Subagents dispatched.**
+**Subagents dispatched (in order).**
 
-- `claim_extractor` — reads `paper.txt`, emits `CLAIMS.md` (one row per claim with
-  sentence-level provenance) using the taxonomy from
-  `conventions/claim_taxonomy.md`.
-- `literature_searcher` — for each claim, first crosschecks against the local
-  literature bank (if provided), then falls back to external search for
-  uncovered claims (biased toward published, peer-reviewed papers over
-  preprints); emits `LITERATURE.md` (claim → candidate references with
-  confidence, source, and snippet).
-- `graph_builder` — consumes `CLAIMS.md` and `LITERATURE.md`, produces
-  `graph.v1.json` per `conventions/graph_schema.md`.
+1. `claim_extractor` — runs `src/extract_claims.py` on `paper.tex`, emits
+   `claims.jsonl`. Mechanical wrapper, no judgment. Schema in
+   `src/claims_schema.md`.
+2. `claim_reviewer` — first-pass quality review of `claims.jsonl`. Drops
+   unambiguous junk rows (LaTeX residue, empty text, metadata leakage),
+   flags suspected issues in `CLAIM_REVIEW.md`. Edits `claims.jsonl` in
+   place when the fix is mechanical; defaults to leaving rows alone.
+3. `literature_searcher` — for each remaining claim, first crosschecks
+   against the local literature bank (if provided), then falls back to
+   external search for uncovered claims (biased toward published,
+   peer-reviewed papers over preprints); emits `LITERATURE.md` (claim →
+   candidate references with confidence, source, and snippet).
+4. `graph_builder` — consumes `claims.jsonl` and `LITERATURE.md`, produces
+   `graph.v1.json` per `conventions/graph_schema.md`.
 
 **Deliverables (in `reviews/<slug>/phase1/outputs/`).**
 
-- `CLAIMS.md`
+- `claims.jsonl` — canonical claim list (post-review)
+- `CLAIM_REVIEW.md` — `claim_reviewer`'s audit + flags
 - `LITERATURE.md`
 - `graph.v1.json`
 - `FINDINGS.md` — short prose summary: how many claims, distribution by type, gaps
   identified at this stage.
 
-**Review.** Single-bot review (correctness/completeness of claim extraction and graph
-well-formedness). Arbiter PASS required to advance.
+**Review.** Single-bot review (correctness/completeness of claim extraction
+and graph well-formedness). Arbiter PASS required to advance. `claim_reviewer`
+already did a hygiene pass on the claim list, so this review focuses on
+graph structure and the literature search.
 
 ## Phase 2 — Strategy & Check
 

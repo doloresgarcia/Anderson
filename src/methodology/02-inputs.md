@@ -15,12 +15,19 @@ A review is launched against exactly one paper, supplied as one of:
 reviews/<slug>/
   paper/
     paper.pdf            # canonical PDF
-    paper.txt            # extracted plain text, page-numbered
+    paper.tex            # LaTeX source (preferred input for claim extraction)
+    paper.txt            # extracted plain text, page-numbered (later phases)
     paper.meta.json      # title, authors, year, venue, DOI/arXiv id
 ```
 
-`paper.txt` is the artifact agents read for claim extraction. `paper.pdf` is the
-artifact phase 3 annotates.
+`paper.tex` is what `claim_extractor` reads — extraction is structurally
+LaTeX-aware (equations, captions, table cells via `\result{}{}` macros).
+`paper.txt` is what later phases reference for verification and highlighting.
+`paper.pdf` is the artifact phase 3 annotates.
+
+If the source isn't available as `.tex` (e.g., PDF-only papers),
+`claim_extractor` falls back to `paper.txt` with degraded structural fidelity
+(no equation/table extraction). Log this as Category B at review.
 
 ## Literature bank
 

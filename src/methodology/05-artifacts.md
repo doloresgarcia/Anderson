@@ -3,19 +3,32 @@
 Every phase deliverable has a fixed format so downstream agents can parse it
 mechanically.
 
-## `CLAIMS.md`
+## `claims.jsonl`
 
-Markdown table, one row per claim:
+The canonical claim list. One JSON record per line, produced by
+`src/extract_claims.py` directly from `paper.tex` and (optionally) refined in
+place by `claim_reviewer`. Full schema: `src/claims_schema.md`.
 
-```
-| claim_id | type | sentence | hedged | confidence | page | line | section | provenance |
-|----------|------|----------|--------|------------|------|------|---------|------------|
-| C001     | …    | "…"      | false  | high       | 3    | 14   | 2.1     | paper.txt:142 |
-```
+Top-level fields per record: `id`, `type` (`prose` | `equation` | `caption` |
+`table_cell`), `text`, `section_path`, `line`, plus type-specific fields
+(`cite_keys`, `is_first_person`, `is_numeric`, `is_footnote`,
+`is_definition`, `epistemic` for `prose`; `env` for `equation`/`caption`;
+`value`, `error`, `best` for `table_cell`).
 
-`type` values and the `hedged` flag definition come from
-`conventions/claim_taxonomy.md`. `confidence` values come from
-`conventions/confidence.md`.
+This is the artifact downstream agents (`literature_searcher`,
+`graph_builder`, `strategist`, checkers) read. There is no separate markdown
+table form in the contract — agents that want one can derive it on demand.
+Specifically:
+
+- `literature_searcher` filters/iterates `claims.jsonl` via `jq`.
+- `graph_builder` reads `claims.jsonl` and emits node IDs that match the
+  `id` field.
+- `strategist` reads `claims.jsonl` and the literature artifact; emits
+  `STRATEGY.md` with rows keyed by the same `id` values.
+
+`CLAIM_REVIEW.md` (also in `phase1/outputs/`) is `claim_reviewer`'s
+human-readable audit log of edits and flags — not consumed by downstream
+agents, useful for human review.
 
 ## `LITERATURE.md`
 
