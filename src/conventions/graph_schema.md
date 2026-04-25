@@ -157,8 +157,9 @@ the goal is to draw the reader's eye to the failure, not to average it out.
 
 ## Clustering algorithm
 
-`graph_builder` runs this to produce ≤20 groups from the `N` claims in
-`CLAIMS.md`. Deterministic given the same input.
+`graph_builder` clusters claims into groups for the graph. The goal is a number of groups that is small enough to be readable in the HTML visualization (a human can scan ~15–25 groups comfortably) but large enough that each group is semantically coherent. **There is no hard count ceiling** — the right number depends on the paper's section structure and claim density. Aim for 10–25 groups; document your reasoning in log.md if you go outside that range.
+
+The algorithm below is a starting point, not a rigid prescription. Use judgment.
 
 ```
 1. Degenerate case. If N ≤ 20: each claim is its own group. Stop.
@@ -167,15 +168,17 @@ the goal is to draw the reader's eye to the failure, not to average it out.
    coarsest natural partition. Typical paper has 5–8 sections × 7 types →
    ~30–50 initial clusters.
 
-3. Split oversized clusters. For any cluster with > 15 claims, split by
-   sub-section. If a single section/type cluster still has > 15 claims after
-   that, split by paragraph proximity (consecutive claims first).
+3. Split oversized clusters. For any cluster with many claims (rough target:
+   keep groups to ~15–30 claims for readability), split by sub-section. If a
+   cluster remains large after that, split by paragraph proximity.
 
-4. Merge until ≤ 20 clusters.
-   while len(clusters) > 20:
+4. Merge until the count is in a readable range (~10–25 groups).
+   while len(clusters) > 25:
      pick the two clusters with smallest combined size that share either
      section or type; merge them. Tie-break by section adjacency
      (claims in adjacent paper sections merge before claims in distant ones).
+   Stop merging when further merges would cross section boundaries and
+   degrade coherence.
 
 5. Floor. If len(clusters) < 5 AND any cluster has > 5 claims:
    split the largest cluster by sub-topic (claim sentence similarity).
@@ -316,10 +319,10 @@ Each version is a new file. **Never overwrite a previous version.**
 
 ## Validation rules
 
-Every emitted JSON is checked. Failure of any rule is auto-Category-A:
+Every emitted JSON is checked. Failure of any **structural** rule is auto-Category-A; the **sizing** guidance is a recommendation, not a hard constraint — reviewers flag deviations as Category B if groups are egregiously large or numerous, but the graph is not rejected solely on count.
 
-- `len(groups) ≤ 20`
-- every `group` has `1 ≤ len(claim_ids) ≤ 15`
+**Structural rules (auto-Category-A if violated):**
+
 - every `claim.parent` resolves to a `group`, and the claim's id is in that
   group's `claim_ids`
 - every `edge.source` and `edge.target` resolves to a `claim` node
@@ -329,6 +332,12 @@ Every emitted JSON is checked. Failure of any rule is auto-Category-A:
 - no edge of kind `contradicts` has confidence `low` and `provenance: "inferred"`
   (an inferred contradiction without a paper anchor is too weak — promote to
   `medium` confidence with a real anchor or drop the edge)
+
+**Sizing guidance (Category-B flag if significantly outside range, not auto-A):**
+
+- Aim for 10–25 groups. Fewer makes the graph hard to explore; more makes it cluttered.
+- Aim for 5–30 claims per group. Very small groups (1–2 claims) are usually worth merging; very large ones (50+) lose coherence.
+- The right number of groups depends on the paper. A 10-page paper and a 40-page paper will have different natural cluster counts. Document your reasoning in log.md.
 
 ## When to extend
 
