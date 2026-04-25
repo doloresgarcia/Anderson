@@ -26,9 +26,10 @@ consistency in phase 2 instead.
 ## C005
 
 ## C006
-- [@Butter:2017cot] — supports — confidence high — "Deep-learned Top Tagging using Lorentz Invariance and Nothing Else."
-- [@Bogatskiy:2022czk] — supports — confidence medium — "PELICAN: Permutation Equivariant and Lorentz Invariant or Covariant Aggregator Network for Particle Physics."
-- [@Gong:2022lye] — supports — confidence medium — "An Efficient Lorentz Equivariant Graph Neural Network for Jet Tagging."
+- [@Butter:2017cot] — related — confidence medium — "Deep-learned Top Tagging using Lorentz Invariance and Nothing Else."
+- [@Bogatskiy:2022czk] — related — confidence medium — "PELICAN: Permutation Equivariant and Lorentz Invariant or Covariant Aggregator Network for Particle Physics."
+- [@Gong:2022lye] — related — confidence medium — "An Efficient Lorentz Equivariant Graph Neural Network for Jet Tagging."
+- Note: Phase-2 verifier should locate a quantitative source for the order-of-magnitude figure (e.g. Spinner:2024hjm §4 or Bogatskiy:2020tje).
 
 ## C007
 - [@Kasieczka:2019dbj] — supports — confidence high — "The Machine Learning Landscape of Top Taggers."
@@ -408,7 +409,8 @@ consistency in phase 2 instead.
 - [@Butter:2023fov] — supports — confidence high — "Jet Diffusion versus JetGPT --- Modern Networks for the LHC."
 
 ## C148
-- [@lipman2023flowmatching] — supports — confidence medium — "Flow Matching for Generative Modeling."
+- [@lipman2023flowmatching] — related — confidence medium — "Flow Matching for Generative Modeling."
+- Note: Vanilla CFM (Lipman 2023) does not provide optimal-transport paths; that is the OT-CFM extension. Phase-2 verifier may flag the underlying claim wording.
 
 ## C149
 
@@ -491,10 +493,6 @@ consistency in phase 2 instead.
 
 ## C187
 
-## C188
-
-## C189
-
 ## C190
 - [@zaheer2017deep] — supports — confidence high — "Deep Sets."
 
@@ -554,3 +552,7 @@ consistency in phase 2 instead.
 ## C216
 
 ## C217
+
+## C218
+
+## C219
