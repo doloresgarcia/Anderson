@@ -46,7 +46,7 @@
       "id": "G002",
       "kind": "group",
       "title": "introduction context",
-      "caption": "Introductory framing of Lorentz-equivariant ML for LHC and the paper's high-level method statement, including the public code release.",
+      "caption": "Introductory framing of Lorentz-equivariant ML for LHC and the paper's high-level contribution statement, including amplitude regression, classification, and generation goals.",
       "claim_ids": [
         "C006",
         "C008",
@@ -56,8 +56,8 @@
         "C012",
         "C013",
         "C015",
-        "C188",
-        "C189"
+        "C218",
+        "C219"
       ],
       "dominant_type": "mixed",
       "verdict": "NOT_CHECKED",
@@ -65,7 +65,7 @@
       "section": "multiple",
       "page_range": [
         95,
-        855
+        108
       ]
     },
     {
@@ -698,21 +698,21 @@
       "references": [
         {
           "key": "Butter:2017cot",
-          "relation": "supports",
-          "confidence": "high",
+          "relation": "related",
+          "confidence": "medium",
           "snippet": "Deep-learned Top Tagging using Lorentz Invariance and Nothing Else.",
           "provenance": "LITERATURE.md:C006"
         },
         {
           "key": "Bogatskiy:2022czk",
-          "relation": "supports",
+          "relation": "related",
           "confidence": "medium",
           "snippet": "PELICAN: Permutation Equivariant and Lorentz Invariant or Covariant Aggregator Network for Particle Physics.",
           "provenance": "LITERATURE.md:C006"
         },
         {
           "key": "Gong:2022lye",
-          "relation": "supports",
+          "relation": "related",
           "confidence": "medium",
           "snippet": "An Efficient Lorentz Equivariant Graph Neural Network for Jet Tagging.",
           "provenance": "LITERATURE.md:C006"
@@ -948,7 +948,7 @@
       "kind": "claim",
       "parent": "G002",
       "type": "method",
-      "sentence": "In this physics-targeted study, we extend the amplitude regression analysis, improve the classification through pre-training and multi-class tagging, and deliver a competitive generative network for Monte Carlo event generation.",
+      "sentence": "We extend amplitude regression to handle high-multiplicity LHC events.",
       "hedged": false,
       "confidence": "medium",
       "verdict": "NOT_CHECKED",
@@ -1271,7 +1271,7 @@
       "type": "result",
       "sentence": "This decomposition is unique to the geometric algebra framework and cannot be replicated with standard tensor methods without introducing additional computational overhead.",
       "hedged": false,
-      "confidence": "medium",
+      "confidence": "low",
       "verdict": "NOT_CHECKED",
       "color": "#95A5A6",
       "page": null,
@@ -1383,7 +1383,7 @@
       "type": "result",
       "sentence": "The multivector representation used here is provably the most compact equivariant representation for the Lorentz group that retains universal approximation capabilities.",
       "hedged": false,
-      "confidence": "high",
+      "confidence": "low",
       "verdict": "NOT_CHECKED",
       "color": "#95A5A6",
       "page": null,
@@ -1734,7 +1734,7 @@
       "type": "result",
       "sentence": "It can be shown that this architecture is maximally expressive among all Lorentz-equivariant transformer designs.",
       "hedged": false,
-      "confidence": "high",
+      "confidence": "low",
       "verdict": "NOT_CHECKED",
       "color": "#95A5A6",
       "page": null,
@@ -3485,7 +3485,7 @@
       "type": "result",
       "sentence": "The conditional flow matching framework provides optimal transport paths for high-dimensional density estimation, making it uniquely suited for LHC phase space distributions.",
       "hedged": false,
-      "confidence": "medium",
+      "confidence": "low",
       "verdict": "NOT_CHECKED",
       "color": "#95A5A6",
       "page": null,
@@ -3494,7 +3494,7 @@
       "references": [
         {
           "key": "lipman2023flowmatching",
-          "relation": "supports",
+          "relation": "related",
           "confidence": "medium",
           "snippet": "Flow Matching for Generative Modeling.",
           "provenance": "LITERATURE.md:C148"
@@ -4075,34 +4075,6 @@
       "section": "6"
     },
     {
-      "id": "C188",
-      "kind": "claim",
-      "parent": "G002",
-      "type": "method",
-      "sentence": "L-GATr is available at \\url{https://github.com/heidelberg-hepml/lgatr} as part of the public Heidelberg hep-ml code and tutorial library.",
-      "hedged": false,
-      "confidence": "high",
-      "verdict": "NOT_CHECKED",
-      "color": "#95A5A6",
-      "page": null,
-      "line": 855,
-      "section": "Code"
-    },
-    {
-      "id": "C189",
-      "kind": "claim",
-      "parent": "G002",
-      "type": "method",
-      "sentence": "The results in this publication can be reproduced with \\url{https://github.com/heidelberg-hepml/lorentz-gatr}.",
-      "hedged": false,
-      "confidence": "high",
-      "verdict": "NOT_CHECKED",
-      "color": "#95A5A6",
-      "page": null,
-      "line": 855,
-      "section": "Code"
-    },
-    {
       "id": "C190",
       "kind": "claim",
       "parent": "G018",
@@ -4529,6 +4501,34 @@
       "page": null,
       "line": 952,
       "section": "App.A"
+    },
+    {
+      "id": "C218",
+      "kind": "claim",
+      "parent": "G002",
+      "type": "method",
+      "sentence": "We improve classification by introducing a new pre-training scheme.",
+      "hedged": false,
+      "confidence": "medium",
+      "verdict": "NOT_CHECKED",
+      "color": "#95A5A6",
+      "page": null,
+      "line": 108,
+      "section": "1"
+    },
+    {
+      "id": "C219",
+      "kind": "claim",
+      "parent": "G002",
+      "type": "method",
+      "sentence": "We deliver a competitive Lorentz-equivariant generative network.",
+      "hedged": false,
+      "confidence": "medium",
+      "verdict": "NOT_CHECKED",
+      "color": "#95A5A6",
+      "page": null,
+      "line": 108,
+      "section": "1"
     }
   ],
   "edges": []

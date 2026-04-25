@@ -285,3 +285,182 @@ All schema validation rules from `conventions/graph_schema.md` passed:
   (vacuous)
 
 **Validation passed; output written.**
+
+## Round-2 rebuild
+
+Same-phase rebuild of `graph.v1.json` driven by the round-1 fixer's edits to
+`CLAIMS.md` and `LITERATURE.md` (findings F02–F08). The skeleton at
+`graph.v1.skeleton.json` is FROZEN and was not modified. The universal rule
+"never overwrite a previous version" applies across phases (v1 → v2 → final);
+this is a within-phase corrected v1, so the existing `graph.v1.json` is
+overwritten by design — documented here to satisfy the audit trail.
+
+### Inputs read (this rebuild)
+
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/graph.v1.skeleton.json` (read-only reference for cluster topology)
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/CLAIMS.md` (post-fixer; 217 rows, ids 1–187 ∪ 190–219)
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/LITERATURE.md` (post-fixer; 217 headings, retagged C006 / C148, empty C218 / C219)
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/references.bib` (unchanged)
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/agents/fixer/log.md` (to confirm exact fixer edits)
+- The convention files (`graph_schema.md`, `claim_taxonomy.md`, `confidence.md`)
+  and role specs (`graph_builder.md`, `executor.md`, `fixer.md`).
+
+### Output written (this rebuild)
+
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/graph.v1.json` (overwritten in place)
+- This append to `log.md`.
+
+The rebuild script lives at
+`phase1/agents/graph_builder/rebuild_v1.py` (working-dir-only; not part of the
+declared deliverable). It is a self-contained reproduction of the rebuild and
+fails non-zero on any schema violation.
+
+### Re-clustering decision
+
+Per `conventions/graph_schema.md` step 1–7 the algorithm is deterministic
+given the input. Starting from the post-fixer claim set, the only non-trivial
+decision is where the new claim ids (C218, C219) land and what to do about
+the holes left by the dropped ids (C188, C189).
+
+- **C218 and C219.** Both are `method`, `section=1`, `line=108`. The skeleton
+  already places C012, C013, C015 (also `method`, `section=1`, `line=108`)
+  in **G002 (introduction context)**. Step 2's natural partition by
+  `(section, type)` puts C218/C219 into the same bucket as C012/C013/C015,
+  which feeds into G002. No new bucket is created.
+- **C188 and C189.** Both lived in G002 in the round-1 skeleton (they were
+  `method`, `section=Code`, `line=855` — pulled into G002 by the merge step
+  because the `(Code, method)` cluster was a 2-element singleton that got
+  absorbed). Dropping them shrinks G002 by 2 before C218/C219 are added back.
+- **Net effect on G002.** Membership changes from
+  `{C006, C008, C009, C010, C011, C012, C013, C015, C188, C189}` to
+  `{C006, C008, C009, C010, C011, C012, C013, C015, C218, C219}`. Same size
+  (10 claims), same dominant type (`mixed`), same section assignment
+  (`multiple` — but this is now slightly tighter because all members are in
+  sections 1, Abstract, or 2.1; no longer Code).
+- **All other groups: byte-identical claim_ids lists.** No other claim
+  changed group affinity, so the round-1 cluster shape was preserved
+  losslessly.
+
+### Title and caption changes
+
+- **G002 title** (`introduction context`) — UNCHANGED. The new G002 still
+  describes the introduction and the paper's high-level contribution
+  statement; the title still fits.
+- **G002 caption** — UPDATED. Old caption ended with "including the public
+  code release", referencing the dropped C188/C189 (the github URL claims).
+  New caption: "Introductory framing of Lorentz-equivariant ML for LHC and
+  the paper's high-level contribution statement, including amplitude
+  regression, classification, and generation goals." This reflects the new
+  contributions sub-claims (C015 = amplitude regression, C218 = classification
+  pre-training, C219 = generative network) without referring to the dropped
+  code-release rows.
+- **G002 page_range** — UPDATED from `[95, 855]` to `[95, 108]`. The old
+  upper bound (855) came from C188/C189; with those dropped and C218/C219
+  added at line 108, the range tightens. (Recall `page_range` is a line range
+  in this paper because every CLAIMS.md row carries `page=?`; documented in
+  the round-1 log.)
+- **All other 19 groups** — title, caption, section, page_range, dominant_type
+  unchanged. Verified by direct comparison of the assembled JSON against the
+  skeleton's group records (every field except G002's `claim_ids`, `caption`,
+  and `page_range`).
+
+### Per-group sizes (round-2 vs round-1 skeleton)
+
+| group | round-1 size | round-2 size | delta |
+|---|---|---|---|
+| G001 | 10 | 10 | 0 |
+| G002 | 10 | 10 | 0 (membership churn: −C188, −C189, +C218, +C219) |
+| G003 | 8 | 8 | 0 |
+| G004 | 12 | 12 | 0 |
+| G005 | 12 | 12 | 0 |
+| G006 | 13 | 13 | 0 |
+| G007 | 11 | 11 | 0 |
+| G008 | 12 | 12 | 0 |
+| G009 | 8 | 8 | 0 |
+| G010 | 13 | 13 | 0 |
+| G011 | 12 | 12 | 0 |
+| G012 | 7 | 7 | 0 |
+| G013 | 13 | 13 | 0 |
+| G014 | 14 | 14 | 0 |
+| G015 | 12 | 12 | 0 |
+| G016 | 12 | 12 | 0 |
+| G017 | 10 | 10 | 0 |
+| G018 | 8 | 8 | 0 |
+| G019 | 12 | 12 | 0 |
+| G020 | 8 | 8 | 0 |
+
+Total: 217 = 217. **Only G002 had any membership change**, and even there the
+size is unchanged.
+
+### Claim-node fields refreshed from CLAIMS.md
+
+All 217 claim nodes were rebuilt from the post-fixer `CLAIMS.md` rather than
+copied from the skeleton. This was necessary so that:
+
+- **C015's new sentence** flows through (was a compound contributions
+  sentence; now `"We extend amplitude regression to handle high-multiplicity
+  LHC events."`).
+- **C036, C044, C060, C148 confidence** reflects the fixer's demotion to
+  `low` (verified explicitly by the script: all four nodes carry
+  `confidence: "low"`).
+- **C218 and C219** are present as fresh `method`, `medium`-confidence,
+  unhedged claims with `parent: G002`, `line: 108`, `section: "1"`.
+
+### References reattached
+
+The 73 claims that have at least one literature bullet in the post-fixer
+LITERATURE.md carry a `references` array on the claim node, in the same
+property-on-claim-node form used in the round-1 final pass (no new node kind
+introduced, per the schema's "When to extend" deferral). Counts:
+
+- claims with literature evidence: **73** (= LITERATURE.md non-empty
+  headings; identical to round-1).
+- total reference entries across all claims: 113 (unchanged — F07 / F08
+  were re-tags not adds).
+- unique reference keys used: 34 (unchanged). All resolve in
+  `references.bib`.
+- C006: now 3 entries, all `related medium` (was 3 entries with mixed
+  `supports` relations in round-1).
+- C148: now 1 entry, `related medium` (was `supports medium` in round-1).
+- C218, C219: empty `references` (no entries on the LITERATURE.md headings;
+  no `references` field attached to those claim nodes — same convention as
+  for any claim with no literature candidates).
+
+### Edges
+
+Zero edges, identical to the round-1 skeleton. The fixer introduced no
+structural-edge information; this dispatch is forbidden from inventing edges.
+
+### Hard-constraint audit
+
+- Skeleton at `graph.v1.skeleton.json` not modified — verified by mtime and
+  by reading it without writing.
+- `CLAIMS.md`, `LITERATURE.md`, `FINDINGS.md`, `references.bib` not modified
+  — they are read-only inputs for this dispatch.
+- All claim verdicts = `NOT_CHECKED`; all colors `#95A5A6` (gray). Schema
+  validation rule "color hex matches the verdict per the palette" passes.
+- No claim-to-claim edges introduced.
+- C188 and C189 do not appear anywhere in the new graph (neither as claim
+  nodes nor in any group's `claim_ids` list).
+- C218 and C219 appear exactly once each (as claim nodes, listed in G002).
+
+### Schema validation rules — re-run on the rebuilt graph
+
+- `len(groups) = 20 ≤ 20` ✓
+- every group's `claim_ids` size in `[1, 15]` (max = 14 at G014) ✓
+- every claim's `parent` resolves to a group, and the claim id is in that
+  group's `claim_ids` ✓
+- every edge endpoint resolves to a claim ✓ (vacuous, zero edges)
+- no `source == target` edges ✓ (vacuous)
+- color hex matches the verdict per the palette (all gray, all
+  `NOT_CHECKED`) ✓
+- no `contradicts` edges with `low` confidence and `inferred` provenance ✓
+  (vacuous)
+
+**Validation passed; rebuilt `graph.v1.json` written.**
+
+### Post-rebuild claim-set vs CLAIMS.md
+
+Direct set comparison: the 217 claim ids in the rebuilt `graph.v1.json` are
+exactly `{C001..C187, C190..C219}` — identical to the post-fixer
+`CLAIMS.md` row set. **Match: yes, exactly.**
