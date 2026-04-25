@@ -7,11 +7,12 @@
 #   make graph       — re-render graph HTML for REVIEW=<dir>
 #   make stats       — re-render STATS.md  for REVIEW=<dir>
 #   make highlight   — re-render highlighted PDF for REVIEW=<dir>
+#   make usage       — aggregate subagent token usage for REVIEW=<dir>
 #
 # Per-review targets pass REVIEW=<path>:
 #   make stats REVIEW=reviews/my-paper
 
-.PHONY: help install demo demo-clean graph stats highlight
+.PHONY: help install demo demo-clean graph stats highlight usage
 
 REVIEW ?= reviews/__demo__
 DEMO_REVIEW := reviews/__demo__
@@ -26,6 +27,7 @@ help:
 	@echo "  graph           re-render graph HTML for REVIEW=<dir>"
 	@echo "  stats           re-render STATS.md  for REVIEW=<dir>"
 	@echo "  highlight       re-render highlighted PDF for REVIEW=<dir>"
+	@echo "  usage           aggregate subagent token usage for REVIEW=<dir>"
 	@echo ""
 	@echo "  REVIEW defaults to $(REVIEW)"
 	@echo ""
@@ -74,3 +76,6 @@ highlight:
 	else \
 		echo "no paper.pdf or paper.txt found under $(REVIEW)/paper/" >&2; exit 2; \
 	fi
+
+usage:
+	python3 src/token_log.py $(REVIEW)
