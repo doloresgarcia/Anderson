@@ -121,3 +121,55 @@ All edges use `provenance: "inferred"` with `confidence: "medium"`.
 - All edge endpoints exist ✓
 - `color = "#95A5A6"` for all claims and groups (verdict `NOT_CHECKED`) ✓
 - No `contradicts` edge with `confidence: low` and `provenance: inferred` ✓
+
+---
+
+## Final pass — literature merge (graph.v1.json)
+
+**Input:** `graph.v1.skeleton.json` + `LITERATURE.md` + `references.bib`
+**Output:** `phase1/outputs/graph.v1.json`
+
+### Method
+
+For each claim listed in any LITERATURE.md cluster, a `literature` field was added to
+the claim node. Each entry in the list has the shape:
+
+```json
+{"key": "AuthorYear", "relation": "supports|contradicts|related", "confidence": "high|medium|low"}
+```
+
+### Coverage
+
+50 distinct claims annotated across 11 clusters (A–K):
+
+| LITERATURE cluster | claims annotated | keys used |
+|---|---|---|
+| A — L-GATr architecture | 10 | Spinner:2024hjm, brehmer2023geometric, Bahl:2024meb, Bahl:2024sib |
+| B — GATr E(3) predecessor | 2 | brehmer2023geometric, de2023euclidean |
+| C — Competitor networks | 3 | Gong:2022lye, Bogatskiy:2022czk, ruhe2023clifford, Hao:2022xuv, Bogatskiy:2020tje |
+| D — Amplitude regression | 5 | Spinner:2024hjm, Bahl:2024meb, Badger:2022hwf, Danziger:2021nec, Herrmann:2025abc |
+| E — Top tagging | 5 | Kasieczka:2019dbj, Heimel:2018mkt, Spinner:2024hjm, Gong:2022lye, Bogatskiy:2022czk |
+| F — ParT / JetClass / MIParT | 1 | Qu:2022mxj, He:2024eiw, Mikuni:2021pou |
+| G — Event generation | 18 | Spinner:2024hjm, Buhmann:2023pmh, Birk:2023ind, Butter:2023fov, Buhmann:2023kdg, Leigh:2023doe |
+| H — LHC ML overview | 4 | Butter:2022rso, Campbell:2022qmc, Kansal:2022spb, Bierlich:2023zzd |
+| I — Transformer foundations | (merged into claim-0109 under cluster A) | vaswani2017attention, xiong2020layer |
+| J — Flow matching | (merged into claim-0354/0355/0359/0367 under cluster G) | lipman2022flow |
+| K — Geometric algebra | 2 | hestenes1966space |
+
+### No contradicts edges added
+
+No LITERATURE.md entry uses the `contradicts` relation. All external papers either
+`supports` or `related` the annotated claims. No contradicts edges were introduced.
+
+### No internal changes to skeleton
+
+Groups, claim nodes (excluding the new `literature` field), and edges are unchanged
+from `graph.v1.skeleton.json`. All verdicts remain `NOT_CHECKED`, all colors `#95A5A6`.
+
+### Validation results (final)
+
+- All skeleton validations carry forward ✓
+- All 50 annotated claim IDs resolve to real claims in the skeleton ✓
+- `literature` field lists only keys present in `references.bib` ✓
+- No new edges introduced ✓
+- File written as new file; skeleton untouched ✓

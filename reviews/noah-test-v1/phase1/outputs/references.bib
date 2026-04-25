@@ -139,40 +139,9 @@
   note          = {bank file: 2211\_10295v2.pdf; FPD/KPD metrics}
 }
 
-@article{Bierlich:2023zzd,
-  author        = {Bierlich, Christian and others},
-  title         = {{Towards a data-driven model of hadronization using
-                    normalizing flows}},
-  year          = {2023},
-  eprint        = {2311.09296},
-  archivePrefix = {arXiv},
-  primaryClass  = {hep-ph},
-  note          = {bank file: 2311\_09296v2.pdf}
-}
-
-@article{Danziger:2021nec,
-  author        = {Danziger, K. and Jan{\ss}en, T. and Schumann, S. and Siegert, F.},
-  title         = {{Accelerating Monte Carlo event generation --- rejection
-                    sampling using neural network event-weight estimates}},
-  journal       = {SciPost Phys.},
-  year          = {2022},
-  eprint        = {2109.11964},
-  archivePrefix = {arXiv},
-  primaryClass  = {hep-ph},
-  note          = {bank file: 2109\_11964v2.pdf}
-}
-
-@article{Herrmann:2025abc,
-  author        = {Herrmann, Tim and Jan{\ss}en, Timo and Schenker, Mathis
-                   and Schumann, Steffen and Siegert, Frank},
-  title         = {{Accelerating multijet-merged event generation with neural
-                    network matrix element surrogates}},
-  year          = {2025},
-  eprint        = {2506.06203},
-  archivePrefix = {arXiv},
-  primaryClass  = {hep-ph},
-  note          = {bank file: 2506\_06203v3.pdf}
-}
+% Bierlich:2023zzd removed — too tangential to classify (F002)
+% Danziger:2021nec removed — too tangential to classify (F002)
+% Herrmann:2025abc removed — too tangential to classify (F002)
 
 @article{Mikuni:2021pou,
   author        = {Mikuni, Vinicius and Canelli, Florencia},
@@ -297,7 +266,7 @@
   note          = {top tagging dataset; external search; 1.2M train + 400k val/test}
 }
 
-@article{Bogatskiy:2020tje,
+@inproceedings{Bogatskiy:2020tje,
   author        = {Bogatskiy, Alexander and Anderson, Brandon and Offermann, Jan T.
                    and Roussi, Marwah and Miller, David W. and Kondor, Risi},
   title         = {{Lorentz Group Equivariant Neural Network for Particle Physics}},
@@ -321,16 +290,9 @@
   note          = {conditional flow matching (CFM) foundation; external search}
 }
 
-@article{Badger:2022hwf,
-  author        = {Badger, Simon and Butter, Anja and Sherrat, Matthew
-                   and Sherrat, Jessica and Sherrat, Luke},
-  title         = {{Loop Amplitudes from Precision Networks}},
-  year          = {2022},
-  eprint        = {2206.14831},
-  archivePrefix = {arXiv},
-  primaryClass  = {hep-ph},
-  note          = {Bayesian networks for loop amplitude surrogates; external search}
-}
+% Badger:2022hwf removed — fabricated author metadata (F003) and too tangential
+% to classify under supports/contradicts (F002). Real paper: arXiv:2206.14831,
+% authors: Badger, Butter, Luchmann, Pitz, Plehn.
 
 @article{Campbell:2022qmc,
   author        = {Campbell, John and others},
@@ -371,15 +333,7 @@
   note          = {layer normalization for transformers; external context}
 }
 
-@inproceedings{hendrycks2016gaussian,
-  author        = {Hendrycks, Dan and Gimpel, Kevin},
-  title         = {{Gaussian Error Linear Units (GELUs)}},
-  year          = {2016},
-  eprint        = {1606.08415},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.LG},
-  note          = {GELU activation function; external context}
-}
+% hendrycks2016gaussian removed — not cited in LITERATURE.md (F006)
 
 % ── Geometric algebra foundational reference ─────────────────────────────────
 
@@ -392,17 +346,3 @@
                    external context}
 }
 
-% ── Additional cite keys used in claims.jsonl (passthrough) ─────────────────
-% These keys appear in paper's cite_keys fields but are not directly cited in
-% LITERATURE.md cluster tables above. Included here for completeness so that
-% references.bib contains every key the paper uses that we have confirmed.
-
-@article{DBLP:journals/corr/abs-2106-06610,
-  author        = {Fuchs, Fabian B. and Welling, Max and others},
-  title         = {{Tensor field networks and higher-order representations}},
-  year          = {2021},
-  eprint        = {2106.06610},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.LG},
-  note          = {higher-order tensor representations; cited in claim-0104}
-}
