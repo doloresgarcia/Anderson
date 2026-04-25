@@ -19,15 +19,18 @@ Markdown table, one row per claim:
 
 ## `LITERATURE.md`
 
-Per claim, a sub-section listing candidate references:
+Per claim, a sub-section listing candidate references. Bank matches appear
+before external matches.
 
 ```
 ## C001
-- [@smith2020] — supports — confidence high — "snippet from abstract"
-- [@jones2019] — contradicts — confidence medium — "snippet"
+- [@smith2020] — supports — confidence high — bank — "snippet from paper text"
+- [@jones2019] — contradicts — confidence medium — external — "snippet"
 ```
 
-`confidence` values come from `conventions/confidence.md`.
+The fourth field is the **source**: `bank` (found in the local literature bank)
+or `external` (retrieved via internet search). `confidence` values come from
+`conventions/confidence.md`.
 
 Bibtex keys must resolve in `references.bib` (also written by
 `literature_searcher`). Unresolvable keys are Category A at review.

@@ -13,8 +13,11 @@ work, and emit a first-pass claim graph.
 - `claim_extractor` — reads `paper.txt`, emits `CLAIMS.md` (one row per claim with
   sentence-level provenance) using the taxonomy from
   `conventions/claim_taxonomy.md`.
-- `literature_searcher` — for each claim, runs targeted searches; emits
-  `LITERATURE.md` (claim → candidate references with relevance score and snippet).
+- `literature_searcher` — for each claim, first crosschecks against the local
+  literature bank (if provided), then falls back to external search for
+  uncovered claims (biased toward published, peer-reviewed papers over
+  preprints); emits `LITERATURE.md` (claim → candidate references with
+  confidence, source, and snippet).
 - `graph_builder` — consumes `CLAIMS.md` and `LITERATURE.md`, produces
   `graph.v1.json` per `conventions/graph_schema.md`.
 

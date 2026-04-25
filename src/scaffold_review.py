@@ -133,6 +133,13 @@ def main() -> int:
         else:
             shutil.copy(args.bib, review_dir / "paper" / "seed.bib")
 
+    literature_bank = REPO_ROOT / "literature_bank"
+    if literature_bank.is_dir():
+        ensure_symlink(review_dir / "literature_bank", literature_bank.resolve())
+    else:
+        print("warning: literature_bank/ not found at repo root; bank search will be skipped",
+              file=sys.stderr)
+
     (review_dir / "prompt.md").write_text("")
 
     print(f"scaffolded {review_dir}")
