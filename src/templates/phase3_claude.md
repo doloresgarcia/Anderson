@@ -32,8 +32,10 @@ paper, and report.
 
 Phase-3 specific Category-A triggers (in addition to the global ones):
 
-- A highlight in `paper.highlighted.pdf` whose claim_id has no entry in
-  `VERIFICATION.md`, or whose color disagrees with the `VERIFICATION.md` verdict.
+- A highlight in `paper.highlighted.pdf` whose claim_id has no `FLAGGED` entry
+  in `VERIFICATION.md`.
+- A highlight whose color does not match the most severe flagged category for
+  that claim per `conventions/error_categories.md`.
 - A node in `graph.final.json` lacking the verdict layer when `graph.v2.json`
   had it.
 - `REPORT.md` introducing a verdict that is not in `VERIFICATION.md`.
@@ -63,6 +65,6 @@ responses:
 ## Phase-3 specific gotchas
 
 - If most claims in `VERIFICATION.md` are `INCONCLUSIVE` because the verification
-  conventions are the placeholder, the highlighted PDF will be mostly yellow
-  and `REPORT.md` will say "not checked" a lot. That is the intended degraded
+  conventions are the placeholder, the highlighted PDF will have few highlights
+  and `REPORT.md` will say "inconclusive" a lot. That is the intended degraded
   output, not a phase-3 bug. Tell the user; do not paper over it.

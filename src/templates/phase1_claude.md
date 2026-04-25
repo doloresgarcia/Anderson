@@ -59,6 +59,7 @@ Hand off to `phase2/CLAUDE.md`.
   expected. Surface the gap in the dispatch summary, do not block on it.
 - `references.bib` must contain every key that appears in `LITERATURE.md`.
   Mismatches are auto-Category-A.
-- The `literature_bank/` symlink must be present. The literature searcher always
-  searches the bank before any external call. If the bank is empty or
-  unreadable, the searcher logs this and falls back to external search.
+- The `literature_bank/` symlink is expected (scaffold_review.py creates it
+  automatically). The literature searcher always searches the bank before any
+  external call. If the bank is missing, empty, or unreadable, the searcher
+  logs this and falls back to external search — this is not a phase failure.

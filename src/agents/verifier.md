@@ -1,53 +1,17 @@
-# verifier
+# verifier (DEPRECATED)
 
-Runs the verification method chosen by the strategist for a single claim (or batch
-of claims).
-
-## Reads
-
-- `phase1/outputs/CLAIMS.md`
-- `phase1/outputs/LITERATURE.md`
-- `phase2/outputs/STRATEGY.md`
-- `phase1/outputs/references.bib`
-- `conventions/verification.md`
-- `paper/paper.txt`
-- The specific upstream references named for the claim
-
-## Writes
-
-- `phase2/outputs/VERIFICATION.md` — appended to (one section per claim)
-- `phase2/agents/verifier/<claim_id>/plan.md` and `log.md`
-
-## Behavior
-
-For each assigned claim:
-
-1. Read the method prescribed by the strategist.
-2. Execute it per `conventions/verification.md`.
-3. Emit a verdict: `PASS`, `FAIL`, or `INCONCLUSIVE`.
-4. List the evidence: explicit `paper.txt:line` ranges plus reference snippets.
-5. Write the reasoning. If INCONCLUSIVE, the reason field is mandatory.
-
-**Hard rule.** A `FAIL` verdict requires concrete evidence — either an internal
-contradiction in the paper or an authoritative external source contradicting the
-claim. "It does not seem right" is INCONCLUSIVE, not FAIL.
-
-## Prompt template
-
-```
-You are the verifier for claim {{claim_id}} of {{paper_slug}}.
-
-Inputs:
-- phase2/outputs/STRATEGY.md  (find your row by claim_id={{claim_id}})
-- phase1/outputs/LITERATURE.md
-- phase1/outputs/references.bib
-- conventions/verification.md
-- paper/paper.txt
-- references named in your strategy row
-
-Append to:
-- phase2/outputs/VERIFICATION.md  (your section for {{claim_id}})
-
-Verdict ∈ {PASS, FAIL, INCONCLUSIVE}. FAIL requires concrete contradicting
-evidence. Cite line ranges and reference snippets.
-```
+> **This role has been replaced by five specialized checker agents.** See
+> `conventions/error_categories.md` for the full specification.
+>
+> - `checker_unreferenced` — missing citations
+> - `checker_ambiguous` — unclear or underspecified statements
+> - `checker_contradiction` — internal contradictions
+> - `checker_literature` — conflicts with published literature
+> - `checker_domain` — violations of established domain knowledge
+>
+> Each checker writes its own section in `phase2/outputs/VERIFICATION.md`
+> and uses the verdict set `FLAGGED` / `CLEAR` / `INCONCLUSIVE` instead of
+> the old `PASS` / `FAIL` / `INCONCLUSIVE`.
+>
+> Do not dispatch this agent. The orchestrator dispatches the five checkers
+> in parallel during phase 2.

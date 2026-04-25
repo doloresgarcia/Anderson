@@ -72,8 +72,8 @@ introductions.
 - *"Transformers use multi-head self-attention to model token interactions."*
 
 Verification target: external corroboration against canonical references (e.g.
-PDG for particle physics, textbooks, survey papers). Disagreement with canon is a
-strong FAIL signal.
+PDG for particle physics, textbooks, survey papers). Disagreement with canon
+triggers a `FLAGGED` verdict from `checker_domain`.
 
 ### `assumption`
 
@@ -83,10 +83,10 @@ model.
 - *"We assume the noise is Gaussian with zero mean."*
 - *"We restrict attention to the case where the matrix is positive-definite."*
 
-Verification target: rarely verifiable in the absolute sense; verifier records
-the assumption and flags whether the paper's results are sensitive to its
+Verification target: rarely verifiable in the absolute sense; the checkers
+record the assumption and flag whether the paper's results are sensitive to its
 violation. Default verdict for unviolated assumptions is `INCONCLUSIVE` (not
-FAIL — the paper is allowed to assume things).
+`FLAGGED` — the paper is allowed to assume things).
 
 ### `interpretation`
 
@@ -96,7 +96,7 @@ of their results.
 - *"This suggests attention is the key mechanism for compositional generalization."*
 - *"We attribute the gap to the increased capacity of the deeper model."*
 
-Verification target: hardest type. Verifier checks for confounders and obvious
+Verification target: hardest type. The checkers look for confounders and obvious
 alternative explanations; default verdict is `INCONCLUSIVE` unless the paper
 itself contradicts the interpretation.
 
@@ -123,8 +123,9 @@ Every row of `CLAIMS.md` carries:
 | `confidence` | `high` / `medium` / `low` per `conventions/confidence.md` — the extractor's confidence in this row |
 | `page`, `line`, `section`, `provenance` | as in `methodology/05-artifacts.md` |
 
-Hedging changes the verdict ceiling: a hedged claim that fails verification is
-`INCONCLUSIVE`, not `FAIL` — the paper did not promise certainty.
+Hedging changes the verdict ceiling: a hedged claim that triggers a checker
+finding is downgraded to `INCONCLUSIVE`, not `FLAGGED` — the paper did not
+promise certainty.
 
 ## Granularity
 
@@ -139,8 +140,8 @@ Example. *"We achieve 87.3% F1, which improves over Smith et al.'s 82%."*
 - `C0yy` `prior_work` — *"Smith et al. report 82% F1."* (with `hedged=false`)
 
 The implicit comparison ("which improves over") is not a third claim — it is
-derivable from the two numerical claims and is checked by the verifier comparing
-them.
+derivable from the two numerical claims and is checked by
+`checker_contradiction` for internal consistency.
 
 **Minimum claim size:** must include both a subject and a predicate that can be
 checked. A bare numeric value with no proposition ("3.7%") is not a claim; the
@@ -155,7 +156,8 @@ Split into propositions, as above.
 ### Attribution
 
 *"Smith et al. show that X"* → tag the proposition X as `prior_work`, with the
-citation as part of provenance. The verifier checks whether Smith actually shows X.
+citation as part of provenance. `checker_literature` checks whether Smith
+actually shows X.
 
 If the paper merely says *"see [12] for details"*, that is not a claim.
 
@@ -197,5 +199,5 @@ the type is too coarse and should be split. Likely future splits, deferred:
 - `method` → `architecture` / `training` / `evaluation`
 - `prior_work` → `prior_result` / `prior_method` / `well_known_fact`
 
-Do not split preemptively — only when an actual reviewer/verifier finding
+Do not split preemptively — only when an actual reviewer/checker finding
 demonstrates the need.

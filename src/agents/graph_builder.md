@@ -30,8 +30,11 @@ Phase 3:
   that the schema is unspecified.
 - Never overwrite a previous version. v1 stays at v1; v2 is a new file; v3 is a new
   file.
-- For phase 3, render `graph.final.svg` from `graph.final.json` with verdict colors:
-  green = PASS, red = FAIL, yellow = INCONCLUSIVE, gray = NOT CHECKED.
+- For phase 3, render `graph.final.svg` from `graph.final.json` with node colors
+  per `conventions/error_categories.md`: blue = unreferenced, amber = ambiguous,
+  orange = internal_contradiction, red = literature_collision,
+  purple = domain_violation, green = all CLEAR, gray = not checked. If a node
+  has multiple flagged categories, use the most severe category's color.
 
 ## Prompt template
 

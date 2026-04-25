@@ -55,30 +55,67 @@ output.
 ## `STRATEGY.md`
 
 ```
-| claim_id | importance | checkability | method | rationale |
-|----------|------------|--------------|--------|-----------|
-| C001     | high       | high         | …      | …         |
+| claim_id | importance | checkability | categories | rationale |
+|----------|------------|--------------|------------|-----------|
+| C001     | high       | high         | unreferenced, literature_collision | … |
 ```
 
-`method` values come from `conventions/verification.md`.
+`categories` lists the error categories from `conventions/error_categories.md`
+most relevant to the claim. All five checkers still run against all claims;
+the categories column guides prioritization.
 
 ## `VERIFICATION.md`
 
-Per checked claim:
+Organized by error category, one top-level section per checker. Within each
+section, one subsection per claim that the checker examined:
 
 ```
-## C001 — VERDICT: FAIL — confidence: medium
-- method: …
+## unreferenced
+
+### C003 — FLAGGED — confidence: high
+- evidence: paper.txt:42-44
+- reasoning: Claims X without citing any source.
+
+### C007 — CLEAR — confidence: high
+
+## ambiguous
+
+### C001 — FLAGGED — confidence: medium
+- evidence: paper.txt:14-15
+- interpretations:
+  1. "significant" means statistically significant (p < 0.05)
+  2. "significant" means practically meaningful (large effect size)
+- reasoning: The distinction matters because …
+
+## internal_contradiction
+
+### C004 — FLAGGED — confidence: high
 - evidence:
-  - paper.txt:142
-  - [@smith2020] §3.2
+  - paper.txt:30 — "We use 10,000 training samples"
+  - paper.txt:89 — "Our training set contains 8,500 examples"
+- reasoning: Irreconcilable counts.
+
+## literature_collision
+
+### C002 — FLAGGED — confidence: medium
+- evidence:
+  - paper.txt:22
+  - [@smith2020] §3.2 — "snippet"
+- reasoning: …
+
+## domain_violation
+
+### C009 — FLAGGED — confidence: high
+- evidence: paper.txt:105
+- violated_principle: …
+- canonical_source: …
 - reasoning: …
 ```
 
-`VERDICT` is one of `PASS`, `FAIL`, `INCONCLUSIVE`. `INCONCLUSIVE` requires a stated
-reason (e.g., paywalled reference, ambiguous wording). `confidence` values come
-from `conventions/confidence.md` and are orthogonal to the verdict — a
-`PASS` with `low` confidence is meaningful and different from `INCONCLUSIVE`.
+`VERDICT` is one of `FLAGGED`, `CLEAR`, `INCONCLUSIVE`. `FLAGGED` requires
+evidence meeting the standard in `conventions/error_categories.md` for that
+category. `INCONCLUSIVE` requires a stated reason. `confidence` values come
+from `conventions/confidence.md`.
 
 ## `REPORT.md`
 
@@ -88,11 +125,18 @@ Human-facing summary, sectioned: Overview, Method, What we checked, What failed
 ## Highlighted paper
 
 `paper.highlighted.pdf` and `paper.highlighted.html`. Highlight color encodes
-verdict:
+the error category (per `conventions/error_categories.md`):
 
-- red — FAIL
-- yellow — INCONCLUSIVE
-- (no highlight) — PASS or not checked
+- blue (`#4285F4`) — `unreferenced` (needs a citation)
+- amber (`#FFBF00`) — `ambiguous` (unclear or underspecified)
+- orange (`#FF6D00`) — `internal_contradiction` (self-contradictory)
+- red (`#D32F2F`) — `literature_collision` (conflicts with published work)
+- purple (`#7B1FA2`) — `domain_violation` (conflicts with established knowledge)
+- (no highlight) — all CLEAR or not checked
 
-Each highlighted span carries a tooltip / margin note linking back to the
-`VERIFICATION.md` entry.
+When a sentence triggers multiple categories, the highlight uses the most
+severe category's color. Severity order (highest first): `domain_violation`,
+`literature_collision`, `internal_contradiction`, `ambiguous`, `unreferenced`.
+
+Each highlighted span carries a tooltip / margin note listing **all** triggered
+categories and linking back to each `VERIFICATION.md` section.

@@ -41,7 +41,7 @@ For each phase, follow the phase's `CLAUDE.md` (e.g. `phase1/CLAUDE.md`).
 | Phase | Subagents | Reviewers | Gate |
 |-------|-----------|-----------|------|
 | 1 | claim_extractor → (literature_searcher ∥ graph_builder) → graph_builder | critical_reviewer + arbiter | commit |
-| 2 | strategist → verifier (parallel) → graph_builder | critical_reviewer + constructive_reviewer + arbiter | commit |
+| 2 | strategist → (checker_unreferenced ∥ checker_ambiguous ∥ checker_contradiction ∥ checker_literature ∥ checker_domain) → graph_builder | critical_reviewer + constructive_reviewer + arbiter | commit |
 | 3 | highlighter ∥ graph_builder ∥ report_writer | critical_reviewer + constructive_reviewer + arbiter | **human gate** |
 
 `∥` means run in parallel.
