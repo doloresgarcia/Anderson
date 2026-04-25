@@ -1,17 +1,21 @@
-# Graph conventions (pointer)
+# Conventions (pointer)
 
-The graph schema, claim taxonomy, and verification rules are deliberately **not**
-specified in `methodology/`. They live in `src/conventions/`:
+Domain logic — the graph schema, claim taxonomy, verification rules, and
+confidence scale — is deliberately **not** specified in `methodology/`. It lives
+in `src/conventions/`:
 
 - `conventions/graph_schema.md` — node and edge types, IDs, properties
 - `conventions/claim_taxonomy.md` — what counts as a claim, claim labels
 - `conventions/verification.md` — verification methods, pass/fail criteria
+- `conventions/confidence.md` — single discrete confidence scale used everywhere
 
-These three files are user-defined. Until they are filled in, agents will produce
-schema-correct but semantically empty graphs (e.g., one node per sentence with no
-typing). That is expected behavior for a skeleton run — it confirms the orchestration
-loop works end-to-end before the domain logic is added.
+`graph_schema.md` is still a placeholder; the other three are filled in. While
+`graph_schema.md` is a placeholder, `graph_builder` produces a minimal
+node-per-claim graph and reviewers raise a Category B finding noting the gap.
+That degraded mode lets the orchestration loop be exercised end-to-end before
+the schema is nailed down.
 
-When the convention files change, no agent role file or methodology file should need
-to change. If you find yourself editing role files to accommodate a schema change,
-the schema is leaking — push the change back into the convention file.
+When convention files change, no agent role file or methodology file should
+need to change. If you find yourself editing role files to accommodate a
+convention change, the domain logic is leaking — push the change back into the
+relevant convention file.
