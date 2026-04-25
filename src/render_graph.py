@@ -58,7 +58,7 @@ def to_cytoscape_elements(graph: dict) -> list[dict]:
             "data": {
                 "id": c["id"],
                 "parent": c.get("parent"),
-                "label": (sentence[:32] + "…") if len(sentence) > 32 else sentence,
+                "label": (sentence[:60] + "…") if len(sentence) > 60 else sentence,
                 "sentence": sentence,
                 "type": c.get("type", ""),
                 "hedged": c.get("hedged", False),
@@ -93,47 +93,103 @@ HTML_TEMPLATE = r"""<!doctype html>
 <meta charset="utf-8">
 <title>Anderson — claim graph for __SLUG__</title>
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, -apple-system, sans-serif; }
-  #cy { width: 100vw; height: 100vh; }
+  :root {
+    --bg: #14161f;
+    --bg-panel: #1f2230;
+    --border: #2a2e3f;
+    --text: #e9ecf3;
+    --text-dim: #9aa3b8;
+    --text-muted: #6b7488;
+    --accent: #ffffff;
+    --edge: #6b7488;
+  }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text);
+  }
+  #cy { width: 100vw; height: 100vh; background: var(--bg); }
+
+  #header {
+    position: absolute; top: 16px; left: 20px;
+    z-index: 10; pointer-events: none;
+  }
+  #header .brand {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 2px;
+  }
+  #header .slug {
+    font-size: 20px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
   #info {
-    position: absolute; top: 12px; right: 12px;
-    background: white; padding: 12px 14px;
-    border: 1px solid #d0d0d0; border-radius: 4px;
-    max-width: 360px; min-width: 240px;
-    font-size: 13px; line-height: 1.45;
-    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    position: absolute; top: 16px; right: 16px;
+    background: var(--bg-panel); color: var(--text);
+    padding: 18px 20px;
+    border: 1px solid var(--border); border-radius: 8px;
+    max-width: 380px; min-width: 280px;
+    font-size: 14px; line-height: 1.5;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
   }
-  #info h2 { font-size: 14px; margin: 0 0 6px; }
-  #info .sentence { font-style: italic; margin-bottom: 6px; }
-  #info .meta { color: #555; font-size: 12px; }
+  #info h2 {
+    font-size: 16px; margin: 0 0 8px;
+    color: var(--text); font-weight: 600;
+  }
+  #info .sentence { font-style: italic; margin-bottom: 8px; color: var(--text); }
+  #info .caption  { color: var(--text); margin-bottom: 8px; }
+  #info .meta { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
+
   .verdict {
-    display: inline-block; padding: 2px 8px; border-radius: 3px;
-    color: white; font-weight: bold; font-size: 11px;
-    text-transform: uppercase; letter-spacing: .5px;
+    display: inline-block; padding: 3px 10px; border-radius: 4px;
+    color: #14161f; font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1px;
   }
+
   #legend {
-    position: absolute; bottom: 12px; left: 12px;
-    background: white; padding: 8px 10px;
-    border: 1px solid #d0d0d0; border-radius: 4px;
-    font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    position: absolute; bottom: 16px; left: 20px;
+    background: var(--bg-panel); color: var(--text);
+    padding: 12px 16px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
   }
-  #legend .swatch { display: inline-block; width: 12px; height: 12px;
-    vertical-align: middle; margin-right: 4px; border-radius: 2px; }
+  #legend .row { margin: 4px 0; display: flex; align-items: center; }
+  #legend .swatch {
+    display: inline-block; width: 14px; height: 14px;
+    margin-right: 8px; border-radius: 3px;
+  }
+  #legend .edges { margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px;
+  }
+  #legend .line { display: inline-block; width: 24px; height: 2px;
+    background: var(--edge); margin-right: 6px; vertical-align: middle; }
+  #legend .line.dashed {
+    background: none; border-top: 2px dashed var(--edge); height: 0;
+  }
+  #legend .line.contradicts { background: #E74C3C; height: 3px; }
 </style>
-<!-- INLINE-TODO: replace these CDN scripts with inlined JS for offline self-containment. -->
+<!-- INLINE-TODO: replace this CDN script with inlined JS for offline self-containment. -->
 <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
 </head>
 <body>
-<div id="cy"></div>
+<div id="header">
+  <div class="brand">ANDERSON · CLAIM GRAPH</div>
+  <div class="slug">__SLUG__</div>
+</div>
 <div id="info">
-  <h2>__SLUG__</h2>
-  <div class="meta">Hover a node for detail. Drag to reposition.</div>
+  <h2>Hover a node</h2>
+  <div class="meta">…for the full claim, verdict, and reasoning. Drag to reposition. Scroll to zoom.</div>
 </div>
 <div id="legend">
-  <div><span class="swatch" style="background:#2ECC71"></span>PASS</div>
-  <div><span class="swatch" style="background:#F1C40F"></span>INCONCLUSIVE</div>
-  <div><span class="swatch" style="background:#E74C3C"></span>FAIL</div>
-  <div><span class="swatch" style="background:#95A5A6"></span>NOT CHECKED</div>
+  <div class="row"><span class="swatch" style="background:#2ECC71"></span>PASS</div>
+  <div class="row"><span class="swatch" style="background:#F1C40F"></span>INCONCLUSIVE</div>
+  <div class="row"><span class="swatch" style="background:#E74C3C"></span>FAIL</div>
+  <div class="row"><span class="swatch" style="background:#95A5A6"></span>NOT CHECKED</div>
+  <div class="edges">
+    <div class="row"><span class="line"></span>supports</div>
+    <div class="row"><span class="line dashed"></span>depends on</div>
+    <div class="row"><span class="line contradicts"></span>contradicts</div>
+  </div>
 </div>
 <script>
 const ELEMENTS = __ELEMENTS__;
@@ -146,43 +202,55 @@ const cy = cytoscape({
     { selector: "node[kind = 'group']",
       style: {
         "background-color": "data(color)",
-        "background-opacity": 0.18,
+        "background-opacity": 0.12,
         "border-color": "data(color)",
-        "border-width": 2,
+        "border-width": 3,
+        "border-opacity": 0.85,
         "label": "data(label)",
-        "font-size": 13,
-        "font-weight": "bold",
+        "font-size": 18,
+        "font-weight": 700,
+        "font-family": "Inter, system-ui, sans-serif",
         "shape": "round-rectangle",
         "text-valign": "top",
         "text-halign": "center",
-        "text-margin-y": -6,
-        "padding": "16px",
-        "color": "#222"
+        "text-margin-y": -10,
+        "padding": "24px",
+        "color": "#e9ecf3",
+        "text-outline-color": "#14161f",
+        "text-outline-width": 2,
+        "text-outline-opacity": 0.9
       }
     },
     { selector: "node[kind = 'claim']",
       style: {
         "background-color": "data(color)",
+        "background-opacity": 0.95,
+        "border-color": "data(color)",
+        "border-width": 1.5,
         "label": "data(label)",
-        "font-size": 9,
+        "font-size": 12,
+        "font-weight": 600,
+        "font-family": "Inter, system-ui, sans-serif",
         "shape": "round-rectangle",
-        "width": 130,
-        "height": 30,
+        "width": 220,
+        "height": 56,
         "text-valign": "center",
         "text-halign": "center",
-        "color": "#fff",
-        "text-wrap": "ellipsis",
-        "text-max-width": "120px"
+        "color": "#14161f",
+        "text-wrap": "wrap",
+        "text-max-width": "200px",
+        "padding": "8px"
       }
     },
     { selector: "edge",
       style: {
-        "line-color": "#7F8C8D",
-        "target-arrow-color": "#7F8C8D",
+        "line-color": "#6b7488",
+        "target-arrow-color": "#6b7488",
         "target-arrow-shape": "triangle",
         "curve-style": "bezier",
-        "width": 1.6,
-        "arrow-scale": 0.9
+        "width": 2,
+        "arrow-scale": 1.1,
+        "opacity": 0.85
       }
     },
     { selector: "edge[kind = 'depends_on']",
@@ -192,39 +260,44 @@ const cy = cytoscape({
       style: {
         "line-color": "#E74C3C",
         "target-arrow-color": "#E74C3C",
-        "width": 3
+        "width": 4,
+        "opacity": 1
       }
     },
     { selector: ":selected",
-      style: { "border-width": 3, "border-color": "#2c3e50" }
+      style: {
+        "border-width": 4,
+        "border-color": "#ffffff",
+        "border-opacity": 1
+      }
     }
   ],
   layout: {
     name: "cose",
-    nodeRepulsion: 8000,
-    idealEdgeLength: 90,
-    padding: 30,
+    nodeRepulsion: 12000,
+    idealEdgeLength: 140,
+    padding: 60,
+    nodeOverlap: 30,
     animate: false
   }
 });
 
 const info = document.getElementById("info");
+const DEFAULT_INFO = '<h2>Hover a node</h2><div class="meta">…for the full claim, verdict, and reasoning. Drag to reposition. Scroll to zoom.</div>';
+
 function renderInfo(node) {
-  if (!node) {
-    info.innerHTML = '<h2>__SLUG__</h2><div class="meta">Hover a node for detail. Drag to reposition.</div>';
-    return;
-  }
+  if (!node) { info.innerHTML = DEFAULT_INFO; return; }
   const d = node.data();
   let html = "<h2>" + escapeHtml(d.label || d.id) + "</h2>";
   if (d.kind === "group") {
-    if (d.caption) html += '<div>' + escapeHtml(d.caption) + '</div>';
-    html += '<div style="margin-top:6px;"><span class="verdict" style="background:' + d.color + '">' + d.verdict + '</span></div>';
+    if (d.caption) html += '<div class="caption">' + escapeHtml(d.caption) + '</div>';
+    html += '<div><span class="verdict" style="background:' + d.color + '">' + d.verdict + '</span></div>';
     if (d.section) html += '<div class="meta">section ' + escapeHtml(d.section) + '</div>';
   } else {
-    html += '<div class="sentence">' + escapeHtml(d.sentence) + '</div>';
+    html += '<div class="sentence">"' + escapeHtml(d.sentence) + '"</div>';
     html += '<div class="meta">type: ' + escapeHtml(d.type) + (d.hedged ? " · hedged" : "") + ' · confidence: ' + escapeHtml(d.confidence) + '</div>';
-    html += '<div style="margin-top:6px;"><span class="verdict" style="background:' + d.color + '">' + d.verdict + '</span>';
-    if (d.verdict_confidence) html += ' <span class="meta">(' + escapeHtml(d.verdict_confidence) + ')</span>';
+    html += '<div style="margin-top:8px;"><span class="verdict" style="background:' + d.color + '">' + d.verdict + '</span>';
+    if (d.verdict_confidence) html += ' <span class="meta" style="margin-top:0;">(' + escapeHtml(d.verdict_confidence) + ')</span>';
     html += '</div>';
     if (d.page != null) html += '<div class="meta">page ' + d.page + (d.line ? ", line " + d.line : "") + '</div>';
   }
