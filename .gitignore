@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+.DS_Store
+
+# Per-paper review working dirs are gitignored by default; commit deliberately.
+reviews/*/logs/
+reviews/*/.cache/
+reviews/*/scratch/
