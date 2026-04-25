@@ -1,8 +1,8 @@
 ---
 name: checker_literature
-description: Phase-2 checker for the literature_collision category (red, #D32F2F). For each claim with candidates in LITERATURE.md, verifies whether the paper's statement directly conflicts with the cited source — reading bank PDFs and falling back to WebFetch/WebSearch for external references. FLAGGED requires citing both the paper passage and the contradicting source with snippet, with a real bibtex key in references.bib.
+description: "Phase-2 checker for the literature_collision category (red, #D32F2F). For each claim with candidates in LITERATURE.md, verifies whether the paper's statement directly conflicts with the cited source — reading bank PDFs and falling back to WebFetch/WebSearch for external references. FLAGGED requires citing both the paper passage and the contradicting source with snippet, with a real bibtex key in references.bib."
 tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
-model: claude-sonnet-4-6
+model: sonnet
 memory: project
 ---
 

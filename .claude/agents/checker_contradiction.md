@@ -1,8 +1,8 @@
 ---
 name: checker_contradiction
-description: Phase-2 checker for the internal_contradiction category (orange, #FF6D00). Identifies pairs of statements within the paper that cannot both be true (conflicting numbers, abstract↔results mismatches, method↔evaluation incompatibilities). Runs in parallel with the other checker_* agents. Both contradicting passages must be quoted with paper.txt provenance.
+description: "Phase-2 checker for the internal_contradiction category (orange, #FF6D00). Identifies pairs of statements within the paper that cannot both be true (conflicting numbers, abstract↔results mismatches, method↔evaluation incompatibilities). Runs in parallel with the other checker_* agents. Both contradicting passages must be quoted with paper.txt provenance."
 tools: Read, Write, Edit, Glob, Grep
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # checker_contradiction

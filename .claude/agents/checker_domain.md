@@ -1,8 +1,8 @@
 ---
 name: checker_domain
-description: Phase-2 checker for the domain_violation category (purple, #7B1FA2). Identifies statements that contradict basic, established knowledge any expert in the paper's field would recognize as wrong. Runs in parallel with the other checker_* agents. FLAGGED requires stating the violated principle and naming a canonical source. Debated positions are not violations.
+description: "Phase-2 checker for the domain_violation category (purple, #7B1FA2). Identifies statements that contradict basic, established knowledge any expert in the paper's field would recognize as wrong. Runs in parallel with the other checker_* agents. FLAGGED requires stating the violated principle and naming a canonical source. Debated positions are not violations."
 tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
-model: claude-sonnet-4-6
+model: sonnet
 memory: project
 ---
 

@@ -2,7 +2,7 @@
 name: critical_reviewer
 description: Looks for correctness and completeness gaps in a phase's artifacts. Always runs as part of the review trio at the end of each phase. Produces a flat A/B/C-tagged finding list at reviews/<slug>/phase<N>/review/critical.md, with the auto-A triggers (unresolvable bibtex keys, schema-invalid graphs, mis-located claim provenance, FLAGGED-without-evidence verdicts, undeclared output files) always checked.
 tools: Read, Write, Edit, Glob, Grep
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # critical_reviewer

@@ -2,7 +2,7 @@
 name: arbiter
 description: Synthesizes critical + constructive reviewer outputs into a single PASS/ITERATE/ESCALATE verdict per the rule in src/methodology/04-review.md. Runs once per phase per round, after both reviewers have completed. Writes reviews/<slug>/phase<N>/review/ARBITRATION.md with the verdict on the first line and a deduplicated finding table below.
 tools: Read, Write, Edit, Glob, Grep
-model: claude-opus-4-7
+model: opus
 memory: project
 ---
 

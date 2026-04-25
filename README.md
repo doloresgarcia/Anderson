@@ -100,7 +100,7 @@ single positional arg to every phase command.
 In Claude Code, dispatch the slash commands:
 
 ```
-/scaffold my-slug paper.pdf      # or paper.txt, arxiv:2401.12345, doi:..., url:...
+/scaffold my-slug paper.pdf      # or paper.txt — these produce a working paper.txt
 /phase1 my-slug
 /phase2 my-slug
 /phase3 my-slug
@@ -111,6 +111,8 @@ In Claude Code, dispatch the slash commands:
 flag inferred from the source format. The new scaffold creates **no
 symlinks** for methodology / conventions / agents / literature_bank — agents
 resolve those via the repo root.
+
+**arxiv / doi / url sources are recorded but not fetched.** `/scaffold my-slug arxiv:2401.12345` (or `doi:...`, `url:...`) writes the identifier into `paper.meta.json` and stops there — you have to put the paper text into `reviews/my-slug/paper/paper.txt` yourself before `/phase1` will run. (Auto-fetch is a deferred follow-up.)
 
 The orchestrator dispatches the role specs in `.claude/agents/` flat from
 the main session. Each phase ends with a reviewer + arbiter pass and a

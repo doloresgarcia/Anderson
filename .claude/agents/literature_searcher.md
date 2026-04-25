@@ -2,7 +2,7 @@
 name: literature_searcher
 description: For each claim in CLAIMS.md, finds prior work via a two-pass strategy — local literature_bank/ first, then external search (WebFetch/WebSearch) for uncovered claims, biased toward peer-reviewed published work over preprints. Invoke in phase 1 after claim_extractor. Writes reviews/<slug>/phase1/outputs/LITERATURE.md and references.bib. Every emitted bibtex key must resolve to a real bank paper or a search result actually retrieved — no fabricated IDs.
 tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
-model: claude-sonnet-4-6
+model: sonnet
 memory: project
 ---
 

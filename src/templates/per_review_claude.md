@@ -13,7 +13,7 @@ at the **repo-root `CLAUDE.md`**; this file is just paper-specific framing.
 
 - phase 1: `reviews/{{paper_slug}}/phase1/outputs/` — CLAIMS.md, LITERATURE.md, references.bib, graph.v1.json, FINDINGS.md
 - phase 2: `reviews/{{paper_slug}}/phase2/outputs/` — STRATEGY.md, VERIFICATION.md, graph.v2.json
-- phase 3: `reviews/{{paper_slug}}/phase3/outputs/` — graph.final.json/svg, paper.highlighted.{pdf,html}, REPORT.md, STATS.md
+- phase 3: `reviews/{{paper_slug}}/phase3/outputs/` — graph.final.json + graph.final.html, paper.highlighted.{pdf,html}, REPORT.md, STATS.md
 
 ## Notes
 
@@ -25,5 +25,4 @@ the slash commands from the repo root:
 - `/phase1 {{paper_slug}}`
 - `/phase2 {{paper_slug}}`
 - `/phase3 {{paper_slug}}`
-
-(Slash commands ship in Phase B.)
+- `/render {{paper_slug}}` (re-run deterministic Phase-3 renderers)

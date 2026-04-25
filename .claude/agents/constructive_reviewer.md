@@ -2,7 +2,7 @@
 name: constructive_reviewer
 description: Looks for clarity, completeness, missing-but-feasible checks, and presentation weaknesses in a phase's artifacts. Runs alongside critical_reviewer in phase 2 and phase 3. Findings tagged A/B/C — usually B or C; the exception is a phase-1 finding that the claim list is materially incomplete (Category A).
 tools: Read, Write, Edit, Glob, Grep
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # constructive_reviewer

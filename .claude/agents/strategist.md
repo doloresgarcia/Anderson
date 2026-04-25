@@ -2,7 +2,7 @@
 name: strategist
 description: Decides which claims warrant focused checking, scores importance/checkability, and lists the most relevant error categories per claim. First subagent of phase 2 (before the five checkers). Output is reviews/<slug>/phase2/outputs/STRATEGY.md. Every importance=high claim must appear; lower-importance claims fill the budget.
 tools: Read, Write, Edit, Glob, Grep
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # strategist

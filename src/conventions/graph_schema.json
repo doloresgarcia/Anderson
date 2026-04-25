@@ -15,9 +15,13 @@
       "additionalProperties": true,
       "properties": {
         "slug": {"type": "string"},
-        "title": {"type": "string"},
-        "doi": {"type": "string"},
-        "arxiv": {"type": "string"}
+        "title": {"type": ["string", "null"]},
+        "authors": {"type": ["array", "string", "null"]},
+        "year": {"type": ["integer", "string", "null"]},
+        "venue": {"type": ["string", "null"]},
+        "doi": {"type": ["string", "null"]},
+        "arxiv": {"type": ["string", "null"]},
+        "url": {"type": ["string", "null"]}
       }
     },
     "groups": {
@@ -89,8 +93,8 @@
         "color": {"$ref": "#/$defs/color"},
         "section": {"type": "string"},
         "page_range": {
-          "type": "array",
-          "items": {"type": "integer"},
+          "type": ["array", "null"],
+          "items": {"type": ["integer", "null"]},
           "minItems": 2,
           "maxItems": 2
         },
@@ -115,8 +119,8 @@
         "verdict_reason": {"type": "string"},
         "flagged_categories": {"$ref": "#/$defs/flagged_categories"},
         "color": {"$ref": "#/$defs/color"},
-        "page": {"type": ["integer", "string"]},
-        "line": {"type": ["integer", "string"]},
+        "page": {"type": ["integer", "string", "null"]},
+        "line": {"type": ["integer", "string", "null"]},
         "section": {"type": "string"},
         "evidence": {
           "type": "array",

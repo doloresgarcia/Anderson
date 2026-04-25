@@ -1,73 +1,28 @@
-# Anderson — Root Orchestrator (CLAUDE.md)
+# Review — test-1
 
-You are the **orchestrator** for paper `test-1`. Your job is to drive a
-3-phase claim-verification review of the paper located in `paper/`.
+Per-paper context for the Anderson orchestrator. The orchestrator itself lives
+at the **repo-root `CLAUDE.md`**; this file is just paper-specific framing.
 
-## Hard rules
+## Paper
 
-1. **You do not extract claims, search literature, build graphs, verify, or
-   highlight.** Every action of that kind is delegated to a subagent whose role
-   spec is in `agents/<role>.md`. Filling in slots ≠ writing prompts; do not
-   author prompts ad hoc.
-2. **Artifacts are the only handoff.** When a phase ends, the next phase reads
-   files. Your context is for prompts, summaries, and verdicts only.
-3. **Plan first.** Before phase 1 starts, write `prompt.md` containing the
-   user's original request, then create the task list of phases and reviews.
-4. **Commit before each subagent dispatch.** A failed subagent must have a
-   clean rollback point.
-5. **No fabricated citations.** Every bibtex key in any artifact must resolve to
-   a real record produced by an actual search. Reviewers enforce this; do not
-   accept a phase whose `LITERATURE.md` keys cannot be resolved in
-   `references.bib`.
+- meta: `reviews/test-1/paper/paper.meta.json`
+- text: `reviews/test-1/paper/paper.txt`
+- pdf:  `reviews/test-1/paper/paper.pdf` (if present)
 
-## Required reading (before phase 1)
+## Phase outputs
 
-- `methodology/01-principles.md`
-- `methodology/03-phases.md`
-- `methodology/03a-orchestration.md`
-- `methodology/04-review.md`
-- `conventions/README.md` (note which placeholders are still in effect)
+- phase 1: `reviews/test-1/phase1/outputs/` — CLAIMS.md, LITERATURE.md, references.bib, graph.v1.json, FINDINGS.md
+- phase 2: `reviews/test-1/phase2/outputs/` — STRATEGY.md, VERIFICATION.md, graph.v2.json
+- phase 3: `reviews/test-1/phase3/outputs/` — graph.final.json + graph.final.html, paper.highlighted.{pdf,html}, REPORT.md, STATS.md
 
-## Loop (per phase, in order)
+## Notes
 
-```
-EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
-```
+Reviews are **not** self-contained. Agents and conventions resolve via the
+repo (`.claude/agents/`, `src/methodology/`, `src/conventions/`,
+`literature_bank/`), not via per-review symlinks. To run this review, invoke
+the slash commands from the repo root:
 
-For each phase, follow the phase's `CLAUDE.md` (e.g. `phase1/CLAUDE.md`).
-
-## Phase summary
-
-| Phase | Subagents | Reviewers | Gate |
-|-------|-----------|-----------|------|
-| 1 | claim_extractor → (literature_searcher ∥ graph_builder) → graph_builder | critical_reviewer + arbiter | commit |
-| 2 | strategist → verifier (parallel) → graph_builder | critical_reviewer + constructive_reviewer + arbiter | commit |
-| 3 | highlighter ∥ graph_builder ∥ report_writer | critical_reviewer + constructive_reviewer + arbiter | **human gate** |
-
-`∥` means run in parallel.
-
-## Subagent dispatch checklist
-
-For every dispatch:
-
-- [ ] Open `agents/<role>.md` and use its prompt template
-- [ ] Fill: `paper_slug`, `phase`, `input_paths`, `output_paths`, `convention_files`
-- [ ] Pass the role file's path to the subagent so it can re-read its own spec
-- [ ] Confirm the subagent wrote exactly the declared outputs (no more, no less)
-- [ ] Capture stdout/log to `phase<N>/agents/<role>/log.md`
-
-## When to escalate to the user
-
-- Convention placeholder is the blocker for meaningful output → tell the user
-  which file to fill in.
-- Reviewers escalate (irreconcilable disagreement).
-- Phase 3 human gate.
-- Search backend is unreachable or returns no results for any claim — this is
-  not a verdict, it is a tooling failure.
-
-## What this file is not
-
-It is not a domain spec. The graph schema, claim taxonomy, and verification
-rules live in `conventions/`. If you find yourself wanting to edit *this* file
-to handle a domain-specific case, the right move is to push the change into the
-relevant convention file.
+- `/phase1 test-1`
+- `/phase2 test-1`
+- `/phase3 test-1`
+- `/render test-1` (re-run deterministic Phase-3 renderers)

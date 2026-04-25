@@ -2,7 +2,7 @@
 name: claim_extractor
 description: Extracts every verifiable claim from a paper into reviews/<slug>/phase1/outputs/CLAIMS.md, one row per claim with stable claim_id, taxonomy type, verbatim sentence, and page/line provenance back into paper.txt. Invoke first in phase 1, after the paper has been ingested. Outputs CLAIMS.md plus plan.md/log.md in its working dir. Tags claims UNCLASSIFIED if conventions/claim_taxonomy.md is the placeholder.
 tools: Read, Write, Edit, Glob, Grep
-model: claude-haiku-4-5
+model: haiku
 ---
 
 # claim_extractor

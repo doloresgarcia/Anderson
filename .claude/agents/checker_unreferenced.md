@@ -1,8 +1,8 @@
 ---
 name: checker_unreferenced
-description: Phase-2 checker for the unreferenced category (blue, #4285F4). Identifies claims that assert a fact requiring a citation but provide none. Runs in parallel with the other four checker_* agents. Writes its section to its own working dir; the orchestrator concatenates into reviews/<slug>/phase2/outputs/VERIFICATION.md. Does NOT flag the paper's own novel results.
+description: "Phase-2 checker for the unreferenced category (blue, #4285F4). Identifies claims that assert a fact requiring a citation but provide none. Runs in parallel with the other four checker_* agents. Writes its section to its own working dir; the orchestrator concatenates into reviews/<slug>/phase2/outputs/VERIFICATION.md. Does NOT flag the paper's own novel results."
 tools: Read, Write, Edit, Glob, Grep
-model: claude-haiku-4-5
+model: haiku
 ---
 
 # checker_unreferenced

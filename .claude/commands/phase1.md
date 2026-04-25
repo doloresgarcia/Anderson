@@ -15,12 +15,17 @@ and stop.
 
 1. Verify `reviews/$0/` exists. If not, tell the user to run
    `/scaffold $0 <source>` first and stop.
-2. Read `reviews/$0/CLAUDE.md` for paper meta.
-3. Read `reviews/$0/prompt.md`. If it is empty or absent, write the user's
+2. Verify `reviews/$0/paper/paper.txt` exists and is non-empty. If not, the
+   review was scaffolded from `--arxiv` / `--doi` / `--url` (which only
+   record the identifier in `paper.meta.json` and do not fetch). Stop and
+   tell the user to either supply the paper text manually or re-run
+   `/scaffold $0 <local.pdf|local.txt>`.
+3. Read `reviews/$0/CLAUDE.md` for paper meta.
+4. Read `reviews/$0/prompt.md`. If it is empty or absent, write the user's
    exact `/phase1 $0` invocation (and any surrounding free-text from the
    user's message) into it as the first action — this is the orchestrator's
    prompt-of-record for the run.
-4. Read the relevant methodology so the dispatch is faithful to spec:
+5. Read the relevant methodology so the dispatch is faithful to spec:
    - `src/methodology/03-phases.md` § Phase 1
    - `src/methodology/03a-orchestration.md` § Parallelism (Phase 1)
    - `src/methodology/04-review.md`
@@ -65,7 +70,7 @@ In a single message, dispatch both subagents simultaneously:
   - inputs: `reviews/$0/phase1/outputs/CLAIMS.md`,
     `src/conventions/graph_schema.json`,
     `src/conventions/claim_taxonomy.md`
-  - output: `reviews/$0/phase1/outputs/graph.skeleton.json`
+  - output: `reviews/$0/phase1/outputs/graph.v1.skeleton.json`
   - working dir: `reviews/$0/phase1/agents/graph_builder_skeleton/`
 
 Wait for both. Their outputs are disjoint, so parallel writes are safe.
@@ -76,7 +81,7 @@ Dispatch `.claude/agents/graph_builder.md` again to merge literature into the
 skeleton:
 
 - inputs:
-  - `reviews/$0/phase1/outputs/graph.skeleton.json`
+  - `reviews/$0/phase1/outputs/graph.v1.skeleton.json`
   - `reviews/$0/phase1/outputs/CLAIMS.md`
   - `reviews/$0/phase1/outputs/LITERATURE.md`
   - `reviews/$0/phase1/outputs/references.bib`

@@ -1,8 +1,8 @@
 ---
 name: checker_ambiguous
-description: Phase-2 checker for the ambiguous category (amber, #FFBF00). Identifies statements whose meaning is unclear, underspecified, or admits multiple plausible readings that change the paper's conclusions. Runs in parallel with the other checker_* agents. FLAGGED requires presenting two distinct interpretations and explaining why the ambiguity matters.
+description: "Phase-2 checker for the ambiguous category (amber, #FFBF00). Identifies statements whose meaning is unclear, underspecified, or admits multiple plausible readings that change the paper's conclusions. Runs in parallel with the other checker_* agents. FLAGGED requires presenting two distinct interpretations and explaining why the ambiguity matters."
 tools: Read, Write, Edit, Glob, Grep
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # checker_ambiguous

@@ -2,7 +2,7 @@
 name: fixer
 description: Applies targeted, in-place corrections to phase artifacts in response to specific findings forwarded by the orchestrator (typically Category-A findings from a critical/constructive/arbiter review). Runs after a review that returned ITERATE. Does NOT rewrite from scratch and does NOT introduce changes outside the scope of the listed findings — that is itself a Category A pattern.
 tools: Read, Write, Edit, Glob, Grep
-model: claude-sonnet-4-6
+model: sonnet
 ---
 
 # fixer

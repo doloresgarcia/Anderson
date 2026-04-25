@@ -113,7 +113,7 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 **Deliverables (in `reviews/<slug>/phase3/outputs/`).**
 
 - `graph.final.json`
-- `graph.final.svg`
+- `graph.final.html` (rendered from `graph.final.json` by `src/render_graph.py`)
 - `paper.highlighted.pdf`
 - `paper.highlighted.html`
 - `REPORT.md`

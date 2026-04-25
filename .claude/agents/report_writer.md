@@ -2,7 +2,7 @@
 name: report_writer
 description: Phase-3 agent. Writes the final human-facing summary REPORT.md for a paper review, organized by error category in severity order. Prose only — no new findings; describes what the checkers already recorded. May shell out to src/claim_stats.py to refresh STATS.md alongside.
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: claude-haiku-4-5
+model: haiku
 ---
 
 # report_writer

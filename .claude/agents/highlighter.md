@@ -2,7 +2,7 @@
 name: highlighter
 description: Phase-3 agent that produces the paper-with-highlights deliverable (paper.highlighted.pdf and paper.highlighted.html) using the five-category color scheme. Maps each FLAGGED verdict in VERIFICATION.md to a colored highlight on the originating sentence; multi-category sentences use the most-severe color and list all categories in the tooltip. May shell out to src/highlight_paper.py / src/highlight_text.py.
 tools: Read, Write, Edit, Glob, Grep, Bash
-model: claude-haiku-4-5
+model: haiku
 ---
 
 # highlighter
