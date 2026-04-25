@@ -155,3 +155,133 @@ on the emitted JSON:
 - no inferred-low `contradicts` edges ✓ (vacuous)
 
 **Validation passed; output written.**
+
+## Final phase-1 pass
+
+### Inputs read
+
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/graph.v1.skeleton.json`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/CLAIMS.md`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/LITERATURE.md`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/references.bib`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/conventions/graph_schema.md`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/conventions/confidence.md`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/agents/graph_builder.md`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/agents/executor.md`
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/methodology/05-artifacts.md`
+
+### Output written
+
+- `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/outputs/graph.v1.json`
+- (this append) `/afs/cern.ch/work/m/mgarciam/private/anderson/reviews/test-1/phase1/agents/graph_builder/log.md`
+
+The skeleton at `graph.v1.skeleton.json` was left untouched per the
+"Never overwrite a previous version" rule.
+
+### Schema-allowed representation chosen
+
+`conventions/graph_schema.md` defines exactly two node kinds — `group` and
+`claim` — and three edge kinds — `supports`, `depends_on`, `contradicts` —
+that connect **claims, not external references**. The `external_reference`
+node type is explicitly listed in the schema's "When to extend" section as a
+deferred extension that should not be added preemptively. The dispatch's
+fallback rule ("If the schema is silent on this, default to the
+property-on-claim-node form and document the choice in log.md") applies, since
+the schema does not provide a `reference` node kind.
+
+Therefore I represented the LITERATURE.md evidence as a per-claim
+`references` array on each affected `claim` node:
+
+```json
+"references": [
+  {
+    "key": "Spinner:2024hjm",
+    "relation": "supports",          // one of: supports / contradicts / related
+    "confidence": "high",            // high / medium / low
+    "snippet": "…",                  // verbatim from LITERATURE.md
+    "provenance": "LITERATURE.md:C001"
+  }
+]
+```
+
+This is a **non-structural** addition: it leaves every required claim field
+from the skeleton (`id, kind, parent, type, sentence, hedged, confidence,
+verdict, color, page, line, section`) byte-equivalent, and it adds **zero new
+nodes and zero new edges**. The build script enforces this with an explicit
+diff against the skeleton (failure → exit non-zero, no write).
+
+Implication: phase-3's renderer will consume `references` as a tooltip /
+detail-panel field on each claim. No edges to draw to literature; literature
+is per-claim metadata, not a graph-level node. If a future reviewer demands
+literature visibility at the graph level, the right response is to extend the
+schema to add `external_reference` as a node kind — not to invent it ad hoc
+here.
+
+### Procedure executed
+
+1. Re-read the skeleton. 20 groups, 217 claims, 0 edges.
+2. Parsed `LITERATURE.md` mechanically with a regex matching the artifact
+   spec's bullet form `- [@key] — relation — confidence X — "snippet"`.
+3. Extracted the set of cited keys: **34 unique** keys across all bullets.
+   Cross-checked every key against `references.bib` — all 34 resolve.
+   The 34 keys: `ATLAS:2020ccu, Alwall:2011uj, Alwall:2014hca, Bogatskiy:2022czk, Bogatskiy:2023nnw, Butter:2017cot, Butter:2022rso, Butter:2023fov, Cacciari:2008gp, Cacciari:2011ma, Campbell:2022qmc, Gong:2022lye, Heimel:2018mkt, Kasieczka:2017nvn, Kasieczka:2019dbj, Nachman:2022emq, Plehn:2022ftl, Qu:2022mxj, Sjostrand:2014zea, Spinner:2024hjm, Wu:2024thh, adam, brehmer2023geometric, chen2023symbolic, dao2022flashattention, deFavereau:2013fsa, deOliveira:2015xxd, hendrycks2016gaussian, kasieczka_gregor_2019_2603256, lipman2023flowmatching, ruhe2023clifford, vaswani2017attention, xiong2020layer, zaheer2017deep`.
+4. Counted claim headings in `LITERATURE.md` that have at least one bullet:
+   **73 claims**. (Headings with no bullets are intentional empty buckets per
+   `LITERATURE.md`'s preamble — those claims will be checked by internal
+   consistency in phase 2 and carry no `references` array on the claim node.)
+5. Validated the relation vocabulary (`supports / contradicts / related`) and
+   the confidence vocabulary (`high / medium / low`) — all bullets conform.
+6. Built `graph.v1.json` by deep-copying the skeleton and attaching
+   `references` only on the 73 enriched claims.
+7. Re-ran every schema validation rule on the assembled graph (counts,
+   parent-child consistency, edge endpoints, palette, no-FAIL-or-INCONCLUSIVE,
+   inferred-low-contradicts ban). All passed.
+8. Wrote `graph.v1.json`. Skeleton untouched.
+
+### Counts
+
+- Node count by kind: `group = 20`, `claim = 217` (no `reference` nodes —
+  schema-disallowed; literature is a per-claim property).
+- Edge count by kind: zero edges total. The phase-1 skeleton has no
+  claim-to-claim edges (extractor produced no structural-edge sidecar) and
+  this dispatch is forbidden from inventing them. Literature evidence does
+  not produce graph edges in the property-on-claim-node form.
+- Claims with literature evidence: **73** (matches `LITERATURE.md` exactly).
+- Total reference entries across all claims: 113 (a single claim may cite
+  multiple references; the largest is 4 entries on C076, C110, C114, C117,
+  C141).
+- Unique reference keys used: 34. All resolve in `references.bib`.
+
+### Hard constraints honored
+
+- Same set of claim and group nodes as the skeleton, byte-for-byte equivalent
+  on their structural fields. Verified by direct comparison in
+  `build_v1.py`.
+- Every literature key resolves in `references.bib`. Verified by set
+  intersection.
+- All claim verdicts remain `NOT_CHECKED`; all colors `#95A5A6` (gray). No
+  PASS/FAIL/INCONCLUSIVE introduced.
+- No new claim-to-claim edges. Edge list is byte-identical to the skeleton's
+  (empty).
+- Only the two declared output operations executed: write `graph.v1.json`
+  and append this section to `log.md`. The build script
+  `phase1/agents/graph_builder/build_v1.py` lives in this agent's working
+  directory and is not part of the declared deliverable; it is preserved for
+  reproducibility.
+
+### Validation outcome
+
+All schema validation rules from `conventions/graph_schema.md` passed:
+
+- `len(groups) = 20 ≤ 20` ✓
+- every group's `claim_ids` size in `[1, 15]` ✓
+- every claim's `parent` resolves to a group, and the claim id is in that
+  group's `claim_ids` ✓
+- every edge endpoint resolves to a claim ✓ (vacuous, zero edges)
+- no `source == target` edges ✓ (vacuous)
+- color hex matches the verdict per the palette (all gray, all
+  `NOT_CHECKED`) ✓
+- no `contradicts` edges with `low` confidence and `inferred` provenance ✓
+  (vacuous)
+
+**Validation passed; output written.**
