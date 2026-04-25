@@ -8,12 +8,13 @@ mechanically.
 Markdown table, one row per claim:
 
 ```
-| claim_id | type | sentence | page | line | section | provenance |
-|----------|------|----------|------|------|---------|------------|
-| C001     | …    | "…"      | 3    | 14   | 2.1     | paper.txt:142 |
+| claim_id | type | sentence | hedged | page | line | section | provenance |
+|----------|------|----------|--------|------|------|---------|------------|
+| C001     | …    | "…"      | false  | 3    | 14   | 2.1     | paper.txt:142 |
 ```
 
-`type` values come from `conventions/claim_taxonomy.md`.
+`type` values and the `hedged` flag definition come from
+`conventions/claim_taxonomy.md`.
 
 ## `LITERATURE.md`
 

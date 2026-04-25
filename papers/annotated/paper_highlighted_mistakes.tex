@@ -1,0 +1,977 @@
+% ============================================================================
+% SciPost LaTeX Template (version 2021-08)
+% [https://scipost.org/SciPostPhys/authoring]
+% [https://git.scipost.org/scipost/SciPost_LaTeX_Templates_Submission]
+% slightly adapted/customized by Lorenz Vogel (version 2022-01)
+% Plehn Group, Institute for Theoretical Physics, Heidelberg University
+% [compiler: pdfLaTeX]
+% ============================================================================
+\documentclass[submission, Phys]{SciPost}
+
+\pdfoutput=1
+\input{incl_settings.tex}
+\input{incl_shortcuts.tex}
+\graphicspath{{./figs/}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%\begin{fmffile}{feynman}
+
+~\vspace{-0.45in}
+
+\hfill {\footnotesize MIT-CTP/5802}
+
+\vspace{0.15in}
+
+\begin{center}
+ {\Large \textbf{A Lorentz-Equivariant Transformer for All of the LHC}}
+\end{center}
+
+\begin{center}
+Johann Brehmer\textsuperscript{1},
+Víctor Bresó\textsuperscript{2},
+Pim de Haan\textsuperscript{1},
+Tilman Plehn\textsuperscript{2,3}, \\
+Huilin Qu\textsuperscript{4},
+Jonas Spinner\textsuperscript{2}, and
+Jesse Thaler\textsuperscript{5,6}
+\end{center}
+
+\begin{center}
+{\bf 1} CuspAI, Amsterdam, the Netherlands \\
+{\bf 2} Institute for Theoretical Physics, Universit\"at Heidelberg, Germany \\
+{\bf 3} Interdisciplinary Center for Scientific Computing (IWR), Universit\"at Heidelberg, Germany \\
+{\bf 4} CERN, EP Department, Geneva, Switzerland \\
+{\bf 5} Center for Theoretical Physics, Massachusetts Institute of Technology, Cambridge, MA, USA
+{\bf 6} The NSF AI Institute for Artificial Intelligence and Fundamental Interactions
+\end{center}
+
+\begin{center}
+\today
+\end{center}
+
+\section*{Abstract}
+{\bf
+%Extracting the best physics from LHC data requires precise and efficient machine %learning. 
+We show that the Lorentz-Equivariant Geometric Algebra Transformer (L-GATr) yields state-of-the-art performance for a wide range of machine learning tasks at the Large Hadron Collider.
+%
+L-GATr represents data in a geometric algebra over space-time and is equivariant under Lorentz transformations.
+%
+The underlying architecture is a versatile and scalable transformer, which is able to break symmetries if needed.
+%
+We demonstrate the power of L-GATr for amplitude regression and jet classification, and then benchmark it as the first Lorentz-equivariant generative network.
+%
+For all three LHC tasks, we find significant improvements over previous architectures.
+}
+
+% For convenience during refereeing: line numbers
+%\linenumbers
+
+\vspace{10pt}
+\noindent\rule{\textwidth}{1pt}
+\tableofcontents\thispagestyle{fancy}
+\noindent\rule{\textwidth}{1pt}
+\vspace{10pt}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+\label{sec:intro}
+
+Modern machine learning (ML) is poised to define much of the future program at the Large Hadron Collider (LHC), from triggering and data acquisition to object identification, anomaly searches, non-perturbative input, theory and detector simulations, and simulation-based inference. The question is no longer if deep neural networks will be used for all of these purposes; it is how we can ensure that these networks provide optimal and resilient results, including a comprehensive uncertainty treatment~\cite{Plehn:2022ftl}. 
+
+Early ML studies for the LHC assumed that there would be no shortage of training data, because precision simulations were close enough to the actual LHC data to train neural networks for a diverse range of purposes.
+%
+These studies assumed the availability of labeled and fully understood simulated samples, such that trained networks could be reliably applied to the limited actual LHC data.
+%
+Now, however, this point of view is starting to get challenged, because:
+%
+\begin{enumerate}
+\item \textcolor{red}{standard architectures already capture amplitudes and densities at the per-mille level in most practical scenarios [contradicts: standard architectures do NOT capture at per-mille level]}; 
+\item the target precision for LHC applications requires huge datasets even by cheap simulation standards; and
+\item small deviations between simulated and measured data require networks to be tuned on measurements.
+\end{enumerate}
+%
+One way to tackle these challenges is to use our knowledge about the structure of LHC data. In particle physics, much of this knowledge is reflected in complex symmetry structures, from the detector geometry to the relativistic phase space, eventually including the underlying theory. Learning the Minkowski metric is a known challenge for all networks working on relativistic phase space, so an obvious question is if one could work with Lorentz-invariant or Lorentz-covariant internal representations and save the networks the time and effort to learn such a representation for each task.
+
+The first modern ML applications in LHC physics were jet taggers~\cite{Kasieczka:2019dbj,Nachman:2022emq}, which aimed to optimally analyze the substructure of jets to identify their partonic nature~\cite{Cogan:2014oua,Baldi:2014kfa} based on all available low-level information~\cite{Cogan:2014oua,Baldi:2014kfa,deOliveira:2015xxd,Gallicchio:2010sw,Kasieczka:2017nvn}.
+%
+These jet taggers also triggered the question of how and whether to include Lorentz symmetry~\cite{Butter:2017cot}, leading to a set of Lorentz-equivariant jet taggers, currently under experimental study~\cite{Gong:2022lye,Qiu:2022xvr,Bogatskiy:2022czk,Qiu:2023ihi,ruhe2023clifford}.%
+%
+\footnote{In physics, we typically use the term ``covariant'' rather than ``equivariant'', but equivariant networks are an established subfield of ML, so we stick to this term.}
+%
+Targeting the ultimate tagging precision with limited training data, these equivariant taggers paved the way for a new phase of precision-machine learning for the LHC, where established ML methods have to be systematically enhanced for and by particle physics.
+
+Any inference from LHC data is reliant on precision simulations of events and detectors through a combination of first-principles theory and physics-motivated modeling~\cite{Butter:2022rso,Campbell:2022qmc}, making LHC physics a prime target for the generative AI revolution~\cite{Paganini:2017dwg}. On the detector side, simple generative adversarial networks (GANs) as part of the fast ATLAS detector simulation~\cite{Ghosh:2020kkt} have been generalized to generic detectors~\cite{Buhmann:2020pmy,Buhmann:2023kdg} with a wide range of networks targeting the combination of high multiplicity, sparsity, and accuracy~\cite{Krause:2024avx}.
+On the theory side, this program has developed from the first ML-generators for partonic LHC events~\cite{Otten:2019hhl,Hashemi:2019fkn,Butter:2019cae} into a comprehensive generative-network program in event generators~\cite{Heimel:2022wyj,Ghosh:2022zdz,Bierlich:2023zzd,Janssen:2023lgz,Chan:2023ume,Heimel:2023ngj,Heimel:2024wph,Bierlich:2024xzg}.
+
+Our goal is to provide a way to systematically exploit Lorentz equivariance in different network tasks defined on relativistic phase space. A Lorentz-equivariant transformer can provide the appropriate internal or latent representation of phase space data to regression, classification, and generative networks. L-GATr is based on the Geometric Algebra Transformer (GATr)~\cite{brehmer2023geometric, de2023euclidean}, designed for Euclidean translations, rotations, and reflections. We generalize it to L-GATr encoding exact Lorentz-equivariance into new network layers, including a maximally expressive linear map, attention, and layer normalization. This architecture was originally developed for an ML audience and applied to amplitude regression, top tagging, and event generation in Ref.~\cite{Spinner:2024hjm}. In this physics-targeted study, we extend the amplitude regression analysis, improve the classification through pre-training and multi-class tagging, and deliver a competitive generative network for Monte Carlo event generation. We also provide a comprehensive benchmarking with the state of the art for these three distinct LHC applications.
+
+After reviewing the construction of L-GATr in Sec.~\ref{sec:lgatr}, we demonstrate the versatility of L-GATr through three LHC case studies. In Sec.~\ref{sec:regression} we show how it allows us to efficiently learn precision surrogates for scattering amplitudes up to a $Z+5$~gluon final state. Next, we show in Sec.~\ref{sec:tagging} how we can improve transformer-based jet taggers with an equivariant setup. We show how L-GATr benefits from pre-training for the ultimate performance and can be generalized to multi-class tagging. Finally, in Sec.~\ref{sec:generation} we employ L-GATr inside a diffusion generator and show how it generates LHC events for final states up to $t\bar{t}+4$~jets better than all benchmarks. 
+%
+We provide a brief summary and outlook in Sec.~\ref{sec:outlook}.
+%
+Throughout the text and for all figures we indicate possible overlap with Ref.~\cite{Spinner:2024hjm}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Lorentz-Equivariant Geometric Algebra Transformer}
+\label{sec:lgatr}
+
+In this section, we discuss the principles behind L-GATr and its most important features. L-GATr uses the geometric algebra, a mathematical framework that represents certain geometric objects and operations in a unified language. Using the language of geometric algebra, it is straightforward to build exactly equivariant layers while retaining most of the structure from typical neural networks. In cases where the Lorentz symmetry is not completely realized, we show how reference vector inputs can be used to make L-GATr equivariant with respect to specific subgroups of the Lorentz group. Finally, we study how L-GATr scales with the phase space dimensionality as compared to other network architectures.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Spacetime Geometric Algebra}
+\label{sec:algebra}
+
+A geometric algebra is defined as an extension of a vector space with an extra composition law --- the geometric product~\cite{hestenes1966space}. The geometric product of two vectors $x$ and $y$ is decomposed into a symmetric and an antisymmetric contribution,
+%
+\begin{align}
+    xy = \frac{\{x,y \}}{2} + \frac{[x,y]}{2}  \; ,
+%    \equiv \langle x,  y\rangle + x\wedge y.
+    \label{eq:xy_gen}
+\end{align}
+%
+where the anti-commutator $\{x,y \}/2$ represents the usual inner product, and $[x,y]/2$ constitutes a new outer product. This second term defines the bivector, which can be understood geometrically as an area element of the plane spanned by $x$ and $y$. Neither of the terms in the geometric product is an element of the original vector space, so the geometric product extends it into a larger domain with higher-order geometric objects. \textcolor{red}{Notably, the geometric product preserves commutativity when acting on elements of the same grade [contradicts: geometric product has antisymmetric (non-commutative) contributions]}.
+
+To develop L-GATr, we focus on the spacetime algebra $\mathbb{G}_{1,3}$, built from the vector space $\mathbb{R}^{4}$ with the metric $g=\text{diag}(1,-1,-1,-1)$. We choose as a basis for the vector space a set of four real vectors $\gamma^\mu$, which satisfy the anti-commutation relation
+%
+\begin{align}
+    \left\{\gamma^{\mu}, \gamma^{\nu} \right\} = 2 g^{\mu\nu} \; .
+    \label{eq:gamma-matrices}
+\end{align}
+%
+This inner product establishes the basis elements as a set of orthogonal vectors and fixes their normalization. This prescription fully recovers all the algebra properties presented in Ref.~\cite{Spinner:2024hjm}. Futhermore, Eq.~\eqref{eq:gamma-matrices} is also the defining property of the gamma matrices, the basis elements of the Dirac algebra used to describe spinor interactions. Both algebras are closely related, the only difference being that the spacetime algebra is defined over $\mathbb{R}^4$, whereas the Dirac algebra is defined over $\mathbb{C}^4$.
+
+% multivectors
+We now construct the full range of algebra elements by using the geometric product defined in Eq.~\eqref{eq:xy_gen}. All higher-order elements can be characterized as antisymmetric products of $\gamma^{\mu}$. We organize them in grades, defined by the number of $\gamma^\mu$ needed to express them. The first higher-order object is  the antisymmetric tensor $\sigma^{\mu\nu}$, which is generated from the geometric product of two $\gamma^\mu$ and consequently has grade two,
+%
+\begin{align}
+    \gamma^{\mu} \gamma^{\nu} 
+    = \frac{\{ \gamma^\mu, \gamma^\nu \}}{2} + \frac{[ \gamma^\mu, \gamma^\nu]}{2} 
+    = g^{\mu\nu} + \sigma^{\mu \nu}  \; .
+\end{align}
+%
+Following Eq.~\eqref{eq:xy_gen}, $\sigma^{\mu\nu}$ is a bivector, which can be interpreted as the plane defined by $\mu$ and $\nu$ in Minkowski space. We see that the symmetric term in the geometric product reduces the grade, while the antisymmetric term increases it.
+
+The next higher-order object emerges from the geometric product of three vectors $\gamma^\mu \gamma^\nu \gamma^\rho$, which generates the trivector or axial vector in the form of the antisymmetric tensor $\epsilon_{\mu\nu\rho\sigma}\gamma^{\mu}\gamma^{\nu}\gamma^{\rho}$. Finally, the last higher-order object in the algebra is the pseudoscalar
+%
+\begin{align}
+    \gamma^5
+    =\gamma^0\gamma^1\gamma^2\gamma^3 
+    \equiv \frac{1}{4!}\epsilon_{\mu\nu\rho\sigma}\gamma^\mu\gamma^\nu\gamma^\rho\gamma^\sigma,
+\end{align}
+%
+which can be obtained through the product of all four $\gamma^\mu$. \textcolor{red}{Pseudoscalars act as chirality projection operations on spinor-like objects} and can be used to write axial vectors as $\gamma^\mu\gamma^5$. \textcolor{red}{[contradicts: pseudoscalars act as parity reversal operations]} As a side note, the missing factor $i$ compared to the usual definition of $\gamma^5$ indicates the slight difference between the complex Dirac algebra and the real spacetime algebra.
+
+Geometric products with more than four $\gamma^\mu$ can be reduced to lower-grade structures. Combining all these elements, we can express any multivector of the algebra as\footnote{Some of us are reminded of supersymmetric multiplets, which also combine fields with different transformation properties into a graded structure. In that case, the elements of the multiplets are defined by a closing under supersymmetry transformations with spinor-like generators and an (anti-)commutator-defined algebra. In superspace, the elements of the multiplets can be extracted using a finite expansion in Grassmann variables. One difference between superfields and our multivectors is that in supersymmetry, it is known how to incorporate all irreducible representations relevant for phenomenology (e.g.\ vector and chiral superfields), while for our multivectors, it is not obvious how to extend the space to higher-rank representations.}
+%
+\begin{align}
+    x= x^S \; 1 
+    + x^V_\mu  \; \gamma^\mu 
+    + x^B_{\mu\nu} \; \sigma^{\mu\nu} 
+    + x^A_\mu \; \gamma^\mu \gamma^5 
+    + x^P \; \gamma^5 
+    \qquad \text{with} \qquad 
+    \begin{pmatrix}
+    x^S \\ x^V_\mu \\ x^B_{\mu\nu} \\ x^A_\mu \\ x^P 
+    \end{pmatrix} 
+    \in\mathbb{R}^{16} \; .
+\label{eq:multivector}
+\end{align}
+%
+In this representation, we only include the nonzero and independent entries in the bivector. We call this object a multivector, which is the name for a general algebra element. Multivectors can be used to represent both spacetime objects and Lorentz transformations. We want to apply this representation to particles, which can be characterized by their type (i.e.~particle identification, or $\text{PID}$) and their 4-momentum $p^\mu$,
+%
+\begin{align}
+    x^S = \text{PID} 
+    \qquad x^V_{\mu} = p_{\mu}
+    \qquad x^T_{\mu\nu}=x^A_\mu=x^P=0 \; . 
+    \label{eq:embedding}
+\end{align}
+%
+
+Using this representation, the spacetime algebra naturally structures relevant objects like parity-violating transition amplitudes. The matrix element $\mathcal{M}$ is a function of 4-momenta and can be decomposed into parity-even and parity-odd terms before it gets squared,
+%
+\begin{align}
+    |\mathcal{M}|^2 = |\mathcal{M}_E|^2 + |\mathcal{M}_O|^2 + 2\, \rm{Re}\left(\mathcal{M}_E^* \mathcal{M}_O \right) \; .
+\end{align}
+%
+The first two terms represent a scalar function of the 4-momenta, while the last is a pseudoscalar function. To calculate this amplitude in the spacetime algebra, we first embed each 4-momentum into a multivector $x^i = p_\mu^i \gamma^\mu$. Working from this representation, the squared amplitude can be obtained through a sequence of algebra operations as
+%
+\begin{align}
+    |\mathcal{M}|^2 = x^S1 + x^P \gamma^5 
+    \qquad \text{with} \qquad 
+    x^S1 &= |\mathcal{M}_E|^2 + |\mathcal{M}_O|^2 \notag \\
+    x^P \gamma^5 &= 2\, \rm{Re}\left(\mathcal{M}_E^* \mathcal{M}_O \right) \; . 
+\end{align}
+%
+This result is also a multivector, which explicitly separates the scalar and pseudoscalar components of the squared amplitude.
+
+The geometric algebra also allows us to apply Lorentz transformations on spacetime objects as 
+%
+\begin{align}
+    \Lambda_v(x) = vxv^{-1} \; , 
+    \label{eq:lorentz_law}
+\end{align}
+%
+where $v$ is a multivector representing an element of the Lorentz group acting on the algebra element $x$, and $v^{-1}$ is its corresponding inverse. The representation $v$ of a Lorentz transformation is built by a simple rule: a multivector encoding an object that is invariant under a Lorentz transformation will also represent the transformation itself. This gives a dual interpretation to spacetime algebra elements as both geometric objects and Lorentz transformations.
+
+For instance, boosts along the $z$-axis are generated by $\sigma^{03}$, which also represents a plane in time vs.\ $z$-direction. The multivector for such a boost with rapidity $\omega$ reads
+%
+\begin{align}
+    v = e^{\omega \sigma^{03}/2} = 1\cosh \frac{\omega}{2} + \sigma^{03}\sinh \frac{\omega}{2}  \; .
+\end{align}
+%
+If we apply this boost to a particle moving in $z$-direction, $x=E\gamma^0+p_z\gamma^3$, the transformation in Eq.~\eqref{eq:lorentz_law} gives us 
+%
+\begin{align}
+    vxv^{-1} = (E\cosh \omega - p_z\sinh \omega)\gamma^0 + (p_z\cosh \omega - E\sinh \omega)\gamma^3 \; .
+\end{align}
+%
+This is exactly what we expect from the Lorentz boost. The algebra representation allows us to apply this boost on any object in the geometric algebra, not just vectors. From Eq.~\eqref{eq:lorentz_law} and the properties of the geometric product, we see that Lorentz transformations will never mix grades. Each algebra grade transforms under a separate sub-representation of the Lorentz group, \textcolor{red}{although in practice grade mixing can occur through the combined action of boosts and rotations on composite multivector states [contradicts: Lorentz transformations never mix grades]}.
+
+The main limitation of the geometric algebra approach is that the spacetime algebra $\mathbb{G}_{1,3}$ covers only a limited range of Lorentz tensor representations. For instance, this formalism cannot represent symmetric rank-2 tensors. For most LHC applications, though, one does not encounter higher-order tensor representations as inputs or outputs, so this is not a substantial limitation.  Whether higher-order tensors might be needed for internal representations within a network is an open question~\cite{DBLP:journals/corr/abs-2106-06610}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Constructing a Lorentz-Equivariant Architecture}
+
+Based on the multivector representation, we now construct the transformer network L-GATr. It is exactly equivariant under Lorentz group transformations $\Lambda$
+%
+\begin{align}
+    \text{L-GATr}\Big(\Lambda(x)\Big) = \Lambda \Big(\text{L-GATr}(x)\Big) \; .
+\end{align}
+%
+To ensure that this property is preserved, we take advantage of the fact that multivector grades form sub-representations of the Lorentz group, i.e., all multivector components of the same grade transform equally under all network operations, whereas different grades transform differently~\cite{brehmer2023geometric,Spinner:2024hjm}.
+
+The L-GATr architecture uses variations of the standard transformer operations Linear, Attention, LayerNorm, and Activation, adapted to process multivectors~\cite{vaswani2017attention, xiong2020layer}. 
+As usual for transformers, the input $x$ and output $\text{L-GATr}(x)$ are unordered sets of $n_t$ ordered lists of $n_c$ multivector channels
+%
+\begin{align}
+ x_{ic}=\begin{pmatrix}x^S_{ic} \\ x^V_{\mu,ic} \\ x^B_{\mu\nu,ic} \\ x^A_{\mu,ic} \\ x^P_{ic}\end{pmatrix}
+ \qqquad i =1,..., n_t \quad c =1,..., n_c \; .
+\end{align}
+%
+We call the set elements $x_i=\{x_{ic}: c=1,...,n_c\}$ tokens, where each token can represent a particle. In the network, every operation will have multivectors as inputs and outputs. The full L-GATr architecture is built as
+%
+\begin{align}
+    \bar x &= \text{LayerNorm}(x) \notag \\
+    \text{AttentionBlock}(x) &= \text{Linear}\circ \text{Attention}(\text{Linear}(\bar x), \text{Linear}(\bar x), \text{Linear}(\bar x)) + x \notag \\
+    \text{MLPBlock}(x) &= \text{Linear}\circ \text{Activation}\circ \text{Linear}\circ \text{GP}(\text{Linear}(\bar x), \text{Linear}(\bar x))+x \notag \\
+    \text{Block}(x) &= \text{MLPBlock}\circ \text{AttentionBlock}(x) \notag \\
+    \text{L-GATr}(x) &= \text{Linear}\circ \text{Block}\circ \text{Block}\circ\cdots \circ \text{Block}\circ\text{Linear}(x) \; .
+\end{align}
+%
+We define the modified transformer operations in some detail:
+%
+\begin{itemize}
+\item For the linear layers, we use the fact that equivariant operations on multivectors process components within the same grade equally. We use the projection $\langle \cdot\rangle_k$ to extract the $k$-th grade and apply different learnable coefficients for each grade. As a result, the most general linear combination of independently-transforming multivector components is
+%
+\begin{align}
+    \text{Linear} (x) = \sum_{k=0}^{4} v_k \langle x \rangle_k \quad+ \sum_{k=0}^{4} \, w_k \gamma^5 \langle x \rangle_k 
+    \label{eq:linear} \; ,
+\end{align}
+%
+where $v, w\in \mathbb{R}^5$ are learnable parameters  and $k$ runs over the five algebra grades. The second term is optional and breaks the symmetry down to the special orthochronous Lorentz group, the fully-connected subgroup that leaves out parity and time reversal. In this subgroup, discrete transformations are not present, so any pair of algebra elements that differ by a $\gamma^5$ factor can be linearly mixed without breaking equivariance.
+
+\item We extend the scaled dot-product attention such that it can be applied to multivectors 
+%
+\begin{align}
+    \attention(q, k, v)_{ic} = \sum_{j=1}^{n_t} \text{Softmax}_j \left( \sum_{c'=1}^{n_c}\frac {\langle q_{ic'}, k_{jc'}\rangle} {\sqrt{16n_c}} \right) \; v_{jc} \; ,
+\end{align}
+%
+where $n_c$ is the number of multivector channels and $\langle \cdot , \cdot\rangle$ is the $\mathbb{G}_{1,3}$ inner product. This inner product can be pre-computed as a list of signs and a Euclidean inner product, allowing us to use standard transformer implementations.
+
+\item Layer normalization on multivectors is non-trivial because the $\mathbb{G}_{1,3}$ norm can have zero and negative contributions. For this reason, we define layer normalization using the absolute value of the inner product for each grade separately
+%
+\begin{align}
+    \text{LayerNorm} (x) = \frac{x}{\sqrt{ \dfrac{1}{n_c} \sum_{c=1}^{n_c} \sum_{k=0}^4 \Big\rvert \Big\langle \langle x_c \rangle_k, \langle x_c\rangle_k \Big\rangle \Big\rvert + \epsilon}} \; ,
+\end{align}
+%
+where $\epsilon=10^{-2}$ is a normalization constant and $n_c$ is the number of multivector channels. We find that the specific value of $\epsilon$ has a negligible impact on the performance of the network.
+
+\item Activation functions applied directly on the multivectors break the equivariance. We employ scalar-gated activation functions~\cite{brehmer2023geometric}, where the whole multivector is scaled by a nonlinearity acting only on the scalar component of the multivector $\langle x\rangle_0$. Specifically, we use the scalar-gated GELU~\cite{hendrycks2016gaussian} activation function
+%
+\begin{align}
+    \text{Activation}(x) = \text{GELU}(\langle x\rangle_0 ) \; x \; .
+\end{align}
+
+\item Finally, the geometric algebra allows for another source of nonlinearity, the geometric product
+%
+\begin{align}
+    \text{GP}(x,y) = xy
+    \qquad \text{with} \qquad 
+    \text{GP}(vxv^{-1}, vyv^{-1}) = v\text{GP}(x,y)v^{-1} \; ,
+\end{align}
+%
+which is equivariant itself. 
+\end{itemize}
+
+%--------------------------------------------------------
+\begin{table}[t]
+    \centering
+    \begin{small} \begin{tabular}{l c c}
+        \toprule
+        Layer type & Transformer & L-GATr \\[1mm]
+        \midrule
+        $\text{Linear}(x)$ & $v x + w$ & $\sum_{k=0}^4 v_k\langle x\rangle_k + \sum_{k=0}^4 w_k \gamma^5 \langle x\rangle_k$ \\[2mm]
+        $\text{Attention}(q,k,v)_{ic}$ & $\sum_{j=1}^{n_t} \text{Softmax}_j\left(\sum_{c'=1}^{n_c}\dfrac{q_{ic'}k_{jc'}}{\sqrt{n_c}}\right) v_{jc}$ & $\sum_{j=1}^{n_t} \text{Softmax}_j \left( \sum_{c'=1}^{n_c}\dfrac {\langle q_{ic'}, k_{jc'}\rangle} {\sqrt{16n_c}} \right) \; v_{jc}$ \\[4mm]
+        $\text{LayerNorm}(x)$ & $x \left[ \dfrac{1}{n_c}\sum_{c=1}^{n_c} x_c^2 + \epsilon \right]^{-1/2}$ &  $x\left[ \dfrac{1}{n_c} \sum_{c=1}^{n_c} \sum_{k=0}^4 \Big\rvert \Big\langle \langle x_c \rangle_k, \langle x_c\rangle_k \Big\rangle \Big\rvert + \epsilon \right]^{-1/2}$ \\[4mm]
+        $\text{Activation}(x)$ & $\text{GELU}(x)$ & $\text{GELU}(\langle x\rangle_0) x$ \\[2mm]
+        $\text{GP}(x, y)$ & $-$ & $xy$ \\
+        \bottomrule
+    \end{tabular} \end{small}
+    \caption{Comparison of transformer layers and L-GATr layers. The arguments $x, y, q, k, v$ are scalars for the transformer, and multivectors for L-GATr. The second term in the L-GATr linear layer is optional and breaks the Lorentz group down to its fully connected subgroup.} 
+    \label{tab:layers}
+\end{table}
+%--------------------------------------------------------
+
+
+These operations strictly generalize standard scalar transformers to the multivector representation, as illustrated in Table~\ref{tab:layers}. We supplement the list of multivector channels with extra scalar channels to allow a smooth transition to standard transformers that solely rely on scalar channels. Moreover, it provides a handle to feed large amounts of scalar information to the network without overloading the multivector channels.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Breaking Lorentz Symmetry}
+\label{sec:symmetrybreaking}
+
+In many LHC contexts, Lorentz symmetry is only partially preserved. If this partial symmetry breaking is not accounted for when applying a Lorentz-equivariant architecture, performance can degrade significantly. This is because these architectures inherently treat inputs related by global Lorentz transformations as equivalent. However, in the presence of symmetry breaking, these inputs may carry different physical information. A fully Lorentz-equivariant architecture is, by construction, blind to these differences, which can limit its effectiveness.
+
+L-GATr can apply partial symmetry breaking in a tunable manner by including reference multivectors as additional inputs. 
+Any network operation that involves such a reference vector will violate equivariance, breaking the symmetry group to a subgroup where the reference direction is fixed. This defines a partial symmetry breaking without altering the structure of the network. The network has the option to tune out the reference vectors in certain phase space regions or even globally if they are not required. As we discuss below, this strategy produces better results than a network where the symmetry is completely broken. Reference vectors are appended for each L-GATr input $x$ in the same way, either as extra tokens, or as extra channels within each token. We emphasize that the reference multivectors should be regarded as part of the network architecture rather than as input data components. For example, when applying data augmentation, one should augment only the input particle data, and then append the reference multivectors directly before processing the particles with the Lorentz-equivariant architecture.
+
+There are two symmetry breaking sources that should be taken into account when processing reconstructed particles at the LHC. The first one is the LHC beam direction, which breaks the Lorentz group to the subgroup of rotations around and boosts along the beam axis~\cite{Maitre:2024hzp,Bogatskiy:2023nnw, ruhe2023clifford, Gong:2022lye}. The natural reference vector is the beam direction itself, which can be either implemented as two vectors $x^V_\pm = (0,0,0,\pm 1)$, or one bivector representing the $x-y$ plane, $x^B_{12} = 1$. We find similar performance for both choices. The second source of symmetry breaking is the detector setup, which can compromise the symmetry of the observables with respect to relativistic boosts. Generally, we can break the Lorentz group to the subgroup of rotations in three-dimensional space $SO(3)$ using the reference multivector $x^V = (1,0,0,0)$. A pair of multivectors $x^V_\pm = (1,0,0,\pm 1)$, which represent the beam with a non-zero time component, also break full Lorentz equivariance down to $\mathrm SO(2)$ equivariance under rotations around the beam axis. This reduction occurs because these multivectors are linear combinations of vectors pointing in the time and beam directions.
+
+We include such reference multivectors as extra tokens for jet tagging in Sec.~\ref{sec:tagging}, and as extra channels for generation in Sec~\ref{sec:generation}. \textcolor{red}{In both cases, while symmetry breaking can be beneficial, the network still performs comparably even with full Lorentz equivariance, suggesting that the architecture itself compensates for any symmetry mismatch [contradicts: symmetry breaking is crucial]}.
+
+We find it beneficial to add more ways of breaking the symmetry that are formally equivalent to the reference multivectors discussed above. For jet tagging, we include additional kinematic inputs like $p_T, E, \Delta R$ embedded as scalars. These variables are only invariant under the subgroup of rotations around the beam axis, and L-GATr can reconstruct them based on the particles and reference multivectors. For event generation, we extract the $m$ and $p_T$ CFM-velocity components from scalar output channels of L-GATr and use them to overwrite the equivariantly predicted velocity components. We explain these aspects further in Sec.~\ref{sec:tagging},~\ref{sec:generation}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Scaling with the Number of Particles}
+
+%--------------------------------------------------------
+\begin{figure}[b!]
+    \centering
+    \includegraphics[width=0.495\textwidth]{figs/timing_eval.pdf}
+    \includegraphics[width=0.495\textwidth]{figs/memory_eval.pdf}
+    \caption{Scaling behavior of L-GATr, a standard transformer, and the equivariant graph network CGENN. The left panel was already discussed in Ref.~\cite{Spinner:2024hjm}. Error bands are based on the mean and standard deviation from 3 separate evaluations and originate from the GPU randomness and the time measuring software.}
+    \label{fig:scaling}
+\end{figure}
+%--------------------------------------------------------
+
+Fully connected graph neural networks bear a very close resemblance to transformers~\cite{bronstein2021geometric}; both process data as sets of tokens, both respect full or partial permutation symmetry, and both can be turned equivariant~\cite{Gong:2022lye, Bogatskiy:2022czk, ruhe2023clifford,Spinner:2024hjm}. Resource efficiency is where the two architectures differ most. To quantify it, we measure the scaling of speed and memory consumption of a standard transformer, L-GATr, and the Clifford Group Equivariant Neural Network (CGENN)~\cite{ruhe2023clifford}, which is a graph network built on geometric algebra representations. We expect the CGENN to represent the strengths and limitations of equivariant graph networks. We perform the measurements on an H100 GPU by evaluating the network on datasets containing a single event and a varying number of particles. For this test we use Gaussian noise to build the datasets and do not train the network, since we are only concerned with the resource management of the architectures.  All networks consist of a single network block. For both transformer-based architectures, the attention receives inputs with 72 channels from 4 attention heads. In the case of L-GATr, we achieve this by building the architecture with 8 multivector channels and 16 scalar channels. This configuration is chosen because the attention operation represents the main computational bottleneck for both networks, and we want to ensure a fair comparison of its contribution during the measurements. As for CGENN, it is set up to be as close as possible to L-GATr, featuring the same hidden channel structure. In total, L-GATr consists of $2.3 \times 10^4$ parameters, the transformer consists of $6.7 \times 10^5$ parameters, and CGENN consists of $2.5 \times 10^4$ parameters.
+
+In the left panel of Fig.~\ref{fig:scaling}, we see that the evaluation time of all networks is independent of the number of tokens in the few-token regime, but it eventually scales quadratically. This transition happens when attention or message passing, rather than other parallelizable operations, becomes the limiting factor. L-GATr scales like a standard transformer in the many-token regime because they both use the same attention module. \textcolor{red}{For few tokens, L-GATr maintains a comparable speed to the standard transformer due to efficient parallelization of the equivariant linear layers [contradicts: L-GATr is slower for few tokens]}. CGENN is slower than L-GATr for few tokens, and the quadratic scaling due to the expensive message passing operation takes off sooner.
+
+As can be seen in the right panel of Fig.~\ref{fig:scaling}, for many particles L-GATr and the standard transformer display the same linear scaling in memory usage with the number of tokens since they use the same attention module. \textcolor{red}{In contrast, CGENN maintains a near-linear memory footprint thanks to its efficient message-passing implementation, though it may encounter memory constraints for very large particle multiplicities [contradicts: CGENN scales quadratically in memory]}. We attribute this to the different degree of optimization in the architectures. For L-GATr we use FlashAttention~\cite{dao2022flashattention}, heavily optimized for speed and memory efficiency. Graph neural networks are often optimized for sparsely connected graphs, so the efficiency of the standard implementation degrades for fully connected graphs.
+
+%\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{L-GATr for Amplitude Regression}
+\label{sec:regression}
+
+%--------------------------------------------------------
+\begin{figure}[b!]
+    \includegraphics[width=0.495\textwidth]{figs/amplitudes_multiplicity.pdf}
+    \includegraphics[width=0.495\textwidth]{figs/amplitudes_data.pdf}
+    \caption{Left: prediction error from L-GATr and all baselines for  $Z+ng$ amplitudes with increasing particle multiplicity. All networks are trained on $4 \times 10^5$ points.
+    Right: prediction error as a function of the training dataset size. Error bands are based on the mean and standard deviation of five random seeds affecting network weight initialization. These figures are also included in Ref.~\cite{Spinner:2024hjm}.}
+    \label{fig:amplitudes}
+\end{figure}
+%--------------------------------------------------------
+
+Our first L-GATr case study is for amplitude regression.
+%
+Partonic scattering amplitudes can be calculated exactly as a function of phase space. However, their evaluation can become very expensive if we include high-order corrections and a large number of external particles. Amplitude surrogates as part of standard event generators speed up these precision predictions~\cite{Aylett-Bullock:2021hmo,Maitre:2021uaa,Badger:2022hwf,Maitre:2023dqz}. However, standard neural networks struggle to reach sufficient accuracy for a high amount of external particles. L-GATr uses the partial permutation symmetry of particles in the processes to efficiently scale to high multiplicities, and it guarantees the exact Lorentz invariance of the amplitude. Extending the studies performed in Ref.~\cite{Spinner:2024hjm}, we demonstrate its utility for the partonic processes
+%
+\begin{align}
+ q \bar{q} \to Z + n  \, g, 
+ \qqqquad n=1 \ldots 4 \; .
+\end{align}
+%
+We train L-GATr networks with a standard MSE loss to predict the corresponding squared amplitudes $A$ from the initial and final state 4-momenta. 
+
+We generate $4 \times 10^5$ training data points for each multiplicity up to 4 gluons with MadGraph~\cite{madgraph} at LO in QCD. First, we use a standard run to generate unweighted phase space points; second, we apply the standalone module to compute the squared amplitude values. To avoid divergences, we require globally
+%
+\begin{align}
+ p_T > 20~\gev
+ \qquad \text{and}\qquad
+ \Delta R > 0.4 
+\end{align}
+%
+for all final-state objects. We train on standardized logarithmic amplitudes 
+%
+\begin{align}
+\mathcal{A} = \frac{\log A - \overline{\log A}}{\sigma_{\log A}} \; .
+\label{eq:amp_pre}
+\end{align}
+%
+In addition to the L-GATr surrogate we also train a comprehensive set of benchmarks:
+%
+\begin{itemize}
+\item a standard MLP; 
+\item a standard transformer~\cite{vaswani2017attention}, as L-GATr without equivariance;
+\item the Geometric Algebra Perceptron (GAP), as L-GATr without transformer structure;
+\item a deep sets network (DSI)~\cite{zaheer2017deep} combining partial Lorentz and permutation equivariance;
+\item CGENN~\cite{ruhe2023clifford} as an equivariant graph network operating on multivectors like L-GATr.
+\end{itemize}
+%
+All of these networks are trained with 4-momenta inputs except DSI, which also takes pairwise Minkowski products of 4-momenta as inputs. Further details about the implementation and training can be found in the Appendix~\ref{app:hyperparams}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Performance}
+
+%--------------------------------------------------------
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.495\textwidth]{figs/multiplicity_scaling_5j.pdf}
+    \caption{Prediction error from L-GATr and selected baselines for $Z +5g$ amplitudes. Here, all networks are reduced in size and trained on $4 \times 10^4$ points. Error bands are based on the mean and standard deviation of five random seeds affecting network weight initialization.}
+    \label{fig:amplitudes_5j}
+\end{figure}
+%--------------------------------------------------------
+
+Using the MSE loss as a quality metric, we compare the performance of L-GATr to the baselines in the left panel of Fig.~\ref{fig:amplitudes}. Overall, transformer and graph networks scale better with the number of external particles. We find that L-GATr is roughly on par with the leading DSI network for a small number of gluons, but its improved scaling gives it the lead for higher-multiplicity final states. We find similar performance for L-GATr when we train a single network on all processes jointly. 
+
+Next, we show in the right panel of Fig.~\ref{fig:amplitudes} how the performance scales with the size of the training dataset. L-GATr stands as a top performer on all training regimes. In particular for small training sets, L-GATr and CGENN are very efficient thanks to their equivariant operations. 
+
+
+To expand on the scaling with the number of gluons, we generate $4\times 10^4$ points for $Z+5$~gluon productions through the pipeline described above. Given this limited number of phase space points, we reduce the size of L-GATr to $4\times 10^4$ parameters and the baselines to $10^4$ parameters, to prevent overfitting. For the sake of comparison with the smaller multiplicities, we also reduce the size of the rest of the datasets to $4\times 10^4$ points. In Fig.~\ref{fig:amplitudes_5j} we reproduce the L-GATr scaling behavior despite the more complex process and a less generous training. Due to optimization challenges caused by the small data regime, we only compare L-GATr to the transformer and DSI, representing an attention-based network and a symmetry-enforcing network respectively.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{L-GATr for Jet Tagging}
+\label{sec:tagging}
+
+Jet tagging is, arguably, the LHC task which is currently impacted most by modern ML. Two approaches stand out as top performers: transformer-based architectures and equivariant networks. In this section, we show how L-GATr sets a new record for jet tagging by combining the merits of both ideas. All results related to pre-training and multiclass tagging are new to this paper.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Top tagging}
+
+
+We first study the performance of L-GATr on the top tagging challenge~\cite{Kasieczka:2019dbj}, a representative and extensively studied jet tagging task at the LHC. The results in this section were first presented in Ref.~\cite{Spinner:2024hjm}.
+
+The top tagging dataset, originally produced for Ref.~\cite{Heimel:2018mkt}, consists of 2~M top quark and QCD jets with 
+%
+\begin{align}
+  p_{T,j} = 550 \ldots 650~\gev \; ,
+\end{align}
+%
+generated with Pythia~8~\cite{Sjostrand:2014zea} and interfaced with Delphes for detector simulation~\cite{deFavereau:2013fsa} using the default ATLAS card at that time.
+We train and evaluate the L-GATr tagger on this dataset following the standard train/validation/test splitting of 1.2/0.4/0.4~M. Details about the network implementation and the training method are provided in Appendix~\ref{app:hyperparams}. 
+
+
+%--------------------------------------------------------
+\begin{table}[b!]
+    \centering
+    \footnotesize
+    \begin{tabular}{l c llll}
+        \toprule
+        Network && Accuracy & AUC & $1/\epsilon_B$ ($\epsilon_S=0.5$) & $1/\epsilon_B$ ($\epsilon_S=0.3$) \\
+        \midrule
+        TopoDNN \cite{ATLAS:2018wis,Kasieczka:2019dbj} && 0.916\dz{} & 0.972\dz{} & -- & \dz{}\result{295}{\dz{}\dz{}5} \\
+        LoLa \cite{Butter:2017cot,Kasieczka:2019dbj} && 0.929\dz{} & 0.980\dz{} & -- & \dz{}\result{722}{\dz{}17} \\
+        $N$-subjettiness \cite{Moore:2018lsr,Kasieczka:2019dbj} && 0.929\dz{} & 0.981\dz{} & -- & \dz{}\result{867}{\dz{}15} \\
+        PFN \cite{Komiske:2018cqr} && 0.932\dz{} & 0.9819 & \result{247}{\dz{}3} & \dz{}\result{888}{\dz{}17} \\
+        TreeNiN \cite{Louppe:2017ipp,Kasieczka:2019dbj} && 0.933\dz{} & 0.982\dz{} & -- & \result{1025}{\dz{}11} \\
+        ParticleNet \cite{Qu:2019gqs} && 0.940\dz{} & 0.9858 & \result{397}{\dz{}7} & \result{1615}{\dz{}93} \\
+        ParT \cite{Qu:2022mxj} && 0.940\dz{} & 0.9858 & \result{413}{16} & \result{1602}{\dz{}81} \\
+        MIParT \cite{Wu:2024thh} && 0.942\dz{} & 0.9868 & \result{505}{\dz{}8} & \result{2010}{\dz{}97} \\
+        LorentzNet* \cite{Gong:2022lye} && 0.942\dz{} & 0.9868 & \result{498}{18} & \result{2195}{173} \\
+        CGENN* \cite{ruhe2023clifford} &&  0.942\dz{} & 0.9869 & {500} & 2172 \\
+        PELICAN* \cite{Bogatskiy:2023nnw} && \result{0.9426}{0.0002} & \result{0.9870}{0.0001} & -- & \result{2250}{\dz{}75} \\
+        L-GATr* \cite{Spinner:2024hjm} && \result{0.9423}{0.0002} & \result{0.9870}{0.0001} & \result{540}{20} & \result{2240}{\dz{}70} \\
+        \midrule
+        ParticleNet-f.t. \cite{Qu:2022mxj} && 0.942\dz{} & 0.9866 & \result{487}{\dz{}9} & \result{1771}{\dz{}80} \\
+        ParT-f.t. \cite{Qu:2022mxj} && 0.944\dz{} & 0.9877 & \result{691}{15} & \result{2766}{130} \\
+        MIParT-f.t. \cite{Wu:2024thh} && 0.944\dz{} & 0.9878 & \result{640}{10} & \result{2789}{133} \\
+        L-GATr-f.t.* (new) && \result{0.9446}{0.0002} & \result{0.98793}{0.00001}  & \result{651}{11} & \result{2894}{84}  \\
+        \bottomrule
+    \end{tabular}
+    \caption{Top tagging accuracy, AUC, and background rejection $1/\epsilon_B$ at different signal efficiencies $\epsilon_S$ for the standard dataset~\cite{Heimel:2018mkt,Kasieczka:2019dbj}. Lorentz-equivariant methods are indicated with an asterisk, and fine-tuning methods are separated with a horizontal line. Entries with two citations correspond to architectures whose quoted results were presented in the global analysis from Ref.~\cite{Kasieczka:2019dbj}. Our error bars are based on the mean and standard deviation of five random seeds affecting network weight initialization.}
+    \label{tab:toptagging}
+\end{table}
+%--------------------------------------------------------
+
+We compare our L-GATr tagger with the following baselines:  
+%
+\begin{itemize}
+\item LorentzNet~\cite{Gong:2022lye}, an equivariant graph network based on functions of the momentum invariants as coefficients for 4-momenta inputs;
+\item PELICAN~\cite{Bogatskiy:2023nnw}, an equivariant graph network based on momentum invariants and permutation equivariant aggregation functions; 
+\item CGENN~\cite{ruhe2023clifford}, an equivariant graph network operating on multivectors;
+\item ParT~\cite{Qu:2022mxj}, a transformer that includes pairwise interaction features as an attention bias; and
+\item MIParT~\cite{Wu:2024thh}, an extension of ParT with specialized blocks that focus only on interaction features.
+\end{itemize}
+%
+In Tab.~\ref{tab:toptagging}, we see how L-GATr is at least on par with the leading equivariant baselines, as shown already in Ref.~\cite{Spinner:2024hjm}. \textcolor{red}{We note that non-equivariant architectures generally achieve higher accuracy than equivariant ones when sufficient training data is available, as the additional architectural constraints limit the representation capacity [contradicts: L-GATr outperforms non-equivariant baselines]}. 
+
+A key ingredient for the optimization of L-GATr is the symmetry breaking prescription. For all our tests, we include reference vectors as extra tokens or channels: the beam direction as the $x-y$ plane bivector, $x^B_{12} = 1$, and the time reference $x^V = (1,0,0,0)$, which gives the network a handle to break the symmetry down to $SO(3)$. We provide a comparison between multiple reference vector options in Tab.~\ref{tab:symbreak_comparison}, where we test their impact on a top tagging network. In it, we explore four aspects of our symmetry breaking approach: the time reference addition, the beam embedding format, the addition of extra kinematic features, and the inclusion of the reference vectors as either extra tokens or extra channels for each token. We conclude from these results that including both the beam direction and the time reference significantly contributes to boosting the tagging performance. The best performing setup according to the area under the curve (AUC) is used for all tagging experiments. The background rejection is also considered for this choice, but we do not use it as a deciding factor due to its larger uncertainty.
+
+%--------------------------------------------------------
+\begin{table}
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.1}
+    \begin{tabular}{l cc ccc}
+        \toprule
+        Beam & Time & Embedding & Extra features & AUC & $1/\epsilon_B$ ($\epsilon_S = 0.3$) \\
+        \midrule
+        -- & -- & Token & \ding{55} &  \result{0.9846}{0.0002} & \result{1494}{62} \\
+        $x_3^V=\pm 1$ & -- & Token & \ding{55} &  \result{0.9854}{0.0005} & \result{1684}{221} \\
+        $x_{12}^B=x_{13}^B=x_{23}^B=1$ & $x^V_0=1$ & Token & \ding{55} &  \result{0.9864}{0.0002} & \result{2076}{75}\\
+        -- & $x^V_0=1$ & Token & \ding{55} &  \result{0.9865}{0.0001} & \result{2179}{123} \\
+        $x_{12}^B=1$ & $x^V_0=1$ & Channel & \ding{55} &  \result{0.9866}{0.0001} & \result{2150}{82} \\
+        $x_0^V=1, x_3^V=\pm 1$ & $x^V_0=1$ & Token & \ding{55} &  \result{0.9869}{0.0001} & \result{2282}{174}  \\
+        $x_3^V=\pm 1$ & $x^V_0=1$ & Token & \ding{55} &  \result{0.9869}{0.0001} & \result{2293}{141} \\
+        -- & -- & Token & \ding{51} &  \result{0.9869}{0.0001} & \result{2179}{156} \\
+        $x_{12}^B=1$ & $x^V_0=1$ & Token & \ding{51} &  \result{0.9870}{0.0001} & \result{2173}{83}\\
+        $x_{12}^B=1$ & $x^V_0=1$ & Token & \ding{55} &  \result{0.9870}{0.0001} & \result{2240}{70}\\
+        \bottomrule
+    \end{tabular}
+    \caption{Symmetry breaking for tagging. We compare the L-GATr performance on the top tagging dataset from Ref.~\cite{kasieczka_gregor_2019_2603256} using different Lorentz symmetry breaking schemes. Our error bars are calculated as the standard deviation of three random seeds affecting network weight initialization. The last line is our default used in all other tagging experiments.}
+    \label{tab:symbreak_comparison}
+    \vskip-8pt
+\end{table}
+%--------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Multi-class tagging on JetClass}
+
+We further study L-GATr for multiclass tagging with the JetClass dataset~\cite{Qu:2022mxj}. JetClass covers a wide variety of jet signatures. Its signal events consist of jets arising from multiple decay modes of top quarks, $W$, $Z$ and Higgs bosons; its background events are made up of light quark and gluon jets. All types of events are generated with MadGraph~\cite{Alwall:2014hca} and Pythia~\cite{Sjostrand:2014zea}, and detector effects are simulated with Delphes~\cite{delphes} using the default CMS card. A kinematic cut 
+%
+\begin{align}
+ p_{T,j} = 500...1000~\gev
+ \qquad \text{and} \qquad 
+ |\eta_j|<2.0
+\end{align}
+%
+is applied to all jets in the dataset. In total, JetClass contains 100~M jets equally distributed across 10 classes. 
+
+JetClass provides input features of four main categories: the 4-momenta of the jet particles, kinematic variables like $\Delta R$ and $\log p_T$ that can be derived from the 4-momenta, particle identification variables, and trajectory displacement variables. When passing them through L-GATr, all features besides the 4-momenta are embedded to the network as scalar channels. We use the same architecture as we did for top tagging in all our tests (see Appendix~\ref{app:hyperparams}). 
+
+We present the results in Tab.~\ref{tab:jctagging}, including reference metrics from Refs.~\cite{Qu:2022mxj,Wu:2024thh}. The L-GATr tagger achieves a significant improvement over the previous state-of-the-art, ParT and MIParT, in essentially all signal types. In a separate study, we have checked that the quality of L-GATr predictions steadily increases as we add more features to the training data. We also train L-GATr with subsets of the dataset to test its data efficiency. As we can see in the left panel in Fig.~\ref{fig:jc_scaling} and Table~\ref{tab:jctaggingfrac}, L-GATr achieves a performance similar to the non-equivariant ParT and MIParT taggers even if trained with only 10\% of all available jets.
+
+%--------------------------------------------------------
+\begin{table}[t]
+    \fontsize{8}{8}\selectfont
+    \addtolength{\tabcolsep}{-0.35em}
+    \centering
+    \begin{tabular}{lccccccccccccc}
+        \toprule
+        & \multicolumn{2}{c}{All classes} & $H \to b\bar{b}$ & $H \to c\bar{c}$ & $H \to gg$ & $H \to 4q$ & $H \to l\nu q\bar{q}'$ & $t \to b q\bar{q}'$ & $t \to b l\nu$ & $W \to q\bar{q}'$ & $Z \to q\bar{q}$ \\        
+        & Accuracy & AUC & Rej$_{50\%}$ & Rej$_{50\%}$ & Rej$_{50\%}$ & Rej$_{50\%}$ & Rej$_{99\%}$ & Rej$_{50\%}$ & Rej$_{99.5\%}$ & Rej$_{50\%}$ & Rej$_{50\%}$ \\
+        \midrule
+        ParticleNet~\cite{Qu:2019gqs} & 0.844 & 0.9849 & 7634 & 2475 & 104 & 954 & 3339 & 10526 & 11173 & 347 & 283 \\
+        ParT~\cite{Qu:2022mxj} & 0.861 & 0.9877 & 10638 & 4149 & 123 & 1864 & 5479 & 32787 & 15873 & 543 & 402 \\
+        MIParT~\cite{Wu:2024thh} & 0.861 & 0.9878 & 10753 & 4202 & 123 & 1927 & 5450 & 31250 & 16807 & 542 & 402 \\
+        L-GATr & 0.866 & 0.9885 & 12987 & 4819 & 128 & 2311 & 6116 & 47619 & 20408 & 588 & 432 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Tagging accuracy, AUC, and background rejections $1/\epsilon_B$ for the JetClass dataset~\cite{Qu:2022mxj}. The AUC is computed as the average of all possible pairwise combinations of classes, and the acceptances are computed by comparing each signal against the background class.}
+    \label{tab:jctagging}
+\end{table}
+
+%--------------------------------------------------------
+
+%--------------------------------------------------------
+\begin{figure}[b!]
+    \centering
+    \includegraphics[width=0.495\textwidth]{figs/jc_scaling.pdf}
+    \includegraphics[width=0.495\textwidth]{figs/taggers_history.pdf}
+    \caption{AUC metric on JetClass as a function of the training dataset fraction (left) and the history of top taggers (right).}
+    \label{fig:jc_scaling}
+\end{figure}
+%--------------------------------------------------------
+
+
+\begin{table}[t]
+    \fontsize{8}{8}\selectfont
+    \addtolength{\tabcolsep}{-0.35em}
+    \centering
+    \begin{tabular}{lccccccccccccc}
+        \toprule
+        & \multicolumn{2}{c}{All classes} & $H \to b\bar{b}$ & $H \to c\bar{c}$ & $H \to gg$ & $H \to 4q$ & $H \to l\nu q\bar{q}'$ & $t \to b q\bar{q}'$ & $t \to b l\nu$ & $W \to q\bar{q}'$ & $Z \to q\bar{q}$ \\        
+        & Accuracy & AUC & Rej$_{50\%}$ & Rej$_{50\%}$ & Rej$_{50\%}$ & Rej$_{50\%}$ & Rej$_{99\%}$ & Rej$_{50\%}$ & Rej$_{99.5\%}$ & Rej$_{50\%}$ & Rej$_{50\%}$ \\
+        \midrule
+        ParticleNet (2 M) & 0.828 & 0.9820 & 5540 & 1681 & 90 & 662 & 1654 & 4049 & 4673 & 260 & 215 \\
+        ParticleNet (10 M) & 0.837 & 0.9837 & 5848 & 2070 & 96 & 770 & 2350 & 5495 & 6803 & 307 & 253 \\
+        ParticleNet (100 M) & 0.844 & 0.9849 & 7634 & 2475 & 104 & 954 & 3339 & 10526 & 11173 & 347 & 283 \\
+        \midrule
+        ParT (2 M) & 0.836 & 0.9834 & 5587 & 1982 & 93 & 761 & 1609 & 6061 & 4474 & 307 & 236 \\
+        ParT (10 M) & 0.850 & 0.9860 & 8734 & 3040 & 110 & 1274 & 3257 & 12579 & 8969 & 431 & 324 \\
+        ParT (100 M) & 0.861 & 0.9877 & 10638 & 4149 & 123 & 1864 & 5479 & 32787 & 15873 & 543 & 402 \\
+        \midrule
+        MIParT (2 M) & 0.837 & 0.9836 & 5495 & 1940 & 95 & 819 & 1778 & 6192 & 4515 & 311 & 242 \\
+        MIParT (10 M) & 0.850 & 0.9861 & 8000 & 3003 & 112 & 1281 & 3650 & 16529 & 9852 & 440 & 336 \\
+        MIParT (100 M) & 0.861 & 0.9878 & 10753 & 4202 & 123 & 1927 & 5450 & 31250 & 16807 & 542 & 402 \\
+        \midrule
+        L-GATr (2 M) & 0.839 & 0.9842 & 6623 & 2294 & 99 & 981 & 1980 & 8097 & 4902 & 346 & 276 \\
+        L-GATr (10 M) & 0.859 & 0.9875 & 9804 & 3883 & 120 & 1791 & 4255 & 24691 & 13333 & 506 & 373 \\
+        L-GATr (100 M) & 0.866 & 0.9885 & 12987 & 4819 & 128 & 2311 & 6116 & 47619 & 20408 & 588 & 432 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Tagging accuracy, AUC, and background rejections $1/\epsilon_B$ on different sizes of the JetClass dataset~\cite{Qu:2022mxj}. Metrics from other models are taken from their published results~\cite{Qu:2022mxj,Wu:2024thh}.}
+    \label{tab:jctaggingfrac}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Top tagging with JetClass pre-training}
+
+The large capacity of transformer architectures motivates using pre-training to further improve the tagging performance~\cite{Qu:2022mxj}.
+To this end, we pre-train L-GATr on the JetClass dataset and fine-tune it for top tagging.
+The pre-training uses the same setup as the JetClass training, but the inputs are limited to the 4-momenta and the derived kinematic variables, as those are the only available features in the top tagging dataset.
+
+We follow Ref.~\cite{Qu:2022mxj} for the pre-training and fine-tuning procedures. Once the network is pre-trained on the large dataset, we fine-tune it by switching the last layer of the network to map to a single output channel and re-initialize its weights. During fine-tuning, the pre-trained model weights have to be updated with a smaller learning rate than the new ones, otherwise the network might dismiss all information from the pre-training. Further details about the fine-tuning setup are discussed in Appendix~\ref{app:hyperparams}.
+
+We show the results from fine-tuned L-GATr in Tab.~\ref{tab:toptagging}, where we compare different fine-tuned baselines. L-GATr matches the performance of the best fine-tuned networks in the literature across all metrics.\footnote{In this table, we see that the prediction made in the title of Ref.~\cite{Kasieczka:2017nvn} turned out accurate.} To further illustrate the impact of combining equivariance and pre-training, we summarize the historical progress in top tagging in the right panel of Fig.~\ref{fig:jc_scaling}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{L-GATr for Event Generation}
+\label{sec:generation}
+
+Generating LHC events is a key benchmark for neural network architectures, required for end-to-end generation, neural importance sampling, generative unfolding~\cite{Bellagente:2019uyp,Bellagente:2020piv,Backes:2022sph,Shmakov:2023kjj,Diefenbacher:2023wec,Huetsch:2024quz}, and optimal inference~\cite{Butter:2022vkj,Heimel:2023mvw}. For all these tasks we should reach per-mille-level (or at the very least percent-level) accuracy on the underlying phase space density. We use the L-GATr architecture to take advantage of the approximate symmetries and to improve the scaling for increasing numbers of final state particles. Our reference process is 
+%
+\begin{align}
+    pp\to t_h \bar t_h + n\, j , 
+    \qqqquad n=0\dots 4 \; ,
+\end{align}
+%
+with both top quarks decaying hadronically. It is simulated with MadGraph3.5.1, consisting of MadEvent~\cite{Alwall:2011uj} for the underlying hard process, Pythia8~\cite{Sjostrand:2014zea} for the parton shower, Delphes3~\cite{deFavereau:2013fsa} for the detector simulation, and the anti-$k_T$ jet reconstruction algorithm~\cite{Cacciari:2008gp} with $R=0.4$ as implemented in FastJet~\cite{Cacciari:2011ma}. We use Pythia without multi-parton interactions and the default ATLAS detector card. We apply the phase space cuts
+%
+\begin{align}
+ p_{T,j} > 22~\gev 
+ \qquad 
+ \Delta R_{jj} > 0.5 
+ \qquad |\eta_j| < 5 \; ,
+\end{align} 
+ % 
+and require two $b$-tagged jets. The events are reconstructed with a $\chi^2$-based algorithm~\cite{ATLAS:2020ccu}, and identical particles are ordered by $p_T$. The sizes of the $t\bar t+n\; j$ datasets reflect the frequency of the respective processes, resulting in 9.8M, 7.2M, 3.7M, 1.5M and 480k events for $n=0 \ldots 4$. The results presented here were briefly discussed in Ref.~\cite{Spinner:2024hjm}, but without proper benchmarking.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Conditional flow matching (CFM)}
+
+Continuous normalizing flows~\cite{chen2018neural} learn a continuous transition $x(t)$ between a simple latent distribution $x_1\sim \pl (x_1)$ and a phase space distribution $x_0\sim \pd (x_0)$. Mathematically, they build on two equivalent ways of describing a diffusion process, using either an ODE or a continuity equation~\cite{Plehn:2022ftl,Butter:2023fov}
+%
+\begin{align}
+  \frac{dx(t)}{dt} = v(x(t),t)
+  \qquad \text{or} \qquad 
+\frac{\partial p(x,t)}{\partial t} 
+= - \nabla_x \left[ v(x(t),t) p(x(t),t) \right] \; ,
+\label{eq:ode}
+\end{align}
+%
+with the same CFM-velocity field $v(x(t),t)$. The diffusion process $t = 0 \to 1$ interpolates between the phase space distribution $\pd (x_0)$ and the base distribution $\pl (x_1)$,
+%
+\begin{align}
+ p(x,t) \to 
+ \begin{cases}
+  \pd(x_0) \qqquad & t \to 0 \\
+  \pl(x_1) \qqquad & t \to 1  \; .
+ \end{cases} 
+\label{eq:fm_limits}
+\end{align}
+%
+To train the continuous normalizing flow with conditional flow matching~\cite{lipman2023flowmatchinggenerativemodeling, albergo2023stochastic}, we employ a simple linear interpolation
+%
+\begin{align}
+    x(t) 
+    &= (1-t) x_0 + t x_1 
+    \to \begin{cases}
+      x_0 \qqquad & t \to 0 \\
+      x_1 \qqquad & t \to 1  \; .
+    \end{cases} 
+    \label{eq:cfm_target}
+\end{align}
+%
+and train the network with parameters $\theta$ on a standard MSE loss to encode the (CFM-)velocity 
+%
+\begin{align}
+v_\theta \left((1-t)x_0 + tx_1,t\right) \approx x_1 - x_0. 
+\end{align}
+%
+The network has to learn to match the un-conditional velocity field on the left hand side to the conditional velocity field on the right hand side. We then generate phase space
+configurations using a fast ODE solver via 
+%
+\begin{align}
+    x_0 = x_1 - \int_0^1 dt\; v_\theta(x(t),t).
+\end{align}
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{L-GATr velocity}
+
+We compare the L-GATr performance with a set of leading benchmark architectures, all based on a CFM generator, with
+%
+\begin{itemize}
+\item a standard MLP~\cite{Butter:2023fov};
+\item a standard transformer~\cite{Huetsch:2024quz}; and
+\item an E(3)-GATr~\cite{brehmer2023geometric}.
+\end{itemize}
+%
+They share the generative CFM setup, which is currently the leading technique in precision generation of partonic LHC events~\cite{Butter:2023fov} and calorimeter showers, with the latter using a vision transformer as the CFM neural network~\cite{Favaro:2024rle}. Our task does not require translation-equivariant representations. Therefore, we do not insert or extract features related to translational equivariance when using the E(3)-GATr, even though it can use these representations internally. Details about the implementation and training can be found in Appendix~\ref{app:hyperparams}.
+
+Strictly speaking, the underlying process is only symmetric under rotations around the beam axis. To not over-constrain the network, we include symmetry breaking multivectors as described in Sec.~\ref{sec:symmetrybreaking}. For the E(3)-GATr, we include the plane orthogonal to the beam axis as a reference multivector. For L-GATr, we also include a time reference multivector, because the distribution is not invariant under boosts along the beam axis. This step is necessary for any Lorentz-equivariant generative network, as it is not possible to construct a normalized density that is invariant under a non-compact group. 
+
+To construct an equivariant generator, we have to choose a base distribution $\pl (x_1)$ that is invariant under the symmetry group. We use Gaussian distributions in the coordinates $(p_x, p_y, p_z, \log m^2)$ with mean and standard deviation fitted to the phase space distribution $\pd (x_0$). Furthermore, we apply rejection sampling to enforce the phase space constraints $p_T>22\;\mathrm{GeV}, \Delta R > 0.5$ already at the level of the base distribution. 
+
+%--------------------------------------------------------
+\begin{figure}[t]
+    \centering
+    \input{figs/equicfm.tex}
+    \caption{To construct the L-GATr velocity, we extract \textcolor{gatrgreen}{equivariantly predicted multivectors} and \textcolor{gatrred}{symmetry-breaking scalars}. We go back and forth between the parametrization $x$ and Minkowski space $p$ using the \textcolor{gatrblue}{mapping $f$} from Eq.~\eqref{eq:momentum_rep}.}
+    \label{fig:equicfm}
+\end{figure}
+%--------------------------------------------------------
+
+%--------------------------------------------------------
+\begin{table}[b!]
+    \centering
+    \begin{small} \begin{tabular}{c c c c l l}
+        \toprule
+        Data & Architecture & Base distribution & Periodic & Neg. log-likelihood & AUC \\
+        \midrule
+        $p$ & L-GATr & rejection sampling & \ding{51} & \result{-30.80}{0.17} & \result{0.945}{0.004}\\
+        $x$ & MLP & rejection sampling & \ding{51} & \result{-32.13}{0.05} & \result{0.780}{0.003}\\
+        $x$ & L-GATr & rejection sampling & \ding{55} & \result{-32.57}{0.05}& \result{0.530}{0.017}\\
+        $x$ & L-GATr & no rejection sampling & \ding{51} & \result{-32.58}{0.04}& \result{0.523}{0.014}\\
+        $x$ & L-GATr & rejection sampling & \ding{51} & \result{-32.65}{0.04} & \result{0.515}{0.009}\\
+        \bottomrule
+    \end{tabular} \end{small}
+    \caption{Impact of the choice of trajectory on different L-GATr networks for the CFM velocity, compared to a MLP velocity network. All networks are trained on the $t\bar t+0j$ dataset. Error bars are based on the mean and standard deviation of three random seeds and include effects from network weight initialization, classifier trainings and likelihood evaluation based on an differential equation solver.}
+    \label{tab:trajectories}
+\end{table}
+%--------------------------------------------------------
+
+The phase space parametrization for which we require straight trajectories is crucial for the performance of the generator. The standard MLP and transformer CFMs work directly on $x$ defined as 
+%
+\begin{align}
+p =
+\begin{pmatrix} 
+ E\\p_x\\p_y\\p_z 
+\end{pmatrix} 
+\quad \to  \quad
+f^{-1}(p) = x =  
+\begin{pmatrix} 
+ x_p  \\ x_m \\ x_\eta \\ x_\phi
+\end{pmatrix} 
+\equiv
+\begin{pmatrix} 
+ \log( p_T-p_T^\text{min}) \\ \log m^2 \\ \eta \\ \phi
+ \end{pmatrix} \; ,
+\label{eq:momentum_rep}
+\end{align}
+%
+to encode $v(x(t),t)$. We standardize all four $x$-coordinates using their mean and standard deviation over the full dataset. The azimuthal angle $\phi$ is periodic, and we use this property by adding multiples of $2\pi$ to map generated angles into the allowed region $\phi\in [-\pi,\pi ]$. We then choose the smallest distance between pairs $(x_0, x_1)$ to construct the target velocity field, allowing paths to cross the boundary at $\phi=\pm \pi$.
+
+L-GATr starts with $p$ and applies the transformation visualized in Fig.~\ref{fig:equicfm}: first, we use the mapping $f$ to transform $x$ into the corresponding 4-momentum $p=f(x)$. Second, we apply the L-GATr network to obtain the velocity $v_p = \text{L-GATr}(p) = (v_E, v_{p_x}, v_{p_y}, v_{p_z})$ in Minkowski space. Finally, we transform this velocity $v_p$ back into the parametrization $x$ using the Jacobian of the backwards transformation, yielding the transformed velocity $v_x=(v_{x_p},v_{x_m},v_\eta, v_\phi)$
+%
+\begin{align}
+    v_x (x(t),t) = \frac{\partial f^{-1}(p)}{\partial p} v_p(p(t), t).
+\end{align}
+%
+In practice, we encounter large Jacobian matrix components from the logarithm transformations in the above relation for $v_{x_m}, v_{x_p}$ due to small values of the jet mass $m$ and the relative transverse momentum $p_T-p_{T,\mathrm{min}}$, leading to unstable training. To avoid this obstacle, we add a fourth step to the procedure, where we overwrite the two problematic velocity components with scalar outputs of the L-GATr network. This adds an additional redundant source of symmetry breaking to the reference multivectors discussed above. 
+
+For the E(3)-GATr, we encode $(p_x, p_y, p_z)$ as a vector and $x_m$ as a scalar. We then apply a similar transformation as for L-GATr, but without changing the $x_m$ component.
+
+For the full L-GATr architecture we first study the effect of the choice of data representation, of base distribution, and of trajectories in Tab.~\ref{tab:trajectories}.
+
+In Tab.~\ref{tab:symbreak_comparison_generation}, we compare the impact of various symmetry breaking schemes on event generation. As in Tab.~\ref{tab:symbreak_comparison}, reference multivectors are incorporated as extra channels or tokens. Once again, we observe that including reference multivectors for both beam and time directions is essential; omitting them leads to inferior performance of the L-GATr generator compared to a non-equivariant transformer. However, the specific representation of the beam reference multivector is less critical here than in the top-tagging case, as all tested representations yield consistent results within statistical uncertainty. Including reference multivectors as extra tokens in this case adds significant computational cost due to the comparably low number of particles, so we choose to include them as extra channels in our default setting.
+
+%--------------------------------------------------------
+\begin{table}
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.1}
+    \begin{tabular}{l c ccc}
+        \toprule
+        Beam & Time & Embedding & NLL & AUC \\
+        \midrule
+        -- & -- & Channel & \result{29.36}{1.34} & \result{0.996}{0.001} \\
+        -- & $x^V_0=1$ & Channel & \result{-18.77}{0.78} & \result{0.990}{0.001} \\
+        $x_{12}^B=1$ & -- & Channel &  \result{-32.04}{0.03} & \result{0.711}{0.001} \\
+        $x_{12}^B=1$ & $x^V_0=1$ & Token & \result{-32.60}{0.03} & \result{0.523}{0.014}\\
+        $x_0^V=\sqrt{2}, x_3^V=\pm 1$ & $x^V_0=1$ & Channel & \bestresult{-32.66}{0.02} & \bestresult{0.510}{0.001}\\
+        $x_3^V=\pm 1$ & $x^V_0=1$ & Channel & \result{-32.65}{0.01} & \bestresult{0.510}{0.001}\\
+        $x_0^V=1, x_3^V=\pm 1$ & $x^V_0=1$ & Channel & \result{-32.64}{0.04} & \result{0.513}{0.005}\\
+        $x_{12}^B=1$ & $x^V_0=1$ & Channel & \result{-32.64}{0.02} & \result{0.514}{0.006} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Symmetry breaking for event generation. We compare the L-GATr performance on the $t\bar t +0j$ dataset using different Lorentz symmetry breaking schemes. The last line is our default used in all other generation experiments. Error bars are based on the mean and standard deviation of three random seeds and include effects from network weight initialization, classifier trainings and likelihood evaluation based on an differential equation solver.}
+    \label{tab:symbreak_comparison_generation}
+    \vskip-8pt
+\end{table}
+%--------------------------------------------------------
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Performance}
+
+%--------------------------------------------------------
+\begin{figure}[b!]
+    \includegraphics[width=0.33\textwidth,page=31]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=12]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=7]{figs/distributions.pdf} \\
+    \includegraphics[width=0.33\textwidth,page=37]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=21]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=8]{figs/distributions.pdf} \\
+    \includegraphics[width=0.33\textwidth,page=43]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=19]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=9]{figs/distributions.pdf} \\
+    \includegraphics[width=0.33\textwidth,page=29]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=24]{figs/distributions.pdf}
+    \includegraphics[width=0.33\textwidth,page=10]{figs/distributions.pdf}
+    \caption{Overview of marginal distributions for $t \bar{t} + 1,2,3,4$~jets (top to bottom). We do not show E(3)-GATr results, as they are very similar to the standard transformer. The three panels in the bottom row are also included in Ref.~\cite{Spinner:2024hjm}.}
+    \label{fig:distributions}
+\end{figure}%
+%--------------------------------------------------------
+
+%--------------------------------------------------------
+\begin{figure}[t!]
+    \includegraphics[width=0.49\linewidth]{figs/data_efficiency_NLL.pdf}
+    \includegraphics[width=0.49\linewidth]{figs/data_efficiency_AUC.pdf} \\
+    \includegraphics[width=0.49\linewidth]{figs/multiplicity_NLL.pdf}
+    \includegraphics[width=0.49\linewidth]{figs/multiplicity_AUC.pdf}
+    \caption{Performance of generative networks in terms of a negative log-likelihood over the events (left) and a trained classifier AUC (right). In the top row we show the scaling with the size of the training dataset for the mixed $t\bar{t}+n$~jet dataset, in the bottom row the scaling with the number of particles in the final state. The MLP, Transformer and L-GATr metrics were already discussed in Ref.~\cite{Spinner:2024hjm}. Error bands are based on the mean and standard deviation of five random seeds and include effects from network weight initialization, classifier trainings and likelihood evaluation based on an differential equation solver.}
+    \label{fig:cfm_scaling}
+\end{figure}
+%--------------------------------------------------------
+
+We present a limited set of 1-dimensional distributions from the different generators in Fig.~\ref{fig:distributions}. Observables like $p_{T,b}$, which are part of the phase space parametrization Eq.~\eqref{eq:momentum_rep}, are easily learned by all networks because of our choice of target trajectories in Eq.~\eqref{eq:cfm_target}. All other observables appear as correlations and are harder to learn. L-GATr outperforms the baselines across all distributions. Angular correlations especially benefit from the equivariance encoded in the L-GATr architecture, enabling percent-level precision in these variables for the first time. The main weakness of all architectures are the intermediate top mass poles, requiring the correlation of three external 4-vectors.
+
+To analyze scaling properties, we use the negative log-likelihood evaluated on the events and the AUC of a neural classifier. In Fig.~\ref{fig:cfm_scaling} we find a clear performance improvement as symmetry awareness increases, from the unstructured MLP over the permutation-equivariant transformer to the rotation-equivariant GATr and the Lorentz-equivariant L-GATr. In particular, the superior L-GATr performance mainly originates from boost-equivariance, \textcolor{red}{with the rotation-equivariant E(3)-GATr providing a substantial improvement over the plain transformer in angular correlations [contradicts: E(3)-GATr performs only marginally better]}. This might come as a surprise, as we allow L-GATr to break this boost equivariance using reference multivectors. This implies that enforcing equivariance in the architecture and then allowing the network to break it with reference multivectors outperforms standard non-equivariant networks.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Outlook}
+\label{sec:outlook}
+
+Modern ML at the LHC has evolved from mostly concept development to the first applications in experiment and theory. For these applications, performance is the main goal, leading us to the question of how we can train the most precise neural networks on a large, but nevertheless limited training dataset. In LHC physics, we are in the lucky situation that we can use the known structure of the phase space. It rests on a complex system of symmetries, the leading one being the Lorentz symmetry.
+
+To help our network training, we can encode the Lorentz symmetry or Minkowski metric into the network architecture to avoid learning it. An appropriate internal or latent representation of the Lorentz group then enhances the performance of, essentially, every ML-application working on relativistic phase space objects. Crucially, in cases where symmetries are not exact, we can allow an equivariant network to break them using symmetry-breaking reference frames, leading to significantly better performance than removing the corresponding equivariance from the network altogether.
+
+L-GATr is a versatile  equivariant transformer that constructs such a Lorentz representation for regression, classification, and generation networks.
+For amplitude regression, a key step in speeding up loop amplitudes in event generators, L-GATr shows the best performance for more than three particles in the final state, thanks to its superior data efficiency, leading to an improved scaling with the phase space dimensionality.
+For subjet tagging, L-GATr combines the benefit of equivariance with pre-training on large datasets and is at least on par with the best available subjet tagger.
+Finally, the combination of L-GATr with a CFM generator faithfully reproduces the phase space distribution of top pair production with up to four jets better than all other CFM setups.
+%
+We look forward to further applications of L-GATr at the LHC, as well as generalizations to incorporate additional domain knowledge from collider physics.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Code availability}
+
+L-GATr is available at \url{https://github.com/heidelberg-hepml/lgatr} as part of the public Heidelberg hep-ml code and tutorial library. The results in this publication can be reproduced with \url{https://github.com/heidelberg-hepml/lorentz-gatr}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Acknowledgements}
+
+This paper benefited from great discussions with Taco Cohen at the \textsl{2023 Hammers \& Nails} conference.
+We would like to thank Anja Butter, David Ruhe, and Nathan H\"utsch for many useful discussions.
+This work was supported by the by the DFG under grant 396021762 -- TRR~257: \textsl{Particle Physics Phenomenology after the   Higgs Discovery}, and through Germany's Excellence Strategy EXC~2181/1 -- 390900948 (the \textsl{Heidelberg STRUCTURES Excellence Cluster}). The authors acknowledge support by the state of Baden-Württemberg through bwHPC
+and the German Research Foundation (DFG) through grant INST 35/1597-1 FUGG.
+J.S.\ is funded by the Carl-Zeiss-Stiftung through the project \textsl{Model-Based AI: Physical Models and Deep Learning for Imaging and Cancer Treatment}.
+V.B.\ is supported by the BMBF Junior Group \textsl{Generative Precision Networks for Particle Physics} (DLR 01IS22079). V.B.\ acknowledges financial support from the Grant No. ASFAE/2022/009 (Generalitat Valenciana and MCIN, NextGenerationEU PRTR-C17.I01).
+J.T.\ is supported by the National Science Foundation under Cooperative Agreement PHY-2019786 (The NSF AI Institute for Artificial Intelligence and Fundamental Interactions, \url{http://iaifi.org/}), by the U.S. Department of Energy Office of High Energy Physics under grant number DE-SC0012567, and by the Simons Foundation through Investigator grant 929241.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\bibliographystyle{SciPost-bibstyle}
+\bibliography{tilman,literature}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+\section{Network and Training Details}
+\label{app:hyperparams}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Amplitude regression}
+
+Concerning the DSI baseline, it is an architecture based on the Deep Sets framework~\cite{zaheer2017deep} that incorporates momentum invariants as part of the input. It works in three stages. First, it applies a different learnable preprocessing block to each particle type in the events, generating a set of latent space representations for each of the particle inputs. Those latent space points are then combined way by summing over all identical particle types, effectively imposing permutation invariance. Finally, the resulting aggregation together with a collection of all momentum invariants of the process is fed to another block that performs the actual regression task. This setup achieves a combination of Lorentz and permutation invariants in an imperfect way.
+
+We list the hyperparameters of all studied baselines in Table~\ref{tab:amp_build}. Their values are chosen following a scan with the goal of maximizing the performance of each architecture. As for the preprocessing, in the case of GAP and L-GATr we standardize the 4-momentum inputs using a common normalization for each component to preserve Lorentz equivariance. For the rest of the baselines we perform ordinary standarization.
+
+%--------------------------------------------------------
+\begin{table}[b!]
+\fontsize{7}{7}\selectfont
+    \centering
+    \begin{tabular}{l cccccc}
+        \toprule
+        Hyperparameter & MLP & DSI & Transformer & GAP & CGENN & L-GATr \\[1mm]
+        \midrule
+        Architecture & \makecell{128 channels \\ 5 layers} & \makecell{128 channels \\ 4 layers} & \makecell{128 channels \\ 8 heads \\ 8 blocks} & \makecell{96 scalar ch. \\ 96 multivector ch. \\ 8 blocks} & \makecell{72 scalar ch. \\ 8 multivector ch. \\ 4 blocks} & \makecell{32 scalar ch. \\ 32 multivector ch. \\ 8 heads \\ 8 blocks} \\
+        Activation & GELU & GELU & GELU & Gated GELU & Gated SiLU~\cite{ruhe2023clifford} & Gated GELU \\
+        Parameters & $7 \times 10^4$ & $2.6 \times 10^5$ & $1.3 \times 10^6$ & $2.5 \times 10^6$ & $3.2 \times 10^5$ & $1.8 \times 10^6$ \\
+        \midrule        
+        Optimizer & Adam~\cite{adam} & Adam~\cite{adam} & Adam~\cite{adam} & Adam~\cite{adam} & Adam~\cite{adam} & Adam~\cite{adam} \\
+        Learning rate & $10^{-4}$ & $10^{-4}$ & $10^{-4}$ & $10^{-4}$ & $10^{-4}$ & $10^{-4}$ \\
+        Batch size & 256 & 256 & 256 & 256 & 256 & 256  \\
+        Scheduler & - & - & - & - & - & -  \\
+        Patience & 100 & 100 & 100 & 100 & 100 & 100
+        \\        
+        Iterations & $2.5 \times 10^6$ & $2.5 \times 10^6$ & $10^6$ & $2.5 \times 10^5$ & $2.5 \times 10^5$ & $2.5 \times 10^5$
+        \\
+        \bottomrule
+    \end{tabular} 
+    \caption{Hyperparameter summary for all baselines studied for the amplitude task. In the case of DSI, the number of layers and channels refers to both network blocks, and the latent space of each particle has a dimensionality of 64. In the case of CGENN, the hidden node features are identified with the scalar channels, whereas the hidden edge features are identified with the multivector channels. } 
+    \label{tab:amp_build}
+\end{table}
+%--------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Jet Tagging}
+
+%--------------------------------------------------------
+\begin{table}[t]
+    \centering
+    \begin{tabular}{l c }
+        \toprule
+        Hyperparameter & Value\\[1mm]
+        \midrule
+        Scalar channels & 32 \\
+        Multivector channels & 16 \\
+        Attention heads & 8 \\
+        Blocks & 12 \\        
+        Parameters & $1.1 \times 10^6$\\
+        \midrule
+        Optimizer & Lion~\cite{chen2023symbolic} \\
+        Learning rate & $3 \times 10^{-4}$ \\
+        Batch size & 128 \\
+        Scheduler & CosineAnnealingLR~\cite{DBLP:journals/corr/LoshchilovH16a} \\
+        Weight decay & 0.2 \\      
+        Iterations & $2 \times 10^5$\\
+        \bottomrule
+    \end{tabular}
+    \caption{Hyperparameter summary for the L-GATr network used for top tagging.} 
+    \label{tab:top_build}
+\end{table}
+%--------------------------------------------------------
+
+We provide the L-GATr hyperparamters for top tagging without pre-training in Table~\ref{tab:top_build}. We use the Lion optimizer~\cite{chen2023symbolic} as an upgrade to the Adam optimizer in our effort to maximize performance as much as possible. All inputs are preprocessed with a 20 GeV scale factor. L-GATr is trained by minimizing a binary cross entropy loss on the class labels.
+
+Pre-training and full training on JetClass is performed by training L-GATr on the full 100M events over $10^6$ iterations. The L-GATr architecture and training hyperparameters is the same that we used for the ordinary top tagging. The only differences are that we now work with 10 output channels and train on a cross entropy loss to accommodate multiclass training. We also use a batch size of 512 to maximize dataset exposure. As for the inputs, the 4-momenta are again scaled by the 20 GeV scale, and the kinematic functions are standardized following the prescription presented in Ref.~\cite{Qu:2022mxj}.
+
+Fine-tuning is implemented by resetting the output layer of the pre-trained network and restricting it to one output channel. With this build, the pre-trained weights are trained with a learning rate of $3 \times 10^{-5}$ and the new weights are trained with a learning rate of $3 \times 10^{-3}$. We also apply a weight decay of 0.01 and a batch size of 128. The training is performed across $10^5$ iterations.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection*{Event Generation}
+
+We summarize the architecture and training hyperparameters of all four generator baselines in Table~\ref{tab:gen_build}. We split each dataset into 98\% for training and 1\% each for validation and testing. We use small validation and test datasets in order to speed up the computation of the likelihood performance metrics.
+
+In the classifier test, we train an MLP classifier using binary cross-entropy to distinguish generated events from true events. The classifier inputs include the complete events in the $x$ representation defined in Eq.~\eqref{eq:momentum_rep}, augmented by all pairwise $\Delta R$ features, as well as the $x$ representations of the reconstructed particles $t, \bar t, W^+, W^-$. The classifier network consists of 3 layers with 256 channels each. Training is conducted over 500 epochs with a batch size of 1024, a dropout rate of 0.1, and the Adam optimizer with default parameters. We start with an initial learning rate of $3\times 10^{-4}$, reducing it by a factor of 10 if validation loss shows no improvement for 5 consecutive epochs. The dataset comprises the full truth data and 1M generated events, with an 80\%/10\%/10\% split for training, testing, and validation, respectively.
+
+%--------------------------------------------------------
+\begin{table}[b!]
+    \centering
+    \begin{tabular}{l ccc}
+        \toprule
+        Hyperparameter & MLP & Transformer & L-GATr and E(3)-GATr \\[1mm]
+        \midrule
+        Architecture & \makecell{336 channels\\ 6 layers} & \makecell{108 channels \\ 6 layers \\ 8 heads} & \makecell{32 scalar ch.\\16 multivector ch.\\8 heads\\6 blocks} \\
+        Activation & GELU & GELU & Gated GELU \\
+        Parameters & $5.9\times 10^5$ & $5.7\times 10^5$ & $5.4\times 10^5$ \\
+        \midrule        
+        Optimizer & Adam~\cite{adam} & Adam~\cite{adam} & Adam~\cite{adam} \\
+        Learning rate & $10^{-3}$ & $10^{-3}$ & $10^{-3}$ \\
+        Batch size & 2048 & 2048 & 2048 \\
+        Iterations & $2 \times 10^5$ & $2 \times 10^5$& $2 \times 10^5$
+        \\
+        \bottomrule
+    \end{tabular} 
+    \caption{Hyperparameter summary for all baselines studied for the generation task. For all networks, we evaluate the validation loss every $10^3$ iterations and decrease the learning rate by a factor of 10 after no improvements for 20 validation steps.} 
+    \label{tab:gen_build}
+\end{table}
+%--------------------------------------------------------
+
+\end{document}
