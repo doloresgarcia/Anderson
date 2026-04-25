@@ -7,7 +7,7 @@ EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
 ```
 
 1. **EXECUTE.** Spawn each phase's subagents. Pass them: their role file
-   (`agents/<role>.md`), the relevant methodology sections, the relevant convention
+   (`.claude/agents/<role>.md`), the relevant methodology sections, the relevant convention
    files, and the upstream artifact paths. Do **not** rewrite role prompts ad hoc.
 2. **REVIEW.** Spawn the reviewers prescribed for this phase. Each reviewer reads
    the phase artifacts and emits a review file under `phase<N>/review/`.
@@ -22,7 +22,7 @@ EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
 
 Every subagent invocation must receive:
 
-- **Role file** — `agents/<role>.md` defines its prompt template. The orchestrator
+- **Role file** — `.claude/agents/<role>.md` defines its prompt template. The orchestrator
   fills slots; it does not author the prompt.
 - **Inputs list** — explicit file paths the agent is allowed to read.
 - **Output spec** — exact file path(s) and format the agent must write.

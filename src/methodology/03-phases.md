@@ -105,8 +105,10 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 - `highlighter` — reads `graph.v2.json` and `VERIFICATION.md`; produces
   `paper.highlighted.pdf` and `paper.highlighted.html` with flagged sentences
   color-coded by error category per `conventions/error_categories.md`.
-- `graph_builder` — final pass; emits `graph.final.json` plus `graph.final.svg` for
-  human reading.
+- `graph_builder` — final pass; emits `graph.final.json`. The HTML
+  visualization (`graph.final.html`) is rendered separately by
+  `python3 src/render_graph.py`, invoked by `make graph` or the
+  phase-3 dispatcher.
 - `report_writer` (specialization of `executor`) — writes `REPORT.md` summarizing
   what was checked, what failed, and why.
 

@@ -160,6 +160,10 @@ What to watch:
 
 `reviews/__*__/` is gitignored, so smoke-test reviews don't dirty the working tree.
 
+## Permission policy
+
+`.claude/settings.json` ships with a deliberately broad allowlist so an interactive one-operator session doesn't drown in permission prompts. Specifically `Bash(python3 -c:*)`, `Bash(make:*)`, and `Edit(.claude/**)` are wide enough that a misbehaving subagent could read or modify anything reachable from the repo root, regardless of the file-level `deny` block. **This is acceptable for interactive use where you watch dispatches; it is not safe for unattended runs.** Before running this on shared infrastructure or in CI, tighten the allowlist (run `/fewer-permission-prompts` against a real session transcript and trim from there) and audit the deny list for the specific paths you want to lock down.
+
 ## Re-rendering individual deliverables
 
 You can re-run any phase-3 script standalone — useful while iterating:

@@ -306,19 +306,15 @@ visible. Click again to collapse.
 **On click (claim).** Open a margin panel with the full claim record and a
 link to the corresponding `VERIFICATION.md` anchor.
 
-**Static export.** `graph.final.svg` is also produced — a one-shot snapshot
-of the default state (groups visible, no expansion). Used for inclusion in
-PDFs and slide decks.
-
 ## Versioning
 
 | file | phase | what's new |
 |---|---|---|
+| `graph.v1.skeleton.json` | 1 | claims-only skeleton, no literature edges yet. |
 | `graph.v1.json` | 1 | groups, claims, structural edges. All claim verdicts = `NOT_CHECKED`. |
 | `graph.v2.json` | 2 | claim verdicts + verdict_confidence + evidence populated; group verdicts re-aggregated. |
 | `graph.final.json` | 3 | same data as v2, frozen for the report. |
-| `graph.final.html` | 3 | interactive viz. |
-| `graph.final.svg` | 3 | static snapshot. |
+| `graph.final.html` | 3 | interactive viz, rendered by `src/render_graph.py`. |
 
 Each version is a new file. **Never overwrite a previous version.**
 
