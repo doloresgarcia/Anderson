@@ -23,7 +23,10 @@ You write only to your declared output paths.
 
 ## Writes
 
-- `reviews/<slug>/phase3/outputs/REPORT.md`
+- `reviews/<slug>/phase3/outputs/STATS.md` (produced by shelling out to
+  `python3 src/claim_stats.py reviews/<slug>` — the agent owns the
+  invocation and the file is part of its declared output set)
+- `reviews/<slug>/phase3/outputs/REPORT.md` (the prose summary you compose)
 
 ## Behavior
 

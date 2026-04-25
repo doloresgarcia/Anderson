@@ -64,25 +64,37 @@ For each checker `<role>` ∈ {`checker_unreferenced`, `checker_ambiguous`,
 
 Wait for all five to complete.
 
-### 1c. graph_builder (sequential merge)
+### 1c. Orchestrator-authored VERIFICATION.md (deterministic concat)
 
-Dispatch `.claude/agents/graph_builder.md` with the merge job. This pass also
-concatenates the five checker sections into `VERIFICATION.md` in the canonical
-severity order: `unreferenced`, `ambiguous`, `internal_contradiction`,
-`literature_collision`, `domain_violation`.
+You (the orchestrator, **not** a subagent) write
+`reviews/$0/phase2/outputs/VERIFICATION.md` by concatenating the five
+checker sections in canonical severity order. This is a deterministic
+merge — no LLM judgment needed, and no subagent owns this artifact:
+
+```bash
+cat reviews/$0/phase2/agents/checker_unreferenced/section.md \
+    reviews/$0/phase2/agents/checker_ambiguous/section.md \
+    reviews/$0/phase2/agents/checker_contradiction/section.md \
+    reviews/$0/phase2/agents/checker_literature/section.md \
+    reviews/$0/phase2/agents/checker_domain/section.md \
+    > reviews/$0/phase2/outputs/VERIFICATION.md
+```
+
+If any section file is missing (a checker failed to write), stop and
+re-dispatch that checker before continuing — VERIFICATION.md must
+contain all five sections.
+
+### 1d. graph_builder (sequential, after VERIFICATION.md exists)
+
+Dispatch `.claude/agents/graph_builder.md` to merge the verdicts into
+`graph.v2.json`:
 
 - inputs:
   - `reviews/$0/phase1/outputs/graph.v1.json`
-  - `reviews/$0/phase2/agents/checker_unreferenced/section.md`
-  - `reviews/$0/phase2/agents/checker_ambiguous/section.md`
-  - `reviews/$0/phase2/agents/checker_contradiction/section.md`
-  - `reviews/$0/phase2/agents/checker_literature/section.md`
-  - `reviews/$0/phase2/agents/checker_domain/section.md`
+  - `reviews/$0/phase2/outputs/VERIFICATION.md` (already concatenated above)
   - `src/conventions/graph_schema.json`
   - `src/conventions/error_categories.md`
-- outputs:
-  - `reviews/$0/phase2/outputs/VERIFICATION.md` (concat in the order above)
-  - `reviews/$0/phase2/outputs/graph.v2.json`
+- output: `reviews/$0/phase2/outputs/graph.v2.json`
 - working dir: `reviews/$0/phase2/agents/graph_builder/`
 
 ## 2. REVIEW (three-bot)

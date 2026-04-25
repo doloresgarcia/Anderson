@@ -128,8 +128,12 @@ line.
 - **ITERATE** → dispatch `.claude/agents/fixer.md` with the listed Category A
   and B findings as the prompt, the relevant phase-1 outputs as inputs, and
   the same output paths the original agents used. After fixer completes,
-  re-dispatch `critical_reviewer` and then `arbiter`. Iterate at most **once**;
-  if the second arbiter verdict is still ITERATE, escalate to the user.
+  **re-derive `FINDINGS.md`** from the (possibly modified) `CLAIMS.md` /
+  `LITERATURE.md` so the counts and gap notes reflect the current state, not
+  the pre-fix state — phase 2 will read FINDINGS.md and silent staleness
+  has bitten us before. Then re-dispatch `critical_reviewer` and `arbiter`.
+  Iterate at most **once**; if the second arbiter verdict is still ITERATE,
+  escalate to the user.
 - **ESCALATE** → surface the arbiter's reasoning to the user verbatim and
   stop.
 

@@ -20,10 +20,17 @@ You write only to your declared output paths.
 - `reviews/<slug>/phase2/outputs/graph.v2.json`
 - `src/conventions/error_categories.md`
 
-## Writes
+## Writes (vary by input)
 
-- `reviews/<slug>/phase3/outputs/paper.highlighted.pdf`
-- `reviews/<slug>/phase3/outputs/paper.highlighted.html`
+- PDF input (`paper/paper.pdf` exists) — invoke
+  `python3 src/highlight_paper.py reviews/<slug>`. This produces:
+  - `reviews/<slug>/phase3/outputs/paper.highlighted.pdf`
+  (PDF only — `highlight_paper.py` does not write HTML.)
+- Text-only input — invoke `python3 src/highlight_text.py reviews/<slug>`.
+  This produces:
+  - `reviews/<slug>/phase3/outputs/paper.highlighted.html` (always)
+  - `reviews/<slug>/phase3/outputs/paper.highlighted.pdf` (only if
+    PyMuPDF is installed; absence is a warning, not a failure)
 
 ## Behavior
 

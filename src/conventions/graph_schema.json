@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://anderson.local/schemas/graph.schema.json",
-  "$comment": "DRIFT NOTE — This JSON Schema is the executable validation contract for graph.v*.json. The prose source of truth lives at src/conventions/graph_schema.md, but the prose currently lags the new five-checker model in src/conventions/error_categories.md. Specifically: graph_schema.md still references the older verdict vocabulary PASS / FAIL / INCONCLUSIVE / NOT_CHECKED and a `verdict_reason` string; the new model (and demo/graph.v2.json) uses CLEAR / FLAGGED / INCONCLUSIVE plus a `flagged_categories` array per error_categories.md. This schema accepts the UNION of both vocabularies so artifacts written under either convention validate. Next maintainer: reconcile graph_schema.md with error_categories.md, then tighten this enum.",
+  "$comment": "Executable validation contract for graph.v*.json. Verdict enum strictly = [CLEAR, FLAGGED, INCONCLUSIVE, NOT_CHECKED] per the five-checker model in src/conventions/error_categories.md. Prose source: src/conventions/graph_schema.md (kept in sync as of 2026-04-25).",
   "title": "Anderson claim graph",
   "type": "object",
   "required": ["groups", "claims", "edges"],
@@ -49,7 +49,7 @@
   "$defs": {
     "verdict": {
       "type": "string",
-      "enum": ["CLEAR", "FLAGGED", "INCONCLUSIVE", "NOT_CHECKED", "PASS", "FAIL"]
+      "enum": ["CLEAR", "FLAGGED", "INCONCLUSIVE", "NOT_CHECKED"]
     },
     "confidence": {
       "type": "string",

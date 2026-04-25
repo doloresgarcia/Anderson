@@ -86,20 +86,36 @@ usage:
 # One-shot pre-PR sanity check. Does not exercise the LLM pipeline —
 # that requires a real `claude` session at the repo root (see README §
 # "Verifying the rework end-to-end").
+#
+# Forces a fresh demo build (not a no-op against stale outputs), asserts
+# both jsonschema and PyMuPDF (fitz) are importable so that
+# highlight_text.py's PDF synthesis is exercised, and confirms each of
+# the 4 phase-3 artifacts ends up newly written.
 ci:
-	@echo "[1/5] make demo (deterministic Python pipeline)..."
-	@$(MAKE) -s demo > /dev/null
+	@echo "[1/7] deps: jsonschema + bibtexparser + PyMuPDF importable..."
+	@python3 -c "import jsonschema, bibtexparser, fitz" \
+		|| { echo "      MISSING — run: pip install -r requirements.txt" >&2; exit 1; }
 	@echo "      OK"
-	@echo "[2/5] graph_schema.json validates demo/graph.v2.json..."
+	@echo "[2/7] make demo-clean (force fresh build; no stale-output reuse)..."
+	@$(MAKE) -s demo-clean > /dev/null
+	@echo "      OK"
+	@echo "[3/7] make demo (deterministic Python pipeline)..."
+	@$(MAKE) -s demo > /dev/null
+	@for f in paper.highlighted.pdf graph.final.html STATS.md paper.highlighted.html; do \
+		test -f $(DEMO_REVIEW)/phase3/outputs/$$f \
+			|| { echo "      MISSING $$f — demo did not produce it" >&2; exit 1; }; \
+	done
+	@echo "      OK (4/4 phase-3 outputs present)"
+	@echo "[4/7] graph_schema.json validates demo/graph.v2.json..."
 	@python3 -c "import json,jsonschema; jsonschema.validate(json.load(open('demo/graph.v2.json')), json.load(open('src/conventions/graph_schema.json')))" \
 		&& echo "      OK"
-	@echo "[3/5] hooks: validate_graph on the demo graph..."
+	@echo "[5/7] hooks: validate_graph on the demo graph (should pass)..."
 	@echo '{"tool_name":"Write","tool_input":{"file_path":"reviews/__demo__/phase3/outputs/graph.final.json"}}' \
 		| .claude/hooks/validate_graph.py && echo "      OK (exit 0)"
-	@echo "[4/5] hooks: validate_bib on a non-review path (should noop)..."
+	@echo "[6/7] hooks: validate_bib on a non-review path (should noop)..."
 	@echo '{"tool_name":"Write","tool_input":{"file_path":"src/something.py"}}' \
 		| .claude/hooks/validate_bib.py && echo "      OK (exit 0)"
-	@echo "[5/5] hooks: usage_log defensive (always exit 0)..."
+	@echo "[7/7] hooks: usage_log defensive (always exit 0)..."
 	@echo '{"agent_type":"test","cwd":"/tmp"}' \
 		| .claude/hooks/usage_log.py && echo "      OK (exit 0)"
 	@echo ""

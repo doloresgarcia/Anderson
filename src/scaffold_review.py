@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -47,6 +48,8 @@ REVIEWS = REPO_ROOT / "reviews"
 
 PHASES = ("phase1", "phase2", "phase3")
 PHASE_SUBDIRS = ("outputs", "agents", "review", "logs")
+
+SLUG_RE = re.compile(r"^(?:__)?[A-Za-z0-9][A-Za-z0-9_-]*(?:__)?$")
 
 
 def extract_pdf_text(pdf_path: Path, out_path: Path) -> str:
@@ -136,7 +139,24 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="overwrite existing reviews/<slug>/")
     args = parser.parse_args()
 
-    review_dir = REVIEWS / args.slug
+    if not SLUG_RE.match(args.slug):
+        print(
+            f"error: invalid --slug {args.slug!r}; must match {SLUG_RE.pattern} "
+            "(letters/digits/_/-, optional surrounding __ for scratch slugs; "
+            "no path separators or '..')",
+            file=sys.stderr,
+        )
+        return 2
+
+    review_dir = (REVIEWS / args.slug).resolve()
+    if review_dir.parent != REVIEWS.resolve():
+        print(
+            f"error: --slug {args.slug!r} resolves outside reviews/ "
+            f"({review_dir}); refusing",
+            file=sys.stderr,
+        )
+        return 2
+
     if review_dir.exists():
         if not args.force:
             print(f"error: {review_dir} exists; pass --force to overwrite", file=sys.stderr)

@@ -17,15 +17,20 @@ You write only to your declared output paths.
 Phase 1:
 - `reviews/<slug>/phase1/outputs/CLAIMS.md`
 - `reviews/<slug>/phase1/outputs/LITERATURE.md`
-- `src/conventions/graph_schema.md`
+- `src/conventions/graph_schema.json` (executable schema)
+- `src/conventions/graph_schema.md` (prose source, for context only)
 
 Phase 2:
 - `reviews/<slug>/phase1/outputs/graph.v1.json`
-- `reviews/<slug>/phase2/outputs/VERIFICATION.md`
+- `reviews/<slug>/phase2/outputs/VERIFICATION.md` (already concatenated by
+  the orchestrator from the five checker section files)
 
 Phase 3:
 - `reviews/<slug>/phase2/outputs/graph.v2.json`
-- `reviews/<slug>/phase3/outputs/REPORT.md` (for any final-pass annotations)
+
+  (You do **not** read `REPORT.md`. report_writer dispatches in parallel
+  with you — there is no read dependency from graph_builder to
+  report_writer; treating one as an input would race.)
 
 ## Writes (varies by phase / pass)
 
@@ -34,9 +39,10 @@ Phase 3:
 - Phase 1 final pass → `reviews/<slug>/phase1/outputs/graph.v1.json`
   (skeleton + literature merged in)
 - Phase 2 → `reviews/<slug>/phase2/outputs/graph.v2.json`
-- Phase 3 → `reviews/<slug>/phase3/outputs/graph.final.json`
-  (data identical to v2, frozen for the report; phase 3's HTML render
-  is produced by `python3 src/render_graph.py`, invoked separately)
+- Phase 3 →
+  - `reviews/<slug>/phase3/outputs/graph.final.json` (copied from v2)
+  - `reviews/<slug>/phase3/outputs/graph.final.html` (rendered by shelling
+    out to `python3 src/render_graph.py reviews/<slug>/phase3/outputs/graph.final.json`)
 
 ## Behavior
 

@@ -211,8 +211,16 @@ def parse_verification_md(path: Path) -> dict[str, dict[str, dict]]:
 # ---------------------------------------------------------------------------
 
 def claim_aggregate_verdict(claim_record: dict) -> str:
-    """Reduce per-category verdicts to a single per-claim verdict:
-    FLAGGED > INCONCLUSIVE > CLEAR > NOT_CHECKED."""
+    """Reduce per-category verdicts to a single per-claim verdict.
+
+    Precedence: FLAGGED > INCONCLUSIVE > CLEAR > NOT_CHECKED.
+
+    A claim is only `CLEAR` if **all five checker categories** examined it
+    and none flagged it. Partial coverage (e.g. only `unreferenced` ran
+    and reported CLEAR while the other four categories never ran) yields
+    `INCONCLUSIVE`, never `CLEAR` — the trust score is meant to require
+    real verification, not "no checker objected because no checker ran."
+    """
     if not claim_record:
         return "NOT_CHECKED"
     verdicts = {c.get("verdict") for c in claim_record.values()}
@@ -221,7 +229,13 @@ def claim_aggregate_verdict(claim_record: dict) -> str:
     if "INCONCLUSIVE" in verdicts:
         return "INCONCLUSIVE"
     if "CLEAR" in verdicts:
-        return "CLEAR"
+        # Only CLEAR if every category was examined and reported CLEAR.
+        # Otherwise demote to INCONCLUSIVE — partial coverage never gets to
+        # claim CLEAR (would inflate the trust score).
+        examined = set(claim_record.keys())
+        if examined >= set(CATEGORIES):
+            return "CLEAR"
+        return "INCONCLUSIVE"
     return "NOT_CHECKED"
 
 

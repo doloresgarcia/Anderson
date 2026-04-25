@@ -37,11 +37,13 @@ Dispatch `.claude/agents/highlighter.md`:
   - `reviews/$0/phase1/outputs/CLAIMS.md`
   - `reviews/$0/paper/paper.pdf` (if present) or `reviews/$0/paper/paper.txt`
   - `src/conventions/error_categories.md`
-- behavior: invoke `python3 src/highlight_paper.py reviews/$0` if a PDF
-  exists, otherwise `python3 src/highlight_text.py reviews/$0`.
+- behavior: if `paper.pdf` is present, invoke
+  `python3 src/highlight_paper.py reviews/$0` (writes PDF only). If no PDF,
+  invoke `python3 src/highlight_text.py reviews/$0` (writes both HTML and,
+  if PyMuPDF is installed, a synthesized PDF).
 - outputs:
-  - `reviews/$0/phase3/outputs/paper.highlighted.pdf` (or `.html` for text-only)
-  - `reviews/$0/phase3/outputs/paper.highlighted.html`
+  - `reviews/$0/phase3/outputs/paper.highlighted.pdf` (always, if highlighter ran without error)
+  - `reviews/$0/phase3/outputs/paper.highlighted.html` (text-input mode only)
 - working dir: `reviews/$0/phase3/agents/highlighter/`
 
 ### 1b. graph_builder (final)

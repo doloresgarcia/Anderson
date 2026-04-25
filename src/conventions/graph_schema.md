@@ -1,11 +1,3 @@
-<!-- DRIFT NOTE: this prose lags `error_categories.md`. The vocabulary
-     described below uses the older PASS/FAIL/INCONCLUSIVE/NOT_CHECKED set
-     and a `verdict_reason` string. The live system (and `demo/graph.v2.json`)
-     uses CLEAR/FLAGGED/INCONCLUSIVE plus a `flagged_categories` array per
-     `error_categories.md`. The executable schema at
-     `src/conventions/graph_schema.json` accepts the union; reconcile the
-     prose here with `error_categories.md` before tightening the schema. -->
-
 # Graph schema
 
 Defines the structure of `graph.v*.json`, the rendering of `graph.final.html`,
@@ -34,7 +26,7 @@ child claims (rule below).
 | `caption` | yes | one-sentence summary of what the group's claims collectively assert |
 | `claim_ids` | yes | list of child claim ids, denormalized for renderer convenience |
 | `dominant_type` | yes | most common claim type within, or `"mixed"` if no type > 60% |
-| `verdict` | derived | aggregated from children — `PASS`, `FAIL`, `INCONCLUSIVE`, `NOT_CHECKED` |
+| `verdict` | derived | aggregated from children — `CLEAR`, `FLAGGED`, `INCONCLUSIVE`, `NOT_CHECKED` |
 | `color` | derived | hex from palette below, derived from verdict |
 | `section` | yes | best-effort paper section, or `"multiple"` |
 | `page_range` | yes | `[first_page, last_page]` of constituent claims |
@@ -115,9 +107,9 @@ One source of truth.
 
 | name | hex | meaning |
 |---|---|---|
-| green | `#2ECC71` | all checked claims `PASS` |
-| yellow | `#F1C40F` | at least one `INCONCLUSIVE`, no `FAIL` |
-| red | `#E74C3C` | at least one `FAIL` |
+| green | `#2ECC71` | all checked claims `CLEAR` |
+| yellow | `#F1C40F` | at least one `INCONCLUSIVE`, no `FLAGGED` |
+| red | `#E74C3C` | at least one `FLAGGED` |
 | gray | `#95A5A6` | none checked / all `skip` |
 
 Properties:
@@ -147,20 +139,20 @@ Map directly from `VERIFICATION.md`:
 
 - claim has a verdict in `VERIFICATION.md` → `claim.verdict` = that verdict
 - claim has no row → `claim.verdict` = `NOT_CHECKED`
-- `claim.color` from the palette: `PASS` → green, `FAIL` → red,
+- `claim.color` from the palette: `CLEAR` → green, `FLAGGED` → red,
   `INCONCLUSIVE` → yellow, `NOT_CHECKED` → gray.
 
 ### Per group
 
 ```
-if any child verdict is FAIL:                       group = FAIL,         red
+if any child verdict is FLAGGED:                       group = FLAGGED,         red
 elif any child verdict is INCONCLUSIVE:             group = INCONCLUSIVE, yellow
-elif every child verdict is PASS:                   group = PASS,         green
-else (mix of PASS and NOT_CHECKED, or all NOT_CHECKED):
+elif every child verdict is CLEAR:                   group = CLEAR,         green
+else (mix of CLEAR and NOT_CHECKED, or all NOT_CHECKED):
                                                     group = NOT_CHECKED,  gray
 ```
 
-A single FAIL anywhere is intentionally enough to color a whole group red —
+A single FLAGGED anywhere is intentionally enough to color a whole group red —
 the goal is to draw the reader's eye to the failure, not to average it out.
 
 ## Clustering algorithm
@@ -237,7 +229,7 @@ but logged. Steps 1–4 and 6 are mechanical.
       "sentence": "We replace standard attention with a sparse variant.",
       "hedged": false,
       "confidence": "high",
-      "verdict": "PASS",
+      "verdict": "CLEAR",
       "verdict_confidence": "high",
       "color": "#2ECC71",
       "page": 4,
@@ -290,7 +282,7 @@ falling back to `breadthfirst` if the graph is small (< 8 groups).
 
 - caption (1 sentence)
 - claim count
-- verdict breakdown: `2 PASS, 1 INCONCLUSIVE, 0 FAIL, 0 NOT_CHECKED`
+- verdict breakdown: `2 CLEAR, 1 INCONCLUSIVE, 0 FLAGGED, 0 NOT_CHECKED`
 
 **On click (group).** Expand to show child claims as small nodes inside the
 group. Edges between claims (rather than aggregated group edges) become
