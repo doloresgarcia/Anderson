@@ -37,7 +37,7 @@ anderson/
 ├── CLAUDE.md                  # root orchestrator — read by the main `claude` session at repo root
 ├── Makefile                   # convenience targets — `make demo`, `make graph`, `make stats`, …
 ├── README.md
-├── requirements.txt           # PyMuPDF
+├── requirements.txt           # PyMuPDF + jsonschema (graph hook) + bibtexparser (bib hook)
 ├── demo/                      # planted-issue demo paper + pre-baked phase-1/2 artifacts
 ├── literature_bank/           # pre-collected reference PDFs (read by literature_searcher via repo path)
 ├── reviews/                   # one subdirectory per paper under review (no symlinks; absolute paths)

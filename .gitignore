@@ -12,3 +12,15 @@ reviews/*/scratch/
 
 # `make demo` regenerates this; don't commit the rendered tree.
 reviews/__demo__/
+
+# Audit / scratch scaffolds — same pattern as __demo__, deliberately ignored.
+reviews/__*__/
+
+# Hook-managed catch-all — usage_log.py appends here when it can't infer
+# slug+phase. Per-review usage.jsonl files under reviews/<slug>/... are
+# tracked deliberately (committed alongside their phase artifacts).
+.claude/agent-memory/_global/
+
+# Per-user / secret overrides for the harness (MCP credentials, profile
+# pins). Never commit.
+.claude/settings.local.json

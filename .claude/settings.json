@@ -12,7 +12,6 @@
       "Bash(python3 -c:*)",
       "Bash(python3 -m:*)",
       "Bash(make:*)",
-      "Bash(make *)",
       "Bash(git status:*)",
       "Bash(git status --porcelain:*)",
       "Bash(git diff:*)",

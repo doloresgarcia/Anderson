@@ -1,3 +1,11 @@
+<!-- DRIFT NOTE: this prose lags `error_categories.md`. The vocabulary
+     described below uses the older PASS/FAIL/INCONCLUSIVE/NOT_CHECKED set
+     and a `verdict_reason` string. The live system (and `demo/graph.v2.json`)
+     uses CLEAR/FLAGGED/INCONCLUSIVE plus a `flagged_categories` array per
+     `error_categories.md`. The executable schema at
+     `src/conventions/graph_schema.json` accepts the union; reconcile the
+     prose here with `error_categories.md` before tightening the schema. -->
+
 # Graph schema
 
 Defines the structure of `graph.v*.json`, the rendering of `graph.final.html`,
