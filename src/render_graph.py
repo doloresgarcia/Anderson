@@ -215,10 +215,26 @@ HTML_TEMPLATE = r"""<!doctype html>
     background: none; border-top: 2px dashed var(--edge); height: 0;
   }
   #legend .line.contradicts { background: #E74C3C; height: 3px; }
+
+  #status {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: var(--bg-panel); color: var(--text);
+    padding: 24px 32px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; max-width: 600px; line-height: 1.5;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 100;
+  }
+  #status.error { border-color: #E74C3C; }
+  #status code {
+    font-family: ui-monospace, "SFMono-Regular", monospace;
+    font-size: 12px; background: rgba(255,255,255,0.04);
+    padding: 2px 6px; border-radius: 3px; color: #FFBF00;
+  }
 </style>
 __CYTOSCAPE_SCRIPT__
 </head>
 <body>
+<div id="cy"></div>
+<div id="status">Loading graph…</div>
 <div id="header">
   <div class="brand">ANDERSON · CLAIM GRAPH</div>
   <div class="slug">__SLUG__</div>
@@ -244,8 +260,32 @@ __CYTOSCAPE_SCRIPT__
 </div>
 <script>
 const ELEMENTS = __ELEMENTS__;
+const status = document.getElementById("status");
 
-const cy = cytoscape({
+function showStatus(msg, isError) {
+  status.innerHTML = msg;
+  status.style.display = "block";
+  if (isError) status.className = "error";
+}
+function hideStatus() { status.style.display = "none"; }
+
+if (typeof cytoscape === "undefined") {
+  showStatus(
+    "<b>Cytoscape.js failed to load.</b><br><br>" +
+    "The library is supposed to be inlined in this HTML. If you're " +
+    "seeing this, the file may be truncated, or another script is " +
+    "blocking it. Check the browser console (F12) for the actual error.",
+    true
+  );
+  throw new Error("cytoscape global not defined");
+}
+if (!ELEMENTS || ELEMENTS.length === 0) {
+  showStatus("<b>No graph data.</b><br>The JSON contained no nodes or edges.", true);
+}
+
+let cy;
+try {
+  cy = cytoscape({
   container: document.getElementById("cy"),
   elements: ELEMENTS,
   wheelSensitivity: 0.2,
@@ -346,7 +386,26 @@ const cy = cytoscape({
 // Force a fit pass after layout to make sure everything is visible.
 cy.ready(function() {
   cy.fit(undefined, 60);
+  if (cy.nodes().length === 0) {
+    showStatus(
+      "<b>Layout produced no visible nodes.</b><br>" +
+      ELEMENTS.length + " elements in data but Cytoscape rendered 0 nodes.",
+      true
+    );
+  } else {
+    hideStatus();
+  }
 });
+
+} catch (err) {
+  console.error("Anderson render error", err);
+  showStatus(
+    "<b>Graph render failed.</b><br><br>" +
+    "<code>" + (err && err.message ? err.message : String(err)) + "</code><br><br>" +
+    "Open the browser console (F12) for the full stack trace.",
+    true
+  );
+}
 
 const info = document.getElementById("info");
 const DEFAULT_INFO = '<h2>Hover a node</h2><div class="meta">…for the full claim, verdict, and reasoning. Drag to reposition. Scroll to zoom.</div>';
