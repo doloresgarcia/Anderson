@@ -4,7 +4,7 @@ Anderson is a multi-agent orchestrator that ingests a scientific paper and produ
 
 1. A **claim graph** of the paper, built per the conventions in `src/conventions/`.
 2. A **verification report** identifying which claims could not be verified or are not well supported by the paper itself or the surrounding literature.
-3. The **paper with sentences highlighted** that fail verification.
+3. The **paper with sentences highlighted** that fail verification, plus a **trust score** cover page summarizing the review.
 
 The architecture follows a "thin orchestrator + specialized subagents" pattern adapted from
 [jfc-mit/jfc](https://github.com/jfc-mit/jfc): the orchestrator never extracts claims, runs
@@ -13,11 +13,11 @@ specifications live in `src/agents/`, and tracks artifacts that subagents produc
 
 ## Phases
 
-| Phase | Purpose | Primary artifact |
+| Phase | Purpose | Primary artifacts |
 |-------|---------|------------------|
-| 1. Ingest & Map  | Parse paper, extract claims, run literature search, build initial claim graph | `CLAIMS.md`, `graph.v1.json`, `LITERATURE.md` |
-| 2. Strategy & Verify | Choose which claims to check; verify against the paper itself and external literature; update graph | `STRATEGY.md`, `VERIFICATION.md`, `graph.v2.json` |
-| 3. Report  | Final claim graph + paper with unverified sentences highlighted | `graph.final.json`, `paper.highlighted.pdf`, `REPORT.md` |
+| 1. Ingest & Map  | Parse paper, extract claims, two-pass literature search (local bank → external), build initial claim graph | `CLAIMS.md`, `LITERATURE.md`, `graph.v1.json` |
+| 2. Strategy & Verify | Choose which claims to check; verify against the paper itself and external literature; update graph with verdicts | `STRATEGY.md`, `VERIFICATION.md`, `graph.v2.json` |
+| 3. Report | Trust score, marked-up paper, interactive claim graph, statistics, prose summary | `STATS.md`, `paper.highlighted.pdf`, `graph.final.html`, `REPORT.md` |
 
 Per phase the orchestrator runs the loop **EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE**.
 
@@ -25,84 +25,137 @@ Per phase the orchestrator runs the loop **EXECUTE → REVIEW → CHECK → COMM
 
 ```
 anderson/
-├── src/
-│   ├── methodology/         # phase definitions, orchestration loop, review protocol, artifact specs
-│   ├── agents/              # role specifications the orchestrator dispatches
-│   ├── conventions/         # graph schema, claim taxonomy, verification rules, confidence scale
-│   ├── templates/           # CLAUDE.md templates dropped into per-paper review dirs
-│   ├── scaffold_review.py   # creates a new reviews/<slug>/ tree wired to a paper
-│   ├── render_graph.py      # graph.json → graph.html (Cytoscape.js)
-│   ├── highlight_paper.py   # paper.pdf + VERIFICATION.md → paper.highlighted.pdf
-│   ├── highlight_text.py    # paper.txt + VERIFICATION.md → highlighted PDF + HTML
-│   └── claim_stats.py       # CLAIMS.md + VERIFICATION.md → STATS.md (counts)
-├── requirements.txt
-└── reviews/                 # one subdirectory per paper under review
+├── Makefile                   # convenience targets — `make demo`, `make graph`, `make stats`, …
+├── README.md
+├── requirements.txt           # PyMuPDF
+├── demo/                      # planted-issue demo paper + pre-baked phase-1/2 artifacts
+├── literature_bank/           # pre-collected reference PDFs (auto-symlinked into every review)
+├── reviews/                   # one subdirectory per paper under review
+└── src/
+    ├── methodology/           # phase definitions, orchestration loop, review protocol, artifact specs
+    ├── agents/                # role specifications the orchestrator dispatches
+    ├── conventions/           # graph schema, claim taxonomy, verification rules, confidence scale
+    ├── templates/             # CLAUDE.md templates dropped into per-paper review dirs
+    ├── scaffold_review.py     # creates a new reviews/<slug>/ tree wired to a paper
+    ├── render_graph.py        # graph.*.json → graph.*.html (Cytoscape.js, dark theme)
+    ├── highlight_paper.py     # paper.pdf + VERIFICATION.md → paper.highlighted.pdf
+    ├── highlight_text.py      # paper.txt + VERIFICATION.md → highlighted PDF + HTML
+    └── claim_stats.py         # CLAIMS.md + VERIFICATION.md → STATS.md (counts + trust score)
 ```
 
 ## Setup
 
 ```bash
-make install            # = pip install -r requirements.txt (installs PyMuPDF)
+make install            # = pip install -r requirements.txt (PyMuPDF)
 ```
 
-## Quick demo
+## Quick demo (no Claude Code required)
 
-A planted-issue 1-page paper ships in `demo/`. `make demo` scaffolds a review
-of it and produces the full set of phase-3 deliverables — including the
-trust-score cover page on the highlighted PDF — without needing Claude Code
-orchestration:
+A planted-issue 1-page ML paper ships in `demo/` along with pre-authored
+phase-1 and phase-2 outputs. `make demo` runs only the deterministic
+phase-3 scripts on those bundled artifacts:
 
 ```bash
 make demo
-# then open:
-#   reviews/__demo__/phase3/outputs/paper.highlighted.pdf
-#   reviews/__demo__/phase3/outputs/graph.final.html
-#   reviews/__demo__/phase3/outputs/STATS.md
 ```
 
-The demo paper contains a fabricated citation, a numerical inconsistency
-between abstract and results, and a "we thus prove" overreach in the
-discussion. Anderson catches all three.
+Outputs land in `reviews/__demo__/phase3/outputs/`:
 
-## Starting a review
+| file | what it is |
+|------|------------|
+| `paper.highlighted.pdf` | cover page with the trust score, then the paper with red/yellow highlights and clickable per-claim comments |
+| `graph.final.html` | dark-theme Cytoscape compound graph — open in any browser |
+| `STATS.md` | trust score block, counts by type and verdict, type×verdict matrix, INCONCLUSIVE reasons |
+| `paper.highlighted.html` | text-mode browser companion to the PDF |
+
+The demo paper contains three planted problems — a fabricated `Chen et al. (2024)` citation, an abstract↔results numerical contradiction (87.3% vs 78.4%), and a "we thus prove" overreach in the discussion. Anderson catches all three; the trust score lands at **62/100 (medium)**.
+
+`make demo` only runs the deterministic Python scripts; the LLM-driven extraction and verification are pre-baked. To watch the full pipeline run live, see the next section.
+
+## Running a real review (full pipeline)
+
+### 1. Scaffold the review
 
 ```bash
 # from a PDF:
-python3 src/scaffold_review.py --paper /path/to/paper.pdf --slug some-paper-slug
+python3 src/scaffold_review.py --paper /path/to/paper.pdf --slug my-slug
 
-# or from a plain-text paper (skips PDF extraction; phase 3 produces HTML
-# instead of PDF for the highlighted output):
-python3 src/scaffold_review.py --text /path/to/paper.txt --slug some-paper-slug
+# or from plain text:
+python3 src/scaffold_review.py --text  /path/to/paper.txt --slug my-slug
 ```
 
-This creates `reviews/some-paper-slug/` with phase subdirectories, symlinks to
-`src/methodology/`, `src/conventions/`, and `src/agents/`, a root `CLAUDE.md`
-that boots the orchestrator, and `paper/paper.txt` (extracted from PDF, or
-copied as-is for a `--text` input).
+This creates `reviews/my-slug/` with:
+- phase subdirectories (`phase1/`, `phase2/`, `phase3/`)
+- symlinks to `src/methodology/`, `src/conventions/`, `src/agents/`, and `literature_bank/`
+- a root `CLAUDE.md` that boots the orchestrator
+- `paper/paper.txt` (extracted from PDF via PyMuPDF, or copied as-is for `--text`)
 
-Then `cd reviews/some-paper-slug/` and open Claude Code there. Claude Code
-reads `CLAUDE.md`, dispatches subagents per the role specs in `agents/`, and
-runs the three-phase loop. Phase 3 calls back into:
+### 2. Open Claude Code in the review directory
 
 ```bash
-python3 ../../src/render_graph.py phase3/outputs/graph.final.json
-# then one of:
-python3 ../../src/highlight_paper.py .   # if paper/paper.pdf exists
-python3 ../../src/highlight_text.py .    # if only paper/paper.txt exists
+cd reviews/my-slug
+claude
 ```
 
-to produce `graph.final.html` and the marked-up paper. Both input modes (PDF
-or text) yield `paper.highlighted.pdf` as the final deliverable; text input
-additionally produces `paper.highlighted.html`.
+### 3. Kick off the orchestrator
 
-## What is intentionally not yet specified
+In Claude Code, send the prompt:
 
-The following live in `src/conventions/` as placeholders and must be filled in before
-the system can produce non-trivial output:
+> Read CLAUDE.md and start phase 1.
 
-- **`graph_schema.md`** — node/edge types, IDs, properties of the claim graph
-- **`claim_taxonomy.md`** — what counts as a claim, how to label claim types
-- **`verification.md`** — verification strategies and pass/fail rules
+Claude Code is now the orchestrator. It reads the role specs under `agents/`
+and dispatches subagents. Each phase ends with a reviewer + arbiter pass and
+a commit; the orchestrator pauses for your OK before advancing.
 
-Until these are written, agents will produce a structurally correct but semantically
-empty skeleton — exactly enough to wire and test the orchestration loop.
+- **Phase 1.** `claim_extractor` → `literature_searcher` (bank first, then external) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
+- **Phase 2.** `strategist` → parallel `verifier` instances per selected claim → `graph_builder v2`. Three-bot review (critical + constructive + arbiter).
+- **Phase 3.** `highlighter` (invokes `highlight_paper.py` or `highlight_text.py`), `graph_builder` (invokes `render_graph.py`), and `report_writer` (invokes `claim_stats.py` then writes `REPORT.md`) run in parallel. Three-bot review, then a human gate.
+
+### 4. Read the outputs
+
+Everything lands in `reviews/my-slug/phase3/outputs/`. Same set as the quick demo above, plus `REPORT.md` (prose summary).
+
+## Re-rendering individual deliverables
+
+You can re-run any phase-3 script standalone — useful while iterating:
+
+```bash
+make graph     REVIEW=reviews/my-slug    # re-render the HTML graph
+make stats     REVIEW=reviews/my-slug    # refresh STATS.md
+make highlight REVIEW=reviews/my-slug    # re-render the highlighted paper
+                                          # (auto-detects PDF vs txt input)
+
+# direct invocations work too:
+python3 src/render_graph.py reviews/my-slug/phase2/outputs/graph.v2.json
+python3 src/claim_stats.py  reviews/my-slug
+python3 src/highlight_text.py reviews/my-slug
+```
+
+`make help` lists all the targets.
+
+## Trust score
+
+The score weights `PASS=1.0`, `INCONCLUSIVE=0.5`, `FAIL=0.0`, with `NOT_CHECKED` excluded from the denominator:
+
+```
+score = round(100 * (PASS + 0.5 * INCONCLUSIVE) / attempted)
+```
+
+Buckets: ≥85 → high (green), ≥60 → medium (yellow), <60 → low (red). The score appears as a colored cover page on `paper.highlighted.pdf`, as a banner at the top of `STATS.md`, and as the headline section of `REPORT.md`.
+
+## Literature bank
+
+`literature_bank/` at the repo root holds reference PDFs the literature searcher checks **before** any external search. Drop new reference papers there as PDFs (any filename); the searcher reads them and tags matches `source: bank` in `LITERATURE.md`. External search runs only for claims the bank doesn't cover, biased toward peer-reviewed published work over preprints. See `src/agents/literature_searcher.md` for the full strategy.
+
+The bank is automatically symlinked into every review directory by `scaffold_review.py`. An empty bank is fine — the searcher just falls back to external search and logs the gap.
+
+## Conventions (the domain logic)
+
+The four files in `src/conventions/` define what Anderson reasons about — keep these in sync with how you want the system to behave:
+
+- `graph_schema.md` — node and edge types, the canonical 4-color palette, the ≤20-group clustering rule, the Cytoscape.js HTML output spec
+- `claim_taxonomy.md` — the seven claim types and how the extractor decides
+- `verification.md` — the six verification methods, type→method default mapping, evidence standards, external-source hierarchy
+- `confidence.md` — the discrete `high`/`medium`/`low` scale used everywhere
+
+Methodology (under `src/methodology/`) defines *how* the orchestrator runs; conventions define *what* it's reasoning about. Edits to convention files do not require touching role specs or the methodology.
