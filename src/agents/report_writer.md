@@ -1,6 +1,6 @@
 # report_writer
 
-Writes the final human-facing summary.
+Writes the final human-facing summary, organized by error category.
 
 ## Reads
 
@@ -9,7 +9,7 @@ Writes the final human-facing summary.
 - `phase2/outputs/STRATEGY.md`
 - `phase2/outputs/VERIFICATION.md`
 - `phase2/outputs/graph.v2.json`
-- `phase3/outputs/STATS.md` (produced by `src/claim_stats.py` — see below)
+- `conventions/error_categories.md`
 
 ## Writes
 
@@ -17,39 +17,26 @@ Writes the final human-facing summary.
 
 ## Behavior
 
-**First step: regenerate STATS.md.** Always run the stats utility before
-writing prose, so the numbers in the report are guaranteed to match the
-underlying artifacts:
+Sections, in order:
 
-```bash
-python3 ../../src/claim_stats.py .
-```
-
-This writes `phase3/outputs/STATS.md` with type counts, confidence counts,
-verdict breakdown, type×verdict matrix, coverage, methods used, INCONCLUSIVE
-reasons, and per-group rows.
-
-Then write `REPORT.md` with these sections, in order:
-
-1. **Trust score** — copy the score banner verbatim from `STATS.md`'s top
-   section. This is the headline of the report; place it before everything
-   else so a reader who reads only the first lines knows the verdict.
-2. **Overview** — paper identification, what was reviewed.
-3. **Method** — what conventions were used (cite the convention files).
-4. **Statistics** — short prose summarizing the key numbers. **Quote** the
-   relevant rows of `STATS.md` rather than recomputing them; embed
-   `STATS.md`'s tables verbatim where they help.
-5. **What we checked** — claim count, claims selected by the strategist,
-   methods used.
-6. **What failed** — for every FAIL/INCONCLUSIVE, one short paragraph:
-   claim, verdict, evidence, link to highlighted sentence.
-7. **Limitations** — paywalled refs, missing conventions, ambiguous wording,
+1. **Overview** — paper identification, what was reviewed.
+2. **Method** — what conventions and error categories were used (cite
+   `conventions/error_categories.md` and checker agent specs).
+3. **What we checked** — claim count, claims selected by the strategist,
+   which checkers ran.
+4. **Findings by category** — one subsection per error category that produced
+   at least one `FLAGGED` verdict. Within each subsection, one short paragraph
+   per flagged claim: the claim, the evidence, the checker's reasoning, and a
+   link to the highlighted sentence. Categories appear in severity order:
+   `domain_violation`, `literature_collision`, `internal_contradiction`,
+   `ambiguous`, `unreferenced`.
+5. **Inconclusive** — claims where any checker reported `INCONCLUSIVE`, grouped
+   by reason (paywalled source, insufficient context, etc.).
+6. **Limitations** — paywalled refs, missing conventions, checker limitations,
    etc.
 
-Prose only (apart from the verbatim STATS tables) — no new findings. The
-report describes what other agents already recorded; it does not introduce
-verdicts of its own. Numbers in prose must match `STATS.md` — if they
-disagree, the report is wrong (the stats are mechanical).
+Prose only — no new findings. The report describes what the checker agents
+already recorded; it does not introduce verdicts of its own.
 
 ## Prompt template
 
@@ -62,10 +49,13 @@ Inputs:
 - phase2/outputs/STRATEGY.md
 - phase2/outputs/VERIFICATION.md
 - phase2/outputs/graph.v2.json
+- conventions/error_categories.md
 
 Output exactly:
 - phase3/outputs/REPORT.md
 
-Sections: Overview, Method, What we checked, What failed, Limitations.
-Do not introduce findings — only describe what is already in the artifacts.
+Sections: Overview, Method, What we checked, Findings by category,
+Inconclusive, Limitations.
+Findings grouped by error category in severity order. Do not introduce
+findings — only describe what is already in the artifacts.
 ```

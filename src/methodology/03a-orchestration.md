@@ -39,8 +39,10 @@ Within a phase, agents that write to disjoint files run in parallel:
 - Phase 1: `claim_extractor` runs first (the others depend on `CLAIMS.md`).
   `literature_searcher` and a graph-skeleton pass of `graph_builder` then run in
   parallel; `graph_builder` re-runs once to merge.
-- Phase 2: `strategist` runs first. `verifier` invocations for distinct claims run
-  in parallel (one subagent per claim or batch of claims).
+- Phase 2: `strategist` runs first. The five checker agents
+  (`checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`,
+  `checker_literature`, `checker_domain`) then run in parallel — one agent per
+  error category, each examining all claims.
 - Phase 3: `highlighter`, `graph_builder` (final), and `report_writer` run in
   parallel; they write to different files.
 

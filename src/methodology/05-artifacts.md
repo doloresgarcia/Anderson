@@ -55,60 +55,88 @@ output.
 ## `STRATEGY.md`
 
 ```
-| claim_id | importance | checkability | method | rationale |
-|----------|------------|--------------|--------|-----------|
-| C001     | high       | high         | …      | …         |
+| claim_id | importance | checkability | categories | rationale |
+|----------|------------|--------------|------------|-----------|
+| C001     | high       | high         | unreferenced, literature_collision | … |
 ```
 
-`method` values come from `conventions/verification.md`.
+`categories` lists the error categories from `conventions/error_categories.md`
+most relevant to the claim. All five checkers still run against all claims;
+the categories column guides prioritization.
 
 ## `VERIFICATION.md`
 
-Per checked claim:
+Organized by error category, one top-level section per checker. Within each
+section, one subsection per claim that the checker examined:
 
 ```
-## C001 — VERDICT: FAIL — confidence: medium
-- method: …
+## unreferenced
+
+### C003 — FLAGGED — confidence: high
+- evidence: paper.txt:42-44
+- reasoning: Claims X without citing any source.
+
+### C007 — CLEAR — confidence: high
+
+## ambiguous
+
+### C001 — FLAGGED — confidence: medium
+- evidence: paper.txt:14-15
+- interpretations:
+  1. "significant" means statistically significant (p < 0.05)
+  2. "significant" means practically meaningful (large effect size)
+- reasoning: The distinction matters because …
+
+## internal_contradiction
+
+### C004 — FLAGGED — confidence: high
 - evidence:
-  - paper.txt:142
-  - [@smith2020] §3.2
+  - paper.txt:30 — "We use 10,000 training samples"
+  - paper.txt:89 — "Our training set contains 8,500 examples"
+- reasoning: Irreconcilable counts.
+
+## literature_collision
+
+### C002 — FLAGGED — confidence: medium
+- evidence:
+  - paper.txt:22
+  - [@smith2020] §3.2 — "snippet"
+- reasoning: …
+
+## domain_violation
+
+### C009 — FLAGGED — confidence: high
+- evidence: paper.txt:105
+- violated_principle: …
+- canonical_source: …
 - reasoning: …
 ```
 
-`VERDICT` is one of `PASS`, `FAIL`, `INCONCLUSIVE`. `INCONCLUSIVE` requires a stated
-reason (e.g., paywalled reference, ambiguous wording). `confidence` values come
-from `conventions/confidence.md` and are orthogonal to the verdict — a
-`PASS` with `low` confidence is meaningful and different from `INCONCLUSIVE`.
-
-## `STATS.md`
-
-Mechanical claim statistics — type counts, extraction confidence, hedging,
-verdict breakdown, type×verdict matrix, coverage, methods used, INCONCLUSIVE
-reasons, per-group rows. Produced by `src/claim_stats.py`. No LLM in the
-loop; numbers are guaranteed to match `CLAIMS.md` and `VERIFICATION.md`.
+`VERDICT` is one of `FLAGGED`, `CLEAR`, `INCONCLUSIVE`. `FLAGGED` requires
+evidence meeting the standard in `conventions/error_categories.md` for that
+category. `INCONCLUSIVE` requires a stated reason. `confidence` values come
+from `conventions/confidence.md`.
 
 ## `REPORT.md`
 
-Human-facing summary, sectioned: Overview, Method, Statistics, What we
-checked, What failed (claim-by-claim), Limitations. The Statistics section
-embeds the relevant tables from `STATS.md` verbatim — prose must agree with
-those numbers.
+Human-facing summary, sectioned: Overview, Method, What we checked, What failed
+(claim-by-claim), Limitations.
 
 ## Highlighted paper
 
-`paper.highlighted.pdf` always. `paper.highlighted.html` additionally if the
-input was plain text.
+`paper.highlighted.pdf` and `paper.highlighted.html`. Highlight color encodes
+the error category (per `conventions/error_categories.md`):
 
-Highlight color encodes verdict, using the canonical palette in
-`conventions/graph_schema.md`:
+- blue (`#4285F4`) — `unreferenced` (needs a citation)
+- amber (`#FFBF00`) — `ambiguous` (unclear or underspecified)
+- orange (`#FF6D00`) — `internal_contradiction` (self-contradictory)
+- red (`#D32F2F`) — `literature_collision` (conflicts with published work)
+- purple (`#7B1FA2`) — `domain_violation` (conflicts with established knowledge)
+- (no highlight) — all CLEAR or not checked
 
-- red `#E74C3C` — FAIL
-- yellow `#F1C40F` — INCONCLUSIVE
-- (no highlight) — PASS or not checked (green and gray in the graph)
+When a sentence triggers multiple categories, the highlight uses the most
+severe category's color. Severity order (highest first): `domain_violation`,
+`literature_collision`, `internal_contradiction`, `ambiguous`, `unreferenced`.
 
-Produced by `src/highlight_paper.py` for PDF input (character-level) or
-`src/highlight_text.py` for text input (line-level in a synthesized PDF, plus
-character-level in a companion HTML).
-
-Each highlighted span carries a tooltip / margin note linking back to the
-`VERIFICATION.md` entry.
+Each highlighted span carries a tooltip / margin note listing **all** triggered
+categories and linking back to each `VERIFICATION.md` section.

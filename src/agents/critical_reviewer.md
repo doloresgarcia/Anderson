@@ -26,7 +26,8 @@ to a methodology or convention rule), and what would resolve it.
   `references.bib` (or the resolved record contradicts the snippet)
 - `graph.vN.json` fails schema validation
 - Claim in `CLAIMS.md` whose page/line does not match `paper.txt`
-- `VERIFICATION.md` verdict `FAIL` with no concrete contradicting evidence
+- `VERIFICATION.md` verdict `FLAGGED` without the evidence required by
+  `conventions/error_categories.md` for that category
 - Output file outside the phase's declared deliverables list
 
 ## Prompt template

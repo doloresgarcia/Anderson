@@ -1,6 +1,7 @@
 # strategist
 
-Decides which claims to verify, and how.
+Decides which claims to check, scores their importance, and identifies which
+error categories are most relevant for each claim.
 
 ## Reads
 
@@ -8,9 +9,8 @@ Decides which claims to verify, and how.
 - `phase1/outputs/CLAIMS.md`
 - `phase1/outputs/LITERATURE.md`
 - `phase1/outputs/FINDINGS.md`
+- `conventions/error_categories.md`
 - `conventions/verification.md`
-- `conventions/confidence.md`
-- `conventions/claim_taxonomy.md`
 
 ## Writes
 
@@ -21,24 +21,22 @@ Decides which claims to verify, and how.
 Score every claim on:
 
 - **importance** (low/med/high) — how central to the paper's contribution
-- **checkability** (low/med/high) — given the convention's verification methods,
-  how feasible is verification
-- **method** — picked from the catalog in `conventions/verification.md`. Use
-  the type → method default mapping in that file; deviations require a one-line
-  justification in `STRATEGY.md`.
+- **checkability** (low/med/high) — given the five error categories, how
+  feasible is checking this claim
+- **categories** — which error categories from `conventions/error_categories.md`
+  are most relevant for this claim (comma-separated subset of:
+  `unreferenced`, `ambiguous`, `internal_contradiction`,
+  `literature_collision`, `domain_violation`)
+- **rationale** — one-line justification for the category selection
 
-Selection rule: every `importance=high` claim must be on the list; lower-importance
-claims are added until either checkability budget or a configured cap is reached.
+All five checker agents run against all claims regardless of strategy, but
+the strategy guides prioritization: every `importance=high` claim must receive
+thorough attention from all checkers. Lower-importance claims are still checked
+but checkers may spend less effort on them.
 
-**Confidence-driven defaults.** Claims whose extraction `confidence` is `low`
-are listed with `method=skip` unless the strategist explicitly overrides — the
-extractor wasn't sure what was being asserted, so verification budget is better
-spent elsewhere. The override rule: a `low`-confidence claim that is also
-`importance=high` may keep its mapped method, with a `STRATEGY.md` justification
-naming why importance overrides confidence.
-
-If `conventions/verification.md` is the placeholder, the strategist still emits a
-ranked list but marks every method as `TBD` and logs the gap.
+Select claims for focused checking. The selection rule is: every
+`importance=high` claim must be on the list; lower-importance claims are added
+until the checkability budget or a configured cap is reached.
 
 ## Prompt template
 
@@ -50,15 +48,12 @@ Inputs:
 - phase1/outputs/CLAIMS.md
 - phase1/outputs/LITERATURE.md
 - phase1/outputs/FINDINGS.md
+- conventions/error_categories.md
 - conventions/verification.md
-- conventions/confidence.md
-- conventions/claim_taxonomy.md
 
 Output exactly:
 - phase2/outputs/STRATEGY.md  (format: methodology/05-artifacts.md)
 
-Every importance=high claim is in. Use the type→method mapping in
-conventions/verification.md as default; justify deviations in one line.
-Low-confidence extractions default to method=skip unless they are also
-importance=high.
+Every importance=high claim is in. For each claim, list the most relevant
+error categories and justify in one line.
 ```

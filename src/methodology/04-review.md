@@ -41,3 +41,10 @@ resolve to a real record (DOI, arXiv ID, conference paper retrievable via the
 configured search backend), that is automatically Category A. LLM-fabricated
 citations are the most common failure mode of this kind of system; the reviewers
 exist primarily to catch them.
+
+## Hard rule: checker evidence standards
+
+If a checker emits `FLAGGED` without meeting the evidence standard defined in
+`conventions/error_categories.md` for that category, that is automatically
+Category A. The fixer must either supply the required evidence or demote the
+verdict to `INCONCLUSIVE`.

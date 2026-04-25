@@ -1,8 +1,10 @@
 # executor (base)
 
 Generic executor role. Specializations (`claim_extractor`, `literature_searcher`,
-`graph_builder`, `strategist`, `verifier`, `highlighter`, `report_writer`, `fixer`)
-inherit this contract; each adds its own reads/writes/prompt slots.
+`graph_builder`, `strategist`, `checker_unreferenced`, `checker_ambiguous`,
+`checker_contradiction`, `checker_literature`, `checker_domain`, `highlighter`,
+`report_writer`, `fixer`) inherit this contract; each adds its own
+reads/writes/prompt slots.
 
 ## Contract
 

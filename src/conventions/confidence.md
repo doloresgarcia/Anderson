@@ -71,23 +71,24 @@ addresses the claim. Anchors differ by source.
 
 This replaces the prior continuous `relevance 0.xx` float in the artifact spec.
 
-### Verification verdict (`VERIFICATION.md` section)
+### Checker verdict (`VERIFICATION.md` section)
 
-The verifier's confidence in the assigned verdict (orthogonal to the verdict
-itself — a `low`-confidence `PASS` is meaningful and different from
+Each checker's confidence in its assigned verdict (orthogonal to the verdict
+itself — a `low`-confidence `CLEAR` is meaningful and different from
 `INCONCLUSIVE`).
 
-- `high` — direct, decisive evidence: a numerical contradiction, a canonical
-  reference flatly disagreeing, an internal inconsistency the verifier can quote.
+- `high` — direct, decisive evidence: the checker can quote specific passages,
+  cite concrete references, or point to an unambiguous violation.
 - `medium` — the evidence supports the verdict but requires some interpretation,
-  OR the verifier had to pick between two plausible readings of the claim.
-- `low` — verdict is the verifier's best guess; the evidence is thin, the method
-  is partially applicable, or the relevant references are paywalled / not
+  OR the checker had to pick between two plausible readings.
+- `low` — verdict is the checker's best guess; the evidence is thin, the
+  domain context is insufficient, or relevant references are paywalled / not
   retrievable.
 
-Note: the rule "a FAIL with no concrete contradicting evidence demotes to
-INCONCLUSIVE" runs *before* confidence is assigned. So `low`-confidence FAIL is
-allowed, but only when there is some concrete evidence — just less of it.
+Note: a `FLAGGED` verdict requires meeting the evidence standard in
+`conventions/error_categories.md` for that category. If the evidence is not
+sufficient, the verdict must be `INCONCLUSIVE`, not `FLAGGED` with `low`
+confidence.
 
 ### Graph edges (`graph.v*.json`)
 
@@ -102,13 +103,14 @@ The graph_builder's confidence that an edge exists between two nodes.
 ## How downstream uses confidence
 
 - **Strategist** deprioritizes `low`-confidence extractions when allocating
-  verifier budget. `low` claims are still listed in `STRATEGY.md`, but with
-  method `skip` unless the user overrides.
+  checking budget. `low` claims are still listed in `STRATEGY.md`, but
+  checkers may spend less effort on them unless the user overrides.
 - **Critical reviewer** scrutinizes `low`-confidence rows more carefully. A
   `high`-confidence claim with a verbatim sentence is rarely flagged; a
   `low`-confidence claim where the extractor paraphrased is often Category B.
-- **Highlighter** does not encode confidence in PDF colors (kept binary
-  red/yellow). Confidence is shown in the margin tooltip and in `REPORT.md`.
+- **Highlighter** does not encode confidence in PDF colors (colors encode
+  error category per `conventions/error_categories.md`). Confidence is shown
+  in the margin tooltip and in `REPORT.md`.
 - **Report writer** mentions confidence in the "What we checked" section so the
   reader knows which findings are firm and which are tentative.
 

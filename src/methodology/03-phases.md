@@ -32,20 +32,26 @@ work, and emit a first-pass claim graph.
 **Review.** Single-bot review (correctness/completeness of claim extraction and graph
 well-formedness). Arbiter PASS required to advance.
 
-## Phase 2 — Strategy & Verify
+## Phase 2 — Strategy & Check
 
-**Goal.** Decide which claims are worth checking, attempt to verify each chosen
-claim, and update the graph with verification verdicts.
+**Goal.** Decide which claims are worth checking, run five specialized checker
+agents against the claims, and update the graph with their findings.
 
 **Subagents dispatched.**
 
 - `strategist` — reads `graph.v1.json` and `FINDINGS.md`; emits `STRATEGY.md`
-  ranking claims by (importance × checkability) and listing the verification method
-  per claim (per `conventions/verification.md`).
-- `verifier` — for each claim selected by the strategist, runs the prescribed
-  verification method and emits one row in `VERIFICATION.md` (PASS / FAIL /
-  INCONCLUSIVE with evidence).
-- `graph_builder` — re-runs to merge verification verdicts onto the graph, emitting
+  ranking claims by importance and listing the most relevant error categories
+  per claim (per `conventions/error_categories.md`).
+- Five **checker agents** — run in parallel, each checking all claims for one
+  error category (per `conventions/error_categories.md`):
+  - `checker_unreferenced` — missing citations
+  - `checker_ambiguous` — unclear or underspecified statements
+  - `checker_contradiction` — internal contradictions
+  - `checker_literature` — conflicts with published literature
+  - `checker_domain` — violations of established domain knowledge
+  Each checker appends its section to `VERIFICATION.md` with verdicts
+  `FLAGGED` / `CLEAR` / `INCONCLUSIVE`.
+- `graph_builder` — re-runs to merge checker findings onto the graph, emitting
   `graph.v2.json`.
 
 **Deliverables (in `reviews/<slug>/phase2/outputs/`).**
@@ -63,28 +69,20 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 
 **Subagents dispatched.**
 
-- `highlighter` — reads `graph.v2.json`, `VERIFICATION.md`, and `CLAIMS.md`;
-  invokes `src/highlight_paper.py` (for PDF input) or `src/highlight_text.py`
-  (for text input) to produce `paper.highlighted.pdf` with FAIL/INCONCLUSIVE
-  sentences visibly marked. Text input also yields a companion
-  `paper.highlighted.html`.
-- `graph_builder` — final pass; emits `graph.final.json`,
-  `graph.final.html` (interactive Cytoscape.js viz, the primary visual
-  deliverable), and `graph.final.svg` (static snapshot for inclusion in PDFs
-  and slides).
-- `report_writer` (specialization of `executor`) — first invokes
-  `src/claim_stats.py` to regenerate `STATS.md` (mechanical claim counts and
-  verdict breakdown), then writes `REPORT.md` summarizing what was checked,
-  what failed, and why, embedding the stats tables verbatim.
+- `highlighter` — reads `graph.v2.json` and `VERIFICATION.md`; produces
+  `paper.highlighted.pdf` and `paper.highlighted.html` with flagged sentences
+  color-coded by error category per `conventions/error_categories.md`.
+- `graph_builder` — final pass; emits `graph.final.json` plus `graph.final.svg` for
+  human reading.
+- `report_writer` (specialization of `executor`) — writes `REPORT.md` summarizing
+  what was checked, what failed, and why.
 
 **Deliverables (in `reviews/<slug>/phase3/outputs/`).**
 
 - `graph.final.json`
-- `graph.final.html`
-- `graph.final.svg` (deferred — HTML is the primary visual)
+- `graph.final.svg`
 - `paper.highlighted.pdf`
-- `STATS.md`
-- `REPORT.md`
+- `paper.highlighted.html`
 - `REPORT.md`
 
 **Gate.** Human review of the highlighted PDF. Possible responses: APPROVE,
