@@ -302,12 +302,27 @@ const cy = cytoscape({
   ],
   layout: {
     name: "cose",
-    nodeRepulsion: 12000,
-    idealEdgeLength: 140,
-    padding: 60,
-    nodeOverlap: 30,
-    animate: false
+    nodeRepulsion: function() { return 50000; },
+    idealEdgeLength: function() { return 180; },
+    edgeElasticity: function() { return 100; },
+    nestingFactor: 1.5,
+    gravity: 0.4,
+    numIter: 2500,
+    padding: 80,
+    nodeOverlap: 40,
+    randomize: true,
+    componentSpacing: 120,
+    fit: true,
+    animate: false,
+    initialTemp: 1000,
+    coolingFactor: 0.95,
+    minTemp: 1.0
   }
+});
+
+// Force a fit pass after layout to make sure everything is visible.
+cy.ready(function() {
+  cy.fit(undefined, 60);
 });
 
 const info = document.getElementById("info");
