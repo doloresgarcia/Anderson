@@ -22,6 +22,14 @@ reviews/<slug>/
 `paper.txt` is the artifact agents read for claim extraction. `paper.pdf` is the
 artifact phase 3 annotates.
 
+## Literature bank
+
+The repository contains a `literature_bank/` directory at the root with
+pre-collected PDFs. `scaffold_review.py` automatically symlinks this into every
+review directory. The literature searcher always searches the bank first; external
+search runs only for claims the bank does not cover (see
+`agents/literature_searcher.md`).
+
 ## Optional inputs
 
 - `--bib /path/to/refs.bib` — pre-supplied bibliography to seed the literature search.

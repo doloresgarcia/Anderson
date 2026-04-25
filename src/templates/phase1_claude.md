@@ -18,7 +18,7 @@
    - Output: `phase1/outputs/CLAIMS.md`
 2. **literature_searcher** ∥ **graph_builder (skeleton)** — parallel.
    - literature_searcher inputs: `phase1/outputs/CLAIMS.md`,
-     `paper/paper.meta.json`
+     `paper/paper.meta.json`, `literature_bank/`
    - literature_searcher outputs: `phase1/outputs/LITERATURE.md`,
      `phase1/outputs/references.bib`
    - graph_builder skeleton inputs: `phase1/outputs/CLAIMS.md`,
@@ -59,3 +59,6 @@ Hand off to `phase2/CLAUDE.md`.
   expected. Surface the gap in the dispatch summary, do not block on it.
 - `references.bib` must contain every key that appears in `LITERATURE.md`.
   Mismatches are auto-Category-A.
+- The `literature_bank/` symlink must be present. The literature searcher always
+  searches the bank before any external call. If the bank is empty or
+  unreadable, the searcher logs this and falls back to external search.

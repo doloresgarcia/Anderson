@@ -64,6 +64,8 @@ For every dispatch:
 - Phase 3 human gate.
 - Search backend is unreachable or returns no results for any claim — this is
   not a verdict, it is a tooling failure.
+- Literature bank is empty or unreadable — not a failure; the literature
+  searcher falls back to external search and logs the reason.
 
 ## What this file is not
 

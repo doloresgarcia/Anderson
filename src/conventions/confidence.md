@@ -49,7 +49,18 @@ correct.
 ### Literature relevance (`LITERATURE.md` candidate row)
 
 The literature_searcher's confidence that the candidate reference actually
-addresses the claim.
+addresses the claim. Anchors differ by source.
+
+**Bank matches** (full text available):
+
+- `high` — the paper's text contains a passage that directly addresses the
+  claim's proposition; the quoted snippet is from that passage.
+- `medium` — the paper covers the same topic and methodology but does not speak
+  to the specific proposition; the connection requires interpretation.
+- `low` — loosely related; same field or object of study but the connection is
+  conjectural even after reading the full text.
+
+**External matches** (typically abstract-only):
 
 - `high` — the reference's title or abstract directly addresses the claim's
   proposition; the quoted snippet contains the relevant assertion.
