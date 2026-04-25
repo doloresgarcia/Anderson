@@ -16,7 +16,7 @@ specifications live in `src/agents/`, and tracks artifacts that subagents produc
 | Phase | Purpose | Primary artifacts |
 |-------|---------|------------------|
 | 1. Ingest & Map  | Parse paper, extract claims, two-pass literature search (local bank → external), build initial claim graph | `CLAIMS.md`, `LITERATURE.md`, `graph.v1.json` |
-| 2. Strategy & Verify | Choose which claims to check; verify against the paper itself and external literature; update graph with verdicts | `STRATEGY.md`, `VERIFICATION.md`, `graph.v2.json` |
+| 2. Strategy & Check | Run five specialized checker agents (one per error category) against the claims and merge their verdicts into the graph | `STRATEGY.md`, `VERIFICATION.md`, `graph.v2.json` |
 | 3. Report | Trust score, marked-up paper, interactive claim graph, statistics, prose summary | `STATS.md`, `paper.highlighted.pdf`, `graph.final.html`, `REPORT.md` |
 
 Per phase the orchestrator runs the loop **EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE**.
@@ -34,10 +34,11 @@ anderson/
 └── src/
     ├── methodology/           # phase definitions, orchestration loop, review protocol, artifact specs
     ├── agents/                # role specifications the orchestrator dispatches
-    ├── conventions/           # graph schema, claim taxonomy, verification rules, confidence scale
+    ├── conventions/           # error categories, claim taxonomy, graph schema, confidence scale
     ├── templates/             # CLAUDE.md templates dropped into per-paper review dirs
+    ├── vendor/                # cytoscape.min.js (inlined into rendered graph HTML for offline viewing)
     ├── scaffold_review.py     # creates a new reviews/<slug>/ tree wired to a paper
-    ├── render_graph.py        # graph.*.json → graph.*.html (Cytoscape.js, dark theme)
+    ├── render_graph.py        # graph.*.json → graph.*.html (Cytoscape.js, dark theme, self-contained)
     ├── highlight_paper.py     # paper.pdf + VERIFICATION.md → paper.highlighted.pdf
     ├── highlight_text.py      # paper.txt + VERIFICATION.md → highlighted PDF + HTML
     └── claim_stats.py         # CLAIMS.md + VERIFICATION.md → STATS.md (counts + trust score)
@@ -63,9 +64,9 @@ Outputs land in `reviews/__demo__/phase3/outputs/`:
 
 | file | what it is |
 |------|------------|
-| `paper.highlighted.pdf` | cover page with the trust score, then the paper with red/yellow highlights and clickable per-claim comments |
-| `graph.final.html` | dark-theme Cytoscape compound graph — open in any browser |
-| `STATS.md` | trust score block, counts by type and verdict, type×verdict matrix, INCONCLUSIVE reasons |
+| `paper.highlighted.pdf` | cover page with the trust score, then the paper with five-category color-coded highlights and clickable per-claim comments |
+| `graph.final.html` | dark-theme Cytoscape compound graph — fully self-contained (Cytoscape.js inlined), opens in any browser, works offline |
+| `STATS.md` | trust score block, counts by type and aggregate verdict, type×verdict matrix, **per-error-category breakdown**, INCONCLUSIVE reasons across all five checkers, per-group rows |
 | `paper.highlighted.html` | text-mode browser companion to the PDF |
 
 The demo paper contains three planted problems — a fabricated `Chen et al. (2024)` citation (caught as `literature_collision`), an abstract↔results numerical contradiction (87.3% vs 78.4%, caught as `internal_contradiction` and flagged on both ends), and a "we thus prove that sparsity is sufficient for emergent reasoning" overreach (caught as `unreferenced` on the abstract version and `ambiguous` on the discussion version). Anderson catches all three; the trust score lands at **58/100 (low)**.
@@ -107,9 +108,9 @@ Claude Code is now the orchestrator. It reads the role specs under `agents/`
 and dispatches subagents. Each phase ends with a reviewer + arbiter pass and
 a commit; the orchestrator pauses for your OK before advancing.
 
-- **Phase 1.** `claim_extractor` → `literature_searcher` (bank first, then external) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
-- **Phase 2.** `strategist` → five **checker agents** in parallel — `checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`, `checker_literature`, `checker_domain` — each examining all claims for its error category and writing its section of `VERIFICATION.md` → `graph_builder v2`. Three-bot review (critical + constructive + arbiter).
-- **Phase 3.** `highlighter` (invokes `highlight_paper.py` or `highlight_text.py`), `graph_builder` (invokes `render_graph.py`), and `report_writer` (invokes `claim_stats.py` then writes `REPORT.md`) run in parallel. Three-bot review, then a human gate.
+- **Phase 1 — Ingest & Map.** `claim_extractor` → `literature_searcher` (bank first, then external) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
+- **Phase 2 — Strategy & Check.** `strategist` → five **checker agents** in parallel — `checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`, `checker_literature`, `checker_domain` — each examining every claim for its error category and writing its own section of `VERIFICATION.md` (verdicts `FLAGGED` / `CLEAR` / `INCONCLUSIVE`) → `graph_builder` (v2). Three-bot review (critical + constructive + arbiter).
+- **Phase 3 — Report.** `highlighter` (invokes `highlight_paper.py` or `highlight_text.py`), `graph_builder` (invokes `render_graph.py`), and `report_writer` (invokes `claim_stats.py` then writes `REPORT.md`) run in parallel. Three-bot review, then a human gate.
 
 ### 4. Read the outputs
 
@@ -133,19 +134,9 @@ python3 src/highlight_text.py reviews/my-slug
 
 `make help` lists all the targets.
 
-## Trust score
-
-Each claim has an aggregate verdict computed from the five checkers — `FLAGGED` if any checker flagged it, else `INCONCLUSIVE` if any checker was inconclusive, else `CLEAR` if any checker examined it, else `NOT_CHECKED`. The trust score weights `CLEAR=1.0`, `INCONCLUSIVE=0.5`, `FLAGGED=0.0`, with `NOT_CHECKED` excluded from the denominator:
-
-```
-score = round(100 * (CLEAR + 0.5 * INCONCLUSIVE) / attempted)
-```
-
-Buckets: ≥85 → high (green), ≥60 → medium (yellow), <60 → low (red). The score appears as a colored cover page on `paper.highlighted.pdf`, as a banner at the top of `STATS.md`, and as the headline section of `REPORT.md`.
-
 ## Error categories
 
-Phase 2 detects errors across five mutually exclusive categories (one checker per category), each with its own highlight color in the marked-up paper and graph:
+Phase 2 detects errors across five mutually exclusive categories. One checker agent per category, each with its own highlight color:
 
 | category | color | meaning |
 |---|---|---|
@@ -155,7 +146,17 @@ Phase 2 detects errors across five mutually exclusive categories (one checker pe
 | `literature_collision` | red `#D32F2F` | conflicts with published work |
 | `domain_violation` | purple `#7B1FA2` | conflicts with established knowledge |
 
-A sentence flagged in multiple categories is highlighted in the most-severe color (severity order: `domain_violation` > `literature_collision` > `internal_contradiction` > `ambiguous` > `unreferenced`); the click-through annotation lists all triggered categories. See `src/conventions/error_categories.md` for the evidence standards each checker requires before emitting `FLAGGED`.
+A sentence flagged in multiple categories is highlighted in the most-severe color (severity order: `domain_violation` > `literature_collision` > `internal_contradiction` > `ambiguous` > `unreferenced`); the click-through annotation lists all triggered categories with each checker's reasoning. See `src/conventions/error_categories.md` for the evidence standard each checker requires before emitting `FLAGGED`.
+
+## Trust score
+
+Each claim has an aggregate verdict computed from the five checkers — `FLAGGED` if any checker flagged it, else `INCONCLUSIVE` if any checker was inconclusive, else `CLEAR` if any checker examined it, else `NOT_CHECKED`. The trust score weights `CLEAR=1.0`, `INCONCLUSIVE=0.5`, `FLAGGED=0.0`, with `NOT_CHECKED` excluded from the denominator:
+
+```
+score = round(100 * (CLEAR + 0.5 * INCONCLUSIVE) / attempted)
+```
+
+Buckets: ≥85 → high (green), ≥60 → medium (yellow), <60 → low (red). The score appears as a colored cover page on `paper.highlighted.pdf`, as a banner at the top of `STATS.md`, and as the headline section of `REPORT.md`.
 
 ## Literature bank
 
