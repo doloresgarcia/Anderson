@@ -46,12 +46,18 @@ pip install -r requirements.txt   # installs PyMuPDF for PDF extract + highlight
 ## Starting a review
 
 ```bash
+# from a PDF:
 python3 src/scaffold_review.py --paper /path/to/paper.pdf --slug some-paper-slug
+
+# or from a plain-text paper (skips PDF extraction; phase 3 produces HTML
+# instead of PDF for the highlighted output):
+python3 src/scaffold_review.py --text /path/to/paper.txt --slug some-paper-slug
 ```
 
 This creates `reviews/some-paper-slug/` with phase subdirectories, symlinks to
 `src/methodology/`, `src/conventions/`, and `src/agents/`, a root `CLAUDE.md`
-that boots the orchestrator, and `paper/paper.txt` extracted from the PDF.
+that boots the orchestrator, and `paper/paper.txt` (extracted from PDF, or
+copied as-is for a `--text` input).
 
 Then `cd reviews/some-paper-slug/` and open Claude Code there. Claude Code
 reads `CLAUDE.md`, dispatches subagents per the role specs in `agents/`, and
@@ -59,10 +65,12 @@ runs the three-phase loop. Phase 3 calls back into:
 
 ```bash
 python3 ../../src/render_graph.py phase3/outputs/graph.final.json
-python3 ../../src/highlight_paper.py .
+# then one of:
+python3 ../../src/highlight_paper.py .   # if paper/paper.pdf exists
+python3 ../../src/highlight_text.py .    # if only paper/paper.txt exists
 ```
 
-to produce `graph.final.html` and `paper.highlighted.pdf`.
+to produce `graph.final.html` and the marked-up paper.
 
 ## What is intentionally not yet specified
 

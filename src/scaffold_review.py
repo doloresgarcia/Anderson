@@ -1,6 +1,7 @@
 """Create a new per-paper review directory tree.
 
     python src/scaffold_review.py --paper /path/to/paper.pdf --slug my-slug
+    python src/scaffold_review.py --text  /path/to/paper.txt --slug my-slug
     python src/scaffold_review.py --arxiv 2401.12345 --slug my-slug
     python src/scaffold_review.py --doi 10.1234/abcde --slug my-slug
 
@@ -126,6 +127,7 @@ def make_meta(args: argparse.Namespace) -> dict:
         "arxiv": args.arxiv,
         "url": args.url,
         "source_pdf": str(args.paper) if args.paper else None,
+        "source_text": str(args.text) if args.text else None,
     }
     return meta
 
@@ -134,6 +136,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     src = parser.add_mutually_exclusive_group(required=True)
     src.add_argument("--paper", type=Path, help="path to a local PDF")
+    src.add_argument("--text", type=Path, help="path to a plain-text paper (skips PDF extraction)")
     src.add_argument("--arxiv", help="arXiv ID, e.g. 2401.12345")
     src.add_argument("--doi", help="DOI, e.g. 10.1234/abcde")
     src.add_argument("--url", help="URL to a PDF or paper landing page")
@@ -185,6 +188,13 @@ def main() -> int:
             except RuntimeError as e:
                 print(f"warning: paper.txt not produced: {e}", file=sys.stderr)
                 print("  (orchestrator will need to extract it as a phase-1 step.)", file=sys.stderr)
+
+    if args.text is not None:
+        if not args.text.exists():
+            print(f"warning: --text {args.text} does not exist; copy skipped", file=sys.stderr)
+        else:
+            shutil.copy(args.text, review_dir / "paper" / "paper.txt")
+            print("copied paper.txt directly (no PDF; phase 3 will produce paper.highlighted.html)")
 
     if args.bib is not None:
         if not args.bib.exists():

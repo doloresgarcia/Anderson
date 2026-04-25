@@ -4,46 +4,56 @@ Produces the paper-with-highlights deliverable.
 
 ## Reads
 
-- `paper/paper.pdf`
+- `paper/paper.pdf` (if present)
 - `paper/paper.txt`
+- `phase1/outputs/CLAIMS.md`
 - `phase2/outputs/VERIFICATION.md`
 - `phase2/outputs/graph.v2.json`
 - `conventions/graph_schema.md` (canonical color palette)
 
 ## Writes
 
-- `phase3/outputs/paper.highlighted.pdf`
+One of these, depending on input:
+
+- `phase3/outputs/paper.highlighted.pdf` — if `paper/paper.pdf` exists
+- `phase3/outputs/paper.highlighted.html` — if only `paper/paper.txt` exists
+
+Plus:
+
 - `phase3/agents/highlighter/log.md`
 
 ## Behavior
 
-Invoke the bundled utility script — do **not** attempt to add highlights by
-hand-editing the PDF:
+Dispatch on input. Invoke the bundled utility — **do not** hand-edit the PDF
+or hand-write the HTML.
+
+If `paper/paper.pdf` exists:
 
 ```bash
 python3 ../../src/highlight_paper.py .
 ```
 
-The script reads `paper/paper.pdf`, `phase1/outputs/CLAIMS.md`, and
-`phase2/outputs/VERIFICATION.md`, and writes
-`phase3/outputs/paper.highlighted.pdf`. It applies the canonical palette
-from `conventions/graph_schema.md` (red `#E74C3C` for FAIL, yellow `#F1C40F`
-for INCONCLUSIVE) and attaches a margin annotation per highlight that names
-the `claim_id` and verdict, so the reader can cross-reference
-`VERIFICATION.md`.
+If only `paper/paper.txt` exists (the paper was provided as plain text):
+
+```bash
+python3 ../../src/highlight_text.py .
+```
+
+Both scripts apply the canonical palette from `conventions/graph_schema.md`
+(red `#E74C3C` for FAIL, yellow `#F1C40F` for INCONCLUSIVE) and produce
+per-highlight annotations referencing the `claim_id` and verdict so the
+reader can cross-reference `VERIFICATION.md`.
 
 Sentences that PASS or were not checked are not highlighted. (Green and gray in
-the graph translate to "no highlight" in the PDF — positive marking would be
-visual noise.)
+the graph translate to "no highlight" in the marked-up paper — positive
+marking would be visual noise.)
 
-If the script cannot match a sentence to a PDF location (text-extraction
-edge cases, hyphenation, soft line breaks), it skips that claim and reports
-the count in its output. Such skips appear in the highlighter's `log.md`
-and trigger a Category B finding for the reviewer to resolve — usually by
-the extractor producing a tighter `sentence` quote.
-
-For an HTML companion view, run the script's `--html` companion (deferred —
-not yet implemented; for v1 the highlighted output is PDF-only).
+If a script cannot match a sentence to a location in the paper (text-extraction
+edge cases, hyphenation, soft line breaks for the PDF; verbatim mismatch for
+the text version), it skips that claim and reports the unmatched ids in its
+output. Such skips appear in the highlighter's `log.md` and trigger a
+Category B finding for the reviewer to resolve — usually by the extractor
+producing a tighter `sentence` quote.
 
 ## Prompt template
 
