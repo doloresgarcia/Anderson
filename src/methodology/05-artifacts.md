@@ -8,13 +8,14 @@ mechanically.
 Markdown table, one row per claim:
 
 ```
-| claim_id | type | sentence | hedged | page | line | section | provenance |
-|----------|------|----------|--------|------|------|---------|------------|
-| C001     | …    | "…"      | false  | 3    | 14   | 2.1     | paper.txt:142 |
+| claim_id | type | sentence | hedged | confidence | page | line | section | provenance |
+|----------|------|----------|--------|------------|------|------|---------|------------|
+| C001     | …    | "…"      | false  | high       | 3    | 14   | 2.1     | paper.txt:142 |
 ```
 
 `type` values and the `hedged` flag definition come from
-`conventions/claim_taxonomy.md`.
+`conventions/claim_taxonomy.md`. `confidence` values come from
+`conventions/confidence.md`.
 
 ## `LITERATURE.md`
 
@@ -22,9 +23,11 @@ Per claim, a sub-section listing candidate references:
 
 ```
 ## C001
-- [@smith2020] — supports — relevance 0.82 — "snippet from abstract"
-- [@jones2019] — contradicts — relevance 0.71 — "snippet"
+- [@smith2020] — supports — confidence high — "snippet from abstract"
+- [@jones2019] — contradicts — confidence medium — "snippet"
 ```
+
+`confidence` values come from `conventions/confidence.md`.
 
 Bibtex keys must resolve in `references.bib` (also written by
 `literature_searcher`). Unresolvable keys are Category A at review.
@@ -61,7 +64,7 @@ output.
 Per checked claim:
 
 ```
-## C001 — VERDICT: FAIL
+## C001 — VERDICT: FAIL — confidence: medium
 - method: …
 - evidence:
   - paper.txt:142
@@ -70,7 +73,9 @@ Per checked claim:
 ```
 
 `VERDICT` is one of `PASS`, `FAIL`, `INCONCLUSIVE`. `INCONCLUSIVE` requires a stated
-reason (e.g., paywalled reference, ambiguous wording).
+reason (e.g., paywalled reference, ambiguous wording). `confidence` values come
+from `conventions/confidence.md` and are orthogonal to the verdict — a
+`PASS` with `low` confidence is meaningful and different from `INCONCLUSIVE`.
 
 ## `REPORT.md`
 

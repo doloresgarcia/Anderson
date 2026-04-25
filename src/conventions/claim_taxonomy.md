@@ -120,6 +120,7 @@ Every row of `CLAIMS.md` carries:
 | `type` | one of the seven above |
 | `sentence` | the literal proposition, in quotes |
 | `hedged` | `true` if the paper explicitly weakens the claim ("we suggest", "may", "it is likely that"); else `false` |
+| `confidence` | `high` / `medium` / `low` per `conventions/confidence.md` — the extractor's confidence in this row |
 | `page`, `line`, `section`, `provenance` | as in `methodology/05-artifacts.md` |
 
 Hedging changes the verdict ceiling: a hedged claim that fails verification is
