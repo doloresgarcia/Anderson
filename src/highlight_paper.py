@@ -131,6 +131,61 @@ def parse_verification_md(path: Path) -> dict[str, dict]:
     return out
 
 
+# Canonical palette (graph_schema.md). Used for trust-score badging.
+TRUST_COLORS = {
+    "high":   "#2ECC71",
+    "medium": "#F1C40F",
+    "low":    "#E74C3C",
+    "none":   "#95A5A6",
+}
+
+
+def trust_score(verdicts: dict) -> dict:
+    """Compute the trust score from a dict of {claim_id: verdict_record}.
+
+    Weighting:
+      PASS         → 1.0
+      INCONCLUSIVE → 0.5  (could be paywalled or ambiguous; partial credit)
+      FAIL         → 0.0
+
+    NOT_CHECKED claims are excluded from the denominator (no opinion).
+
+    Buckets (pinned to the canonical palette):
+      ≥ 85  →  high   (green)
+      ≥ 60  →  medium (yellow)
+      < 60  →  low    (red)
+      no attempts → "none" (gray)
+
+    Returns {score, bucket, color, passed, failed, inconclusive, attempted}.
+    """
+    passed = sum(1 for v in verdicts.values() if v.get("verdict") == "PASS")
+    failed = sum(1 for v in verdicts.values() if v.get("verdict") == "FAIL")
+    inconclusive = sum(1 for v in verdicts.values() if v.get("verdict") == "INCONCLUSIVE")
+    attempted = passed + failed + inconclusive
+
+    if attempted == 0:
+        bucket = "none"
+        score = None
+    else:
+        score = round(100 * (passed + 0.5 * inconclusive) / attempted)
+        if score >= 85:
+            bucket = "high"
+        elif score >= 60:
+            bucket = "medium"
+        else:
+            bucket = "low"
+
+    return {
+        "score": score,
+        "bucket": bucket,
+        "color": TRUST_COLORS[bucket],
+        "passed": passed,
+        "failed": failed,
+        "inconclusive": inconclusive,
+        "attempted": attempted,
+    }
+
+
 def build_annotation_text(cid: str, v: dict) -> str:
     """Compose the comment shown when a reader clicks a highlight.
 
@@ -172,11 +227,104 @@ def find_sentence_quads(page, sentence: str):
     return []
 
 
+def _hex_to_rgb01(hex_color: str) -> tuple[float, float, float]:
+    h = hex_color.lstrip("#")
+    return tuple(int(h[i:i+2], 16) / 255 for i in (0, 2, 4))
+
+
+def insert_trust_cover_page(doc, slug: str, t: dict) -> None:
+    """Prepend a one-page trust-score cover to an open fitz document."""
+    import fitz
+    PAGE_W, PAGE_H = 595, 842
+    page = doc.new_page(pno=0, width=PAGE_W, height=PAGE_H)
+
+    # Header strip
+    page.insert_text(
+        fitz.Point(60, 90),
+        "ANDERSON",
+        fontname="hebo", fontsize=14, color=(0.3, 0.3, 0.3),
+    )
+    page.insert_text(
+        fitz.Point(60, 110),
+        "automated paper claim review",
+        fontname="helv", fontsize=10, color=(0.55, 0.55, 0.55),
+    )
+
+    # Big slug
+    page.insert_text(
+        fitz.Point(60, 170),
+        slug,
+        fontname="hebo", fontsize=22, color=(0.1, 0.1, 0.1),
+    )
+
+    # Big trust score
+    score_str = f"{t['score']}" if t["score"] is not None else "—"
+    label = {
+        "high":   "HIGH TRUST",
+        "medium": "MEDIUM TRUST",
+        "low":    "LOW TRUST",
+        "none":   "NOT YET CHECKED",
+    }[t["bucket"]]
+    color_rgb = _hex_to_rgb01(t["color"])
+
+    # Colored score band.
+    band = fitz.Rect(60, 230, 535, 360)
+    page.draw_rect(band, color=None, fill=color_rgb, fill_opacity=0.18)
+    page.draw_rect(band, color=color_rgb, width=2)
+
+    page.insert_text(
+        fitz.Point(80, 285),
+        f"{score_str}",
+        fontname="hebo", fontsize=68, color=color_rgb,
+    )
+    page.insert_text(
+        fitz.Point(80 + (180 if t["score"] is not None else 100), 285),
+        "/ 100" if t["score"] is not None else "",
+        fontname="helv", fontsize=20, color=(0.4, 0.4, 0.4),
+    )
+    page.insert_text(
+        fitz.Point(80, 330),
+        label,
+        fontname="hebo", fontsize=14, color=color_rgb,
+    )
+
+    # Breakdown lines.
+    y = 400
+    page.insert_text(
+        fitz.Point(60, y),
+        f"{t['passed']} pass | {t['failed']} fail | {t['inconclusive']} inconclusive",
+        fontname="helv", fontsize=12, color=(0.2, 0.2, 0.2),
+    )
+    page.insert_text(
+        fitz.Point(60, y + 22),
+        f"out of {t['attempted']} attempted verifications",
+        fontname="helv", fontsize=10, color=(0.5, 0.5, 0.5),
+    )
+
+    # Methodology note. ASCII-only to render reliably in all PDF viewers.
+    note = (
+        "Trust score weighting: PASS = 1.0, INCONCLUSIVE = 0.5, FAIL = 0.0.\n"
+        "NOT_CHECKED claims are excluded from the denominator.\n"
+        "Buckets: 85+ high, 60+ medium, <60 low.\n"
+        "\n"
+        "Highlighted claims on the following pages:\n"
+        "    red    - verified FAIL (paper contradicts itself or external evidence)\n"
+        "    yellow - INCONCLUSIVE (could not be decisively verified)\n"
+        "Click any highlight for the verdict and the verifier's reasoning."
+    )
+    rect = fitz.Rect(60, 480, 535, 720)
+    page.insert_textbox(
+        rect, note, fontname="helv", fontsize=10,
+        color=(0.3, 0.3, 0.3), align=0,
+    )
+
+
 def annotate_pdf(
     pdf_in: Path,
     pdf_out: Path,
     claims: dict[str, dict],
     verdicts: dict[str, dict],
+    slug: str = "",
 ) -> dict:
     """Add highlights to pdf_in, write to pdf_out. Returns counts."""
     import fitz  # PyMuPDF
@@ -209,6 +357,13 @@ def annotate_pdf(
         annot.set_info(title="Anderson", content=build_annotation_text(cid, v))
         annot.update()
         counts["highlighted"] += 1
+
+    # Prepend the trust-score cover page LAST so claim page numbers (which
+    # refer to the original PDF) stay valid while we add highlights above.
+    t = trust_score(verdicts)
+    insert_trust_cover_page(doc, slug or "review", t)
+    counts["trust_score"] = t["score"]
+    counts["trust_bucket"] = t["bucket"]
 
     pdf_out.parent.mkdir(parents=True, exist_ok=True)
     doc.save(pdf_out)
@@ -253,7 +408,7 @@ def main() -> int:
               f"(file missing or no parsable sections); nothing to highlight",
               file=sys.stderr)
 
-    counts = annotate_pdf(pdf_in, pdf_out, claims, verdicts)
+    counts = annotate_pdf(pdf_in, pdf_out, claims, verdicts, slug=review.name)
     print(f"wrote {pdf_out}")
     for k, v in counts.items():
         print(f"  {k}: {v}")

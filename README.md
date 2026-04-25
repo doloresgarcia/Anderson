@@ -42,8 +42,27 @@ anderson/
 ## Setup
 
 ```bash
-pip install -r requirements.txt   # installs PyMuPDF for PDF extract + highlight
+make install            # = pip install -r requirements.txt (installs PyMuPDF)
 ```
+
+## Quick demo
+
+A planted-issue 1-page paper ships in `demo/`. `make demo` scaffolds a review
+of it and produces the full set of phase-3 deliverables — including the
+trust-score cover page on the highlighted PDF — without needing Claude Code
+orchestration:
+
+```bash
+make demo
+# then open:
+#   reviews/__demo__/phase3/outputs/paper.highlighted.pdf
+#   reviews/__demo__/phase3/outputs/graph.final.html
+#   reviews/__demo__/phase3/outputs/STATS.md
+```
+
+The demo paper contains a fabricated citation, a numerical inconsistency
+between abstract and results, and a "we thus prove" overreach in the
+discussion. Anderson catches all three.
 
 ## Starting a review
 

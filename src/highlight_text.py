@@ -32,6 +32,7 @@ robust and visually clearer than mid-line highlights in a synthesized PDF.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -42,6 +43,8 @@ from highlight_paper import (  # noqa: E402
     parse_claims_md,
     parse_verification_md,
     build_annotation_text,
+    insert_trust_cover_page,
+    trust_score,
 )
 
 # Canonical palette (graph_schema.md).
@@ -53,22 +56,41 @@ HIGHLIGHT_COLORS = {
 
 def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
     """Return [(start, end, claim_id, verdict, confidence), ...] sorted by
-    start, with overlaps resolved by keeping the earlier-start range."""
+    start, with overlaps resolved by keeping the earlier-start range.
+
+    Tries an exact literal match first; falls back to a whitespace-tolerant
+    regex match (each whitespace run in the sentence allows any whitespace
+    in the text, so soft-wrapped paragraphs match too).
+    """
     ranges: list[tuple] = []
     for cid, claim in claims.items():
         v = verdicts.get(cid)
         if not v or v["verdict"] not in HIGHLIGHT_COLORS:
             continue
-        sentence = claim["sentence"]
+        sentence = (claim.get("sentence") or "").strip()
         if not sentence:
             continue
+
         idx = 0
+        found = False
         while True:
             pos = text.find(sentence, idx)
             if pos == -1:
                 break
             ranges.append((pos, pos + len(sentence), cid, v["verdict"], v.get("confidence", "")))
             idx = pos + len(sentence)
+            found = True
+        if found:
+            continue
+
+        # Whitespace-tolerant fallback for soft-wrapped sentences.
+        words = sentence.split()
+        if len(words) < 2:
+            continue
+        pattern = r"\s+".join(re.escape(w) for w in words)
+        for m in re.finditer(pattern, text):
+            ranges.append((m.start(), m.end(), cid, v["verdict"], v.get("confidence", "")))
+
     ranges.sort()
     merged: list[tuple] = []
     for r in ranges:
@@ -295,6 +317,13 @@ def synthesize_pdf(
                     annot.update()
 
             y += LINE_H
+
+    # Prepend the trust-score cover page (last so we can reuse the existing
+    # text-emission loop without juggling page indices).
+    t = trust_score(verdicts)
+    insert_trust_cover_page(doc, slug, t)
+    counts["trust_score"] = t["score"]
+    counts["trust_bucket"] = t["bucket"]
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(out_path)

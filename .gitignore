@@ -9,3 +9,6 @@ __pycache__/
 reviews/*/logs/
 reviews/*/.cache/
 reviews/*/scratch/
+
+# `make demo` regenerates this; don't commit the rendered tree.
+reviews/__demo__/

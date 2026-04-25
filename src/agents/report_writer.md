@@ -31,16 +31,19 @@ reasons, and per-group rows.
 
 Then write `REPORT.md` with these sections, in order:
 
-1. **Overview** — paper identification, what was reviewed.
-2. **Method** — what conventions were used (cite the convention files).
-3. **Statistics** — short prose summarizing the key numbers. **Quote** the
+1. **Trust score** — copy the score banner verbatim from `STATS.md`'s top
+   section. This is the headline of the report; place it before everything
+   else so a reader who reads only the first lines knows the verdict.
+2. **Overview** — paper identification, what was reviewed.
+3. **Method** — what conventions were used (cite the convention files).
+4. **Statistics** — short prose summarizing the key numbers. **Quote** the
    relevant rows of `STATS.md` rather than recomputing them; embed
    `STATS.md`'s tables verbatim where they help.
-4. **What we checked** — claim count, claims selected by the strategist,
+5. **What we checked** — claim count, claims selected by the strategist,
    methods used.
-5. **What failed** — for every FAIL/INCONCLUSIVE, one short paragraph:
+6. **What failed** — for every FAIL/INCONCLUSIVE, one short paragraph:
    claim, verdict, evidence, link to highlighted sentence.
-6. **Limitations** — paywalled refs, missing conventions, ambiguous wording,
+7. **Limitations** — paywalled refs, missing conventions, ambiguous wording,
    etc.
 
 Prose only (apart from the verbatim STATS tables) — no new findings. The
