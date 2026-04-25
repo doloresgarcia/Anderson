@@ -7,14 +7,15 @@ The output is a Cytoscape.js compound-graph view: groups are containers, claims
 are nodes inside groups, edges connect claims. Color follows the canonical
 palette in conventions/graph_schema.md.
 
-V1 limitations (deliberate, document-and-iterate):
+The Cytoscape.js library is **inlined** into the HTML from
+`src/vendor/cytoscape.min.js`, so the resulting file is fully self-contained
+and works offline. If the vendor file is missing, the renderer falls back to
+loading from a public CDN (and warns the user — useful while iterating, but
+the file won't render without internet).
 
-- Loads Cytoscape.js from a public CDN. The schema asks for fully self-contained
-  HTML; this version isn't. Switch to inline-embedded JS once the renderer's
-  output stabilizes — search for INLINE-TODO below.
-- Default state shows all nodes (groups + claims). The schema specifies
-  click-to-expand collapse behavior. Implementing that requires the
-  cytoscape-expand-collapse extension; deferred for v1.
+V1 limitation: default state shows all nodes (groups + claims). The schema
+specifies click-to-expand collapse behavior; implementing that needs the
+cytoscape-expand-collapse extension and is deferred.
 """
 
 from __future__ import annotations
@@ -46,6 +47,29 @@ VERDICT_COLORS = {
 }
 
 DEFAULT_COLOR = VERDICT_COLORS["NOT_CHECKED"]
+
+
+VENDOR_DIR = Path(__file__).resolve().parent / "vendor"
+CYTOSCAPE_VENDOR = VENDOR_DIR / "cytoscape.min.js"
+CYTOSCAPE_CDN = "https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"
+
+
+def _cytoscape_script_block() -> str:
+    """Return the <script>…</script> tag(s) that load Cytoscape.js.
+
+    Prefers the inlined vendor copy (offline-safe). Falls back to the public
+    CDN with a console.warn if the vendor copy is missing.
+    """
+    if CYTOSCAPE_VENDOR.exists():
+        # Inline-embed — emit a literal <script> with the library source.
+        # The minified JS shouldn't contain </script>, but guard just in case.
+        body = CYTOSCAPE_VENDOR.read_text().replace("</script>", "<\\/script>")
+        return "<script>\n" + body + "\n</script>"
+    return (
+        f'<script src="{CYTOSCAPE_CDN}"></script>'
+        '<script>console.warn("Anderson: cytoscape.min.js was loaded from a '
+        'CDN; ship src/vendor/cytoscape.min.js for an offline-safe build.");</script>'
+    )
 
 
 def to_cytoscape_elements(graph: dict) -> list[dict]:
@@ -192,8 +216,7 @@ HTML_TEMPLATE = r"""<!doctype html>
   }
   #legend .line.contradicts { background: #E74C3C; height: 3px; }
 </style>
-<!-- INLINE-TODO: replace this CDN script with inlined JS for offline self-containment. -->
-<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+__CYTOSCAPE_SCRIPT__
 </head>
 <body>
 <div id="header">
@@ -367,6 +390,7 @@ def render(graph: dict) -> str:
     slug = (graph.get("paper") or {}).get("slug", "graph")
     return (
         HTML_TEMPLATE
+        .replace("__CYTOSCAPE_SCRIPT__", _cytoscape_script_block())
         .replace("__SLUG__", slug)
         .replace("__ELEMENTS__", json.dumps(elements, indent=2))
     )
