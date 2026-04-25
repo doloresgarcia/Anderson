@@ -8,11 +8,12 @@
 #   make stats       — re-render STATS.md  for REVIEW=<dir>
 #   make highlight   — re-render highlighted PDF for REVIEW=<dir>
 #   make usage       — aggregate subagent token usage for REVIEW=<dir>
+#   make ci          — pre-PR structural sanity check (no LLM dispatch)
 #
 # Per-review targets pass REVIEW=<path>:
 #   make stats REVIEW=reviews/my-paper
 
-.PHONY: help install demo demo-clean graph stats highlight usage
+.PHONY: help install demo demo-clean graph stats highlight usage ci
 
 REVIEW ?= reviews/__demo__
 DEMO_REVIEW := reviews/__demo__
@@ -28,6 +29,8 @@ help:
 	@echo "  stats           re-render STATS.md  for REVIEW=<dir>"
 	@echo "  highlight       re-render highlighted PDF for REVIEW=<dir>"
 	@echo "  usage           aggregate subagent token usage for REVIEW=<dir>"
+	@echo ""
+	@echo "  ci              pre-PR structural check (demo + schema + hook smokes)"
 	@echo ""
 	@echo "  REVIEW defaults to $(REVIEW)"
 	@echo ""
@@ -79,3 +82,25 @@ highlight:
 
 usage:
 	python3 src/token_log.py $(REVIEW)
+
+# One-shot pre-PR sanity check. Does not exercise the LLM pipeline —
+# that requires a real `claude` session at the repo root (see README §
+# "Verifying the rework end-to-end").
+ci:
+	@echo "[1/5] make demo (deterministic Python pipeline)..."
+	@$(MAKE) -s demo > /dev/null
+	@echo "      OK"
+	@echo "[2/5] graph_schema.json validates demo/graph.v2.json..."
+	@python3 -c "import json,jsonschema; jsonschema.validate(json.load(open('demo/graph.v2.json')), json.load(open('src/conventions/graph_schema.json')))" \
+		&& echo "      OK"
+	@echo "[3/5] hooks: validate_graph on the demo graph..."
+	@echo '{"tool_name":"Write","tool_input":{"file_path":"reviews/__demo__/phase3/outputs/graph.final.json"}}' \
+		| .claude/hooks/validate_graph.py && echo "      OK (exit 0)"
+	@echo "[4/5] hooks: validate_bib on a non-review path (should noop)..."
+	@echo '{"tool_name":"Write","tool_input":{"file_path":"src/something.py"}}' \
+		| .claude/hooks/validate_bib.py && echo "      OK (exit 0)"
+	@echo "[5/5] hooks: usage_log defensive (always exit 0)..."
+	@echo '{"agent_type":"test","cwd":"/tmp"}' \
+		| .claude/hooks/usage_log.py && echo "      OK (exit 0)"
+	@echo ""
+	@echo "All structural checks pass. Live LLM smoke is NOT covered — see README."

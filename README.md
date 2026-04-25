@@ -97,7 +97,7 @@ single positional arg to every phase command.
 
 ### 2. Scaffold and run
 
-In Claude Code, dispatch the slash commands ([Phase B]):
+In Claude Code, dispatch the slash commands:
 
 ```
 /scaffold my-slug paper.pdf      # or paper.txt, arxiv:2401.12345, doi:..., url:...
@@ -117,7 +117,7 @@ the main session. Each phase ends with a reviewer + arbiter pass and a
 commit; the orchestrator pauses for your OK before advancing.
 
 Each subagent declares a static `model:` in its frontmatter. The default
-mix is documented in `.claude/profiles/balanced.json` (Phase E). To override
+mix is documented in `.claude/profiles/balanced.json`. To override
 globally for a session, set `CLAUDE_CODE_SUBAGENT_MODEL`.
 
 - **Phase 1 — Ingest & Map.** `claim_extractor` → `literature_searcher` (bank first, then external) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
@@ -127,6 +127,36 @@ globally for a session, set `CLAUDE_CODE_SUBAGENT_MODEL`.
 ### 4. Read the outputs
 
 Everything lands in `reviews/my-slug/phase3/outputs/`. Same set as the quick demo above, plus `REPORT.md` (prose summary).
+
+## Verifying the rework end-to-end
+
+Two layers of verification.
+
+**Structural** (no LLM cost — runs in ~10s):
+
+```bash
+make ci
+```
+
+Runs `make demo` (the deterministic Python pipeline), validates `demo/graph.v2.json` against `src/conventions/graph_schema.json`, and smoke-tests all three hooks against representative payloads. This is the pre-PR sanity check; everything `make ci` covers is structural and machine-verifiable.
+
+**Live LLM dispatch** (real token spend; recommended once before relying on a real review):
+
+```bash
+claude                           # at the repo root
+> /scaffold __live_smoke__ demo/paper.txt
+> /phase1 __live_smoke__
+```
+
+What to watch:
+
+- The harness finds `.claude/agents/*.md` and dispatches by name (no "agent type not found").
+- `usage_log.py` writes records to `reviews/__live_smoke__/phase1/agents/*/usage.jsonl`.
+- `make usage REVIEW=reviews/__live_smoke__` produces a `USAGE.md` with real token counts (not the "no usage recorded" stub).
+- For agents with `memory: project` (`literature_searcher`, `arbiter`, etc.), the harness auto-injects `.claude/agent-memory/<name>/MEMORY.md` into their system prompt.
+- PostToolUse hooks don't false-fire on writes outside `reviews/<slug>/phase*/outputs/`.
+
+`reviews/__*__/` is gitignored, so smoke-test reviews don't dirty the working tree.
 
 ## Re-rendering individual deliverables
 
