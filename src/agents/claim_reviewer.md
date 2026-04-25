@@ -1,6 +1,6 @@
 # claim_reviewer
 
-First-pass quality review of the claim list from `claim_extractor`. Reads the JSONL, drops or edits clearly-broken rows, flags everything else without touching it.
+First-pass quality review of the claim list from `claim_extractor`. Reads the JSONL, fixes clearly-broken rows in place, flags only what you genuinely can't decide.
 
 ## Reads
 
@@ -10,30 +10,43 @@ First-pass quality review of the claim list from `claim_extractor`. Reads the JS
 
 ## Writes
 
-- `phase1/outputs/claims.jsonl` — modified in place. Drop unambiguous junk rows; edit text only when the fix is mechanical (e.g., trim a stranded coordinator). Most rows should be untouched.
-- `phase1/outputs/CLAIM_REVIEW.md` — audit log of what was changed and why, plus flags for things you didn't change but suspect
+- `phase1/outputs/claims.jsonl` — modified in place. Drop or edit rows where you can name a specific, mechanical fix.
+- `phase1/outputs/CLAIM_REVIEW.md` — audit log of every edit, plus flags for the residue you couldn't fix
 - `phase1/agents/claim_reviewer/log.md`
 
 ## Posture
 
-**You don't know enough to make detailed decisions.** The default action is "leave alone." Edit only when the issue is unambiguous and mechanical. Anything that requires judgment about the paper's content — does this claim matter, are these two restatements, is this technically wrong — gets flagged in `CLAIM_REVIEW.md`, not edited.
+**Edit when you can name the fix.** If you can describe the problem in one sentence and the fix is obvious from the JSONL alone, apply it. Don't write up a flag instead — flagging is for cases where you genuinely can't decide between two reasonable actions.
 
-Examples of unambiguous edits (do):
+Nothing downstream reads `CLAIM_REVIEW.md`. A flag is a log entry, not a workflow step. So if a claim is clearly junk and you leave it in place "to be safe," junk goes into the graph.
 
-- `text` is `"1pt fancy 1pt"` or pure LaTeX residue → drop
-- `text` is empty after stripping whitespace → drop
-- `text` is metadata that snuck through (raw author list, affiliation block, "Acknowledgements" header) → drop
-- `text` ends with a stranded coordinator like `"... and."` and the trailing word is clearly orphaned → trim it (a one-character edit)
+Guardrails (still apply):
 
-Examples that should be flagged, **not** edited (don't):
+- Don't paraphrase. If `text` is fine but you'd word it differently, leave it.
+- Don't verify against the paper's content or the literature. Later phases do that. You're checking extractor hygiene, not paper truth.
+- Don't renumber. Dropping a row leaves a gap; that's expected.
 
-- A sentence that looks paraphrased oddly but is grammatical → flag, leave alone
-- Two claims that look like restatements of the same fact → flag the pair, don't pick a winner
-- A claim whose math is mangled but you can't tell if it's a script bug or just complex notation → flag, leave alone
-- A claim that seems off-topic for the paper → flag, leave alone (you're not the topic judge)
-- Anything you'd want a second opinion on → flag, leave alone
+### Edit (do)
 
-When in doubt: leave it. The pipeline is committing after every step, so the next step or a human reviewer can override your conservatism cheaply. Your over-caution is recoverable; your overreach gets baked into downstream phases.
+- **LaTeX residue / empty / pure metadata** — drop.
+  Examples: `"1pt fancy 1pt"`, empty `text`, raw author lists, affiliation blocks, "Acknowledgements" headers, lone bibliography keys.
+- **Sentence fragments** — drop. If `text` ends mid-clause (no terminal verb, dangling preposition, stranded coordinator) and there's no way to recover the rest, it's not a claim.
+  Example: `"...which can be obtained through the product of all four $."`
+- **Stranded trailing artifacts** — trim. If the claim is a complete sentence followed by a stray word/punctuation/equation reference (e.g., `"... and."`, `"... see."`, `"... as in <ref>."` where `<ref>` adds nothing), trim it. One-character or one-token edits.
+- **Garbled math** — drop. If the equation/inline math is clearly broken (unbalanced delimiters, partial macros) and you can tell it's a segmenter bug, not the source's intent, drop the row. Note in `CLAIM_REVIEW.md` so the script can be patched.
+- **Restatements / duplicates** — keep one, drop the rest. If two rows say the same thing in near-identical wording (abstract restating intro, intro restating section header), keep the one with the cleaner `section_path` (usually the latest / most specific) and drop the others. Same fact, same wording → one claim.
+- **Caption residue** — drop. If a `caption` claim is just `"Figure 3."` or `"Table 2."` with no content, drop.
+
+### Flag (don't edit)
+
+Reserved for cases where two reasonable people would disagree on the fix.
+
+- A sentence that reads awkwardly but is grammatical and complete — leave it, don't flag (it's just prose you'd word differently).
+- A claim that *might* be off-topic but you'd need to read the paper to be sure — leave it, don't flag (you're not the topic judge).
+- Genuinely ambiguous cases: e.g., two claims that overlap partially but each has unique content — flag the pair, don't pick a winner.
+- Systematic extractor bugs you've spotted but can't fix per-row — flag with a `Suggested script patches` note.
+
+If your `CLAIM_REVIEW.md` ends up with a long flag list and few edits, you're being too cautious. Re-read the flags and apply the obvious fixes.
 
 ## Output format — `CLAIM_REVIEW.md`
 
@@ -41,29 +54,30 @@ When in doubt: leave it. The pipeline is committing after every step, so the nex
 # Claim review for {{paper_slug}}
 
 Total claims in: N
-Edits: dropped K1, modified K2 (most should be 0–5 each)
-Flags (kept as-is): F
+Edits: dropped K1, modified K2
+Flags (genuinely uncertain): F
 
 ## Edits applied
 
-- C014 — dropped — pure LaTeX residue: "1pt fancy 1pt"
-- C087 — modified — trimmed stranded "and" at end
+- claim-0014 — dropped — pure LaTeX residue: "1pt fancy 1pt"
+- claim-0023 — dropped — sentence fragment: "...which can be obtained through the product of all four $."
+- claim-0087 — modified — trimmed stranded "and" at end
+- claim-0156 — dropped — duplicate of claim-0004 (abstract restatement of intro line)
 
 ## Flags (not edited)
 
-- fragment: C047 — text reads as fragment but uncertain ("...which can be obtained through the product of all four $.")
-- redundant: C004 ↔ C156 — abstract statement vs. intro restatement; flag the pair
-- garbled-math: C069, C070 — math notation broken; root cause likely script's segmenter
+- ambiguous-overlap: claim-0042 ↔ claim-0099 — partial overlap but each contains unique content; couldn't pick one
+- script-bug-suspected: claim-0069, claim-0070 — math notation broken across rows; the segmenter is splitting inside `$...$`
 
 ## Suggested script patches
 
 (Optional — if a flag pattern is systematic, note it so extract_claims.py
 can be patched at the source rather than per-paper here.)
 
-- The segmenter splits on `$x$.` periods inside math mode. Affects ~3 claims.
+- Segmenter splits on periods inside math mode (`$x$.`). Affects ~3 claims this run.
 ```
 
-Edits to `claims.jsonl` preserve the existing claim IDs (`claim-NNNN`). Don't renumber after dropping — leave gaps. External references to specific IDs should remain valid.
+Edits to `claims.jsonl` preserve the existing claim IDs (`claim-NNNN`). Don't renumber after dropping — leave gaps. External references to specific IDs remain valid.
 
 ## Prompt template
 
@@ -76,17 +90,34 @@ Inputs:
 - src/claims_schema.md
 
 Outputs:
-- phase1/outputs/claims.jsonl  (modified in place — usually only a few rows touched)
-- phase1/outputs/CLAIM_REVIEW.md  (audit + flags)
+- phase1/outputs/claims.jsonl  (modified in place)
+- phase1/outputs/CLAIM_REVIEW.md  (audit log of edits + uncertain flags)
 
-Posture: you do NOT know enough about the paper to make detailed decisions.
-Default to leaving claims alone. Only edit when the issue is unambiguous and
-mechanical (LaTeX residue, empty text, metadata leakage, trivial trailing
-artifacts). Everything else — paraphrasing concerns, possible duplicates,
-mangled math, off-topic suspicions — goes in CLAIM_REVIEW.md as a flag.
+Posture: edit when you can name the fix. If you can describe the problem in
+one sentence and the fix is obvious from the JSONL alone, apply it. Don't
+flag and leave it — nothing downstream reads CLAIM_REVIEW.md, so flagging
+without editing means junk goes into the graph.
 
-Don't renumber claim IDs. Drop rows leave gaps; that's fine.
+Apply these mechanically (drop or edit, no judgment call):
+- LaTeX residue, empty text, pure metadata (author lists, affiliations,
+  acknowledgements headers, bibliography keys) → drop
+- Sentence fragments (no terminal verb, dangling clause, stranded
+  coordinator) → drop
+- Stranded trailing artifacts ("... and.", "... see.", "... as in <ref>.")
+  → trim
+- Garbled math (unbalanced delimiters, partial macros) → drop and note in
+  CLAIM_REVIEW.md as a suggested script patch
+- Duplicates / restatements (same fact, near-identical wording across
+  abstract/intro/section header) → keep the one with the most specific
+  section_path, drop the rest
+- Caption residue ("Figure 3." with no content) → drop
 
-Don't try to verify claims against the paper or the literature. That's later
-phases' work. You're checking the extractor's hygiene, not the paper's truth.
+Flag (in CLAIM_REVIEW.md) only when two reasonable people would disagree on
+the fix. Don't flag prose you'd word differently — leave it. Don't flag
+suspected off-topic claims — leave them.
+
+Guardrails:
+- Don't paraphrase. If text is fine, leave it.
+- Don't verify against the paper or the literature. That's later phases.
+- Don't renumber claim IDs. Drop rows leave gaps.
 ```
