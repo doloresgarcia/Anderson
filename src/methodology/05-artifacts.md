@@ -85,11 +85,11 @@ Human-facing summary, sectioned: Overview, Method, What we checked, What failed
 ## Highlighted paper
 
 `paper.highlighted.pdf` and `paper.highlighted.html`. Highlight color encodes
-verdict:
+verdict, using the canonical palette in `conventions/graph_schema.md`:
 
-- red — FAIL
-- yellow — INCONCLUSIVE
-- (no highlight) — PASS or not checked
+- red `#E74C3C` — FAIL
+- yellow `#F1C40F` — INCONCLUSIVE
+- (no highlight) — PASS or not checked (green and gray in the graph)
 
 Each highlighted span carries a tooltip / margin note linking back to the
 `VERIFICATION.md` entry.

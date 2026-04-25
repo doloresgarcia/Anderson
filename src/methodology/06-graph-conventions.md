@@ -9,11 +9,9 @@ in `src/conventions/`:
 - `conventions/verification.md` — verification methods, pass/fail criteria
 - `conventions/confidence.md` — single discrete confidence scale used everywhere
 
-`graph_schema.md` is still a placeholder; the other three are filled in. While
-`graph_schema.md` is a placeholder, `graph_builder` produces a minimal
-node-per-claim graph and reviewers raise a Category B finding noting the gap.
-That degraded mode lets the orchestration loop be exercised end-to-end before
-the schema is nailed down.
+All four convention files are filled in. The system is no longer in degraded
+mode — `graph_builder` produces real ≤20-group compound graphs per
+`graph_schema.md`, and `graph.final.html` is the primary visual deliverable.
 
 When convention files change, no agent role file or methodology file should
 need to change. If you find yourself editing role files to accommodate a

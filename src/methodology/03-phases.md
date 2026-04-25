@@ -63,14 +63,17 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 - `highlighter` — reads `graph.v2.json` and `VERIFICATION.md`; produces
   `paper.highlighted.pdf` with FAIL/INCONCLUSIVE sentences visibly marked, and
   `paper.highlighted.html` for browser viewing.
-- `graph_builder` — final pass; emits `graph.final.json` plus `graph.final.svg` for
-  human reading.
+- `graph_builder` — final pass; emits `graph.final.json`,
+  `graph.final.html` (interactive Cytoscape.js viz, the primary visual
+  deliverable), and `graph.final.svg` (static snapshot for inclusion in PDFs
+  and slides).
 - `report_writer` (specialization of `executor`) — writes `REPORT.md` summarizing
   what was checked, what failed, and why.
 
 **Deliverables (in `reviews/<slug>/phase3/outputs/`).**
 
 - `graph.final.json`
+- `graph.final.html`
 - `graph.final.svg`
 - `paper.highlighted.pdf`
 - `paper.highlighted.html`
