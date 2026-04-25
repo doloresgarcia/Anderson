@@ -32,6 +32,18 @@ work, and emit a first-pass claim graph.
 **Review.** Single-bot review (correctness/completeness of claim extraction and graph
 well-formedness). Arbiter PASS required to advance.
 
+### Phase 1 gotchas
+
+- If `conventions/claim_taxonomy.md` is the placeholder, every claim will be
+  `UNCLASSIFIED`. The `critical_reviewer` will raise that as Category B; that
+  is expected. Surface the gap in the dispatch summary, do not block on it.
+- `references.bib` must contain every key that appears in `LITERATURE.md`.
+  Mismatches are auto-Category-A.
+- The literature searcher always searches `literature_bank/` (at the repo
+  root) before any external call. If the bank is missing, empty, or
+  unreadable, the searcher logs this and falls back to external search — this
+  is not a phase failure.
+
 ## Phase 2 — Strategy & Check
 
 **Goal.** Decide which claims are worth checking, run five specialized checker
@@ -63,6 +75,27 @@ agents against the claims, and update the graph with their findings.
 **Review.** 3-bot review (a critical reviewer, a constructive reviewer, and an
 arbiter). Findings classified A/B/C per `04-review.md`.
 
+### Phase 2 gotchas
+
+- Checker agents are independent; do not let them write to the same file
+  simultaneously. Each writes its section first under
+  `phase2/agents/<checker_name>/section.md`; the orchestrator's concat step
+  assembles `VERIFICATION.md` in category severity order: `unreferenced`,
+  `ambiguous`, `internal_contradiction`, `literature_collision`,
+  `domain_violation`.
+- All five checkers always run. If a checker finds nothing to flag for any
+  claim, its section still appears in `VERIFICATION.md` with all `CLEAR`
+  entries.
+- Concurrency: all five checkers run in parallel from the main session (one
+  agent per category, not per claim). This keeps the total agent count at 5
+  regardless of claim count.
+- Common phase-2 fixer fixes:
+  - A `FLAGGED` verdict without the evidence required by
+    `conventions/error_categories.md` → demote to `INCONCLUSIVE` or supply
+    the evidence.
+  - Strategist skipped an `importance=high` claim → re-run checkers for it.
+  - A checker used the wrong category → reassign the finding.
+
 ## Phase 3 — Report
 
 **Goal.** Produce the final, human-facing artifacts.
@@ -87,3 +120,20 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 
 **Gate.** Human review of the highlighted PDF. Possible responses: APPROVE,
 ITERATE (fix in phase 3 scope), REGRESS(N) (re-open phase N).
+
+### Phase 3 gotchas
+
+- If most claims in `VERIFICATION.md` are `INCONCLUSIVE` because the
+  verification conventions are the placeholder, the highlighted PDF will have
+  few highlights and the report will say "inconclusive" a lot. That is the
+  intended degraded output, not a phase-3 bug. Tell the user; do not paper
+  over it.
+- Phase-3 specific Category-A triggers (in addition to the global ones):
+  - A highlight in `paper.highlighted.pdf` whose claim_id has no `FLAGGED`
+    entry in `VERIFICATION.md`.
+  - A highlight whose color does not match the most severe flagged category
+    for that claim per `conventions/error_categories.md`.
+  - A node in `graph.final.json` lacking the verdict layer when
+    `graph.v2.json` had it.
+  - The phase-3 prose summary introducing a verdict that is not in
+    `VERIFICATION.md`.

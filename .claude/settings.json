@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(python3 src/*.py:*)",
+      "Bash(python3 src/scaffold_review.py:*)",
+      "Bash(python3 src/render_graph.py:*)",
+      "Bash(python3 src/highlight_paper.py:*)",
+      "Bash(python3 src/highlight_text.py:*)",
+      "Bash(python3 src/claim_stats.py:*)",
+      "Bash(make:*)",
+      "Bash(make *)",
+      "Bash(git status:*)",
+      "Bash(git status --porcelain:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m:*)",
+      "Bash(ls:*)",
+      "Bash(find reviews:*)",
+      "Bash(find literature_bank:*)",
+      "Read(**)",
+      "Write(reviews/**)",
+      "Edit(reviews/**)",
+      "Write(.claude/agent-memory/**)",
+      "Edit(.claude/agent-memory/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf /:*)",
+      "Bash(git push:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Edit(src/conventions/**)",
+      "Edit(src/methodology/**)"
+    ]
+  }
+}
