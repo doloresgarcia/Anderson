@@ -78,5 +78,24 @@
       "Edit(src/methodology/05-artifacts.md)",
       "Edit(src/methodology/06-graph-conventions.md)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/validate_graph.py" },
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/validate_bib.py" }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/usage_log.py" }
+        ]
+      }
+    ]
   }
 }
