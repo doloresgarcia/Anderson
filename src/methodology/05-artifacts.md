@@ -84,15 +84,19 @@ Human-facing summary, sectioned: Overview, Method, What we checked, What failed
 
 ## Highlighted paper
 
-`paper.highlighted.pdf` (PDF-only in v1; HTML companion deferred). Highlight
-color encodes verdict, using the canonical palette in
+`paper.highlighted.pdf` always. `paper.highlighted.html` additionally if the
+input was plain text.
+
+Highlight color encodes verdict, using the canonical palette in
 `conventions/graph_schema.md`:
 
 - red `#E74C3C` — FAIL
 - yellow `#F1C40F` — INCONCLUSIVE
 - (no highlight) — PASS or not checked (green and gray in the graph)
 
-Produced by `src/highlight_paper.py` (PyMuPDF-based).
+Produced by `src/highlight_paper.py` for PDF input (character-level) or
+`src/highlight_text.py` for text input (line-level in a synthesized PDF, plus
+character-level in a companion HTML).
 
 Each highlighted span carries a tooltip / margin note linking back to the
 `VERIFICATION.md` entry.

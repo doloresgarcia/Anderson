@@ -12,17 +12,21 @@ Reads:
 
 Writes:
 - reviews/<slug>/phase3/outputs/paper.highlighted.html
+- reviews/<slug>/phase3/outputs/paper.highlighted.pdf  (if PyMuPDF available)
 
 Color palette is the canonical one from conventions/graph_schema.md:
   red    (#E74C3C) — FAIL
   yellow (#F1C40F) — INCONCLUSIVE
 PASS and NOT_CHECKED produce no highlight.
 
-Each highlight is a `<mark>` span with an anchor id `claim-<id>`, a tooltip
-showing the verdict, and a small superscript label so the reader can
-cross-reference VERIFICATION.md.
+The HTML is self-contained (no JS, no CDN) — `<mark>` spans for the highlights,
+anchor ids `claim-<id>`, and hover tooltips with the verdict.
 
-No external dependencies — produces a self-contained HTML file.
+The PDF is synthesized from paper.txt with PyMuPDF — A4, single column,
+line-level highlight bands behind any line that contains a FAIL/INCONCLUSIVE
+sentence. Line-level (not character-level) is intentional: with a plain-text
+input we have no original layout to preserve, so coloring whole lines is both
+robust and visually clearer than mid-line highlights in a synthesized PDF.
 """
 
 from __future__ import annotations
@@ -77,6 +81,45 @@ def html_escape(s: str) -> str:
          .replace(">", "&gt;")
          .replace('"', "&quot;")
     )
+
+
+def char_range_to_lines(text: str, start: int, end: int) -> tuple[int, int]:
+    """Return (start_line, end_line), 1-indexed, for a character range."""
+    return text.count("\n", 0, start) + 1, text.count("\n", 0, end) + 1
+
+
+def line_verdict_map(text: str, ranges: list[tuple]) -> dict[int, str]:
+    """{line_number: verdict} for any line that intersects a highlight range.
+    Lines spanning a FAIL keep FAIL even if also overlapped by INCONCLUSIVE."""
+    out: dict[int, str] = {}
+    for start, end, _cid, verdict, _conf in ranges:
+        sl, el = char_range_to_lines(text, start, end)
+        for ln in range(sl, el + 1):
+            if out.get(ln) == "FAIL":
+                continue
+            out[ln] = verdict
+    return out
+
+
+def _wrap_line(line: str, max_chars: int) -> list[str]:
+    """Soft-wrap a line at the last space before `max_chars`. Preserves
+    leading whitespace by keeping wrapped continuations starting at column 0."""
+    if len(line) <= max_chars:
+        return [line]
+    out: list[str] = []
+    cursor = 0
+    while cursor < len(line):
+        if len(line) - cursor <= max_chars:
+            out.append(line[cursor:])
+            break
+        idx = line.rfind(" ", cursor, cursor + max_chars + 1)
+        if idx > cursor:
+            out.append(line[cursor:idx])
+            cursor = idx + 1
+        else:
+            out.append(line[cursor:cursor + max_chars])
+            cursor += max_chars
+    return out
 
 
 HTML_TEMPLATE = """<!doctype html>
@@ -136,6 +179,82 @@ HTML_TEMPLATE = """<!doctype html>
 """
 
 
+# Canonical palette as PyMuPDF RGB floats in [0, 1].
+_PDF_RGB = {
+    "FAIL":         (0.906, 0.298, 0.235),  # #E74C3C
+    "INCONCLUSIVE": (0.945, 0.769, 0.059),  # #F1C40F
+}
+
+
+def synthesize_pdf(text: str, ranges: list[tuple], out_path: Path, slug: str) -> dict:
+    """Synthesize a PDF from paper.txt with line-level highlight bands.
+
+    Layout is intentionally minimal: A4, single column, Helvetica 10pt, lines
+    wrapped at ~85 characters. Any line that intersects a FAIL or
+    INCONCLUSIVE highlight range gets a colored band drawn behind it.
+    """
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        raise RuntimeError(
+            "PyMuPDF not installed; cannot produce PDF. "
+            "Install with: pip install pymupdf"
+        )
+
+    PAGE_W, PAGE_H = 595, 842        # A4 in points
+    MARGIN = 60
+    FONT_NAME = "helv"
+    FONT_SIZE = 10
+    LINE_H = 13
+    MAX_CHARS = 85
+
+    line_verdicts = line_verdict_map(text, ranges)
+    counts = {
+        "FAIL":              sum(1 for v in line_verdicts.values() if v == "FAIL"),
+        "INCONCLUSIVE":      sum(1 for v in line_verdicts.values() if v == "INCONCLUSIVE"),
+        "highlighted_lines": len(line_verdicts),
+    }
+
+    doc = fitz.open()
+    page = doc.new_page(width=PAGE_W, height=PAGE_H)
+    y = MARGIN
+
+    # Header
+    page.insert_text(
+        fitz.Point(MARGIN, y),
+        f"Anderson — highlighted paper: {slug}",
+        fontname=FONT_NAME, fontsize=12, color=(0.3, 0.3, 0.3),
+    )
+    y += LINE_H * 2
+
+    for orig_no, raw_line in enumerate(text.splitlines(), start=1):
+        verdict = line_verdicts.get(orig_no)
+        for wrapped in _wrap_line(raw_line if raw_line else " ", MAX_CHARS):
+            if y + LINE_H > PAGE_H - MARGIN:
+                page = doc.new_page(width=PAGE_W, height=PAGE_H)
+                y = MARGIN
+
+            if verdict:
+                rgb = _PDF_RGB[verdict]
+                rect = fitz.Rect(
+                    MARGIN - 3, y - LINE_H + 3,
+                    PAGE_W - MARGIN + 3, y + 4,
+                )
+                page.draw_rect(rect, color=None, fill=rgb, fill_opacity=0.35)
+
+            page.insert_text(
+                fitz.Point(MARGIN, y),
+                wrapped,
+                fontname=FONT_NAME, fontsize=FONT_SIZE,
+            )
+            y += LINE_H
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(out_path)
+    doc.close()
+    return counts
+
+
 def render(text: str, ranges: list[tuple], slug: str) -> tuple[str, dict]:
     parts: list[str] = []
     cursor = 0
@@ -172,8 +291,14 @@ def main() -> int:
                    help="override CLAIMS.md path")
     p.add_argument("--verification", type=Path,
                    help="override VERIFICATION.md path")
-    p.add_argument("--out", type=Path,
-                   help="override output HTML path")
+    p.add_argument("--html-out", type=Path,
+                   help="override HTML output path")
+    p.add_argument("--pdf-out", type=Path,
+                   help="override PDF output path")
+    p.add_argument("--no-pdf", action="store_true",
+                   help="skip PDF synthesis (HTML only)")
+    p.add_argument("--no-html", action="store_true",
+                   help="skip HTML output (PDF only)")
     args = p.parse_args()
 
     review = args.review_dir
@@ -184,7 +309,8 @@ def main() -> int:
     text_path = args.text or (review / "paper" / "paper.txt")
     claims_md = args.claims or (review / "phase1" / "outputs" / "CLAIMS.md")
     verification_md = args.verification or (review / "phase2" / "outputs" / "VERIFICATION.md")
-    out_path = args.out or (review / "phase3" / "outputs" / "paper.highlighted.html")
+    html_out = args.html_out or (review / "phase3" / "outputs" / "paper.highlighted.html")
+    pdf_out  = args.pdf_out  or (review / "phase3" / "outputs" / "paper.highlighted.pdf")
 
     for required, label in [(text_path, "paper.txt"), (claims_md, "CLAIMS.md")]:
         if not required.exists():
@@ -211,11 +337,22 @@ def main() -> int:
     unmatched = sorted(expected_ids - matched_ids)
 
     slug = review.name
-    html, counts = render(text, ranges, slug)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html)
-    print(f"wrote {out_path}")
-    print(f"  highlighted: {counts}")
+
+    if not args.no_html:
+        html, html_counts = render(text, ranges, slug)
+        html_out.parent.mkdir(parents=True, exist_ok=True)
+        html_out.write_text(html)
+        print(f"wrote {html_out}")
+        print(f"  highlights: {html_counts}")
+
+    if not args.no_pdf:
+        try:
+            pdf_counts = synthesize_pdf(text, ranges, pdf_out, slug)
+            print(f"wrote {pdf_out}")
+            print(f"  highlighted lines: {pdf_counts}")
+        except RuntimeError as e:
+            print(f"warning: PDF skipped — {e}", file=sys.stderr)
+
     if unmatched:
         print(f"  unmatched (sentence not found in paper.txt): {unmatched}")
     return 0

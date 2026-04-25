@@ -13,13 +13,11 @@ Produces the paper-with-highlights deliverable.
 
 ## Writes
 
-One of these, depending on input:
+A highlighted PDF in either case. If the paper was supplied as text, an HTML
+companion is also produced.
 
-- `phase3/outputs/paper.highlighted.pdf` — if `paper/paper.pdf` exists
-- `phase3/outputs/paper.highlighted.html` — if only `paper/paper.txt` exists
-
-Plus:
-
+- `phase3/outputs/paper.highlighted.pdf` — always
+- `phase3/outputs/paper.highlighted.html` — only when `paper/paper.txt` is the source
 - `phase3/agents/highlighter/log.md`
 
 ## Behavior
@@ -33,16 +31,30 @@ If `paper/paper.pdf` exists:
 python3 ../../src/highlight_paper.py .
 ```
 
+→ produces `paper.highlighted.pdf` with character-level highlights on the
+original PDF (highlights wrap the actual sentences).
+
 If only `paper/paper.txt` exists (the paper was provided as plain text):
 
 ```bash
 python3 ../../src/highlight_text.py .
 ```
 
+→ produces `paper.highlighted.pdf` (synthesized PDF, A4, line-level
+highlight bands behind any line containing a flagged sentence) **and**
+`paper.highlighted.html` (browser-friendly companion view, character-level
+`<mark>` spans).
+
 Both scripts apply the canonical palette from `conventions/graph_schema.md`
 (red `#E74C3C` for FAIL, yellow `#F1C40F` for INCONCLUSIVE) and produce
 per-highlight annotations referencing the `claim_id` and verdict so the
 reader can cross-reference `VERIFICATION.md`.
+
+Note on granularity. The PDF-input script highlights at the exact sentence
+boundaries (PyMuPDF `page.search_for`). The text-input script highlights
+whole *lines* in the synthesized PDF — character-level highlights don't
+help when there's no original layout to preserve, and line bands are more
+robust to text-extraction edge cases.
 
 Sentences that PASS or were not checked are not highlighted. (Green and gray in
 the graph translate to "no highlight" in the marked-up paper — positive

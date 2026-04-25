@@ -70,7 +70,9 @@ python3 ../../src/highlight_paper.py .   # if paper/paper.pdf exists
 python3 ../../src/highlight_text.py .    # if only paper/paper.txt exists
 ```
 
-to produce `graph.final.html` and the marked-up paper.
+to produce `graph.final.html` and the marked-up paper. Both input modes (PDF
+or text) yield `paper.highlighted.pdf` as the final deliverable; text input
+additionally produces `paper.highlighted.html`.
 
 ## What is intentionally not yet specified
 
