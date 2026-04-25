@@ -1,65 +1,174 @@
 # VERIFICATION — EfficientFlow demo
 
-## C001 — VERDICT: FAIL — confidence: high
-- method: internal_consistency
-- evidence: paper.txt:7, paper.txt:32
-- reasoning: The abstract claims 87.3% F1 on GLUE, but Section 3 (Results) reports an average score of 78.4% across 9 tasks. There is no mention of a separate F1 metric or a different evaluation in the body that could reconcile these numbers. The 87.3% figure in the abstract is contradicted by the paper's own results.
+Sections are organized by error category; subsections are per-claim verdicts
+from each checker. Per `methodology/05-artifacts.md`.
 
-## C002 — VERDICT: PASS — confidence: high
-- method: internal_consistency
-- evidence: paper.txt:8, paper.txt:35
-- reasoning: The 40% memory reduction claim in the abstract matches the 40% drop reported in Section 3 at sequence length 4096. Internally consistent.
+## unreferenced
 
-## C003 — VERDICT: PASS — confidence: medium
-- method: internal_consistency
-- evidence: paper.txt:10, paper.txt:24
-- reasoning: The "linearly scaling sparse pattern" abstract claim is consistent with the Section 2 description of routing each query to k=8 keys, which is O(n*k) = O(n) in sequence length.
+### C006 — CLEAR — confidence: high
 
-## C004 — VERDICT: FAIL — confidence: high
-- method: citation_audit
-- evidence: paper.txt:9
-- reasoning: The cited reference "Chen et al. (2024)" cannot be resolved to any retrievable record. The paper provides no DOI, no arXiv ID, and no venue, and search of the major literature backends returns no matching paper that "EfficientFlow" could be building on. This is a fabricated_citation.
+### C001 — CLEAR — confidence: high
 
-## C005 — VERDICT: FAIL — confidence: high
-- method: internal_consistency
-- evidence: paper.txt:11, paper.txt:44
-- reasoning: The abstract states the method "demonstrates that attention sparsity is sufficient for emergent reasoning". This is an extraordinary claim, and the paper provides no measurement of reasoning capability — the only evaluation reported is GLUE average accuracy. The claim is unsupported by the paper's own results.
+### C009 — CLEAR — confidence: high
 
-## C006 — VERDICT: PASS — confidence: high
-- method: external_corroboration
-- reasoning: O(n^2) complexity of standard attention is a well-established background fact ([vaswani2017]) and is uncontroversial.
+### C002 — CLEAR — confidence: high
 
-## C007 — VERDICT: PASS — confidence: medium
-- method: internal_consistency
-- evidence: paper.txt:26
-- reasoning: 12 layers × 768 hidden dim is internally consistent with the paper's other architectural mentions; a standard configuration. No conflicting numbers elsewhere in the paper.
+### C011 — CLEAR — confidence: high
 
-## C008 — VERDICT: PASS — confidence: medium
-- method: internal_consistency
-- evidence: paper.txt:24, paper.txt:10
-- reasoning: The k=8 router design is consistent with the abstract's "linearly scaling sparse pattern" claim. No conflicting description elsewhere.
+### C003 — CLEAR — confidence: high
 
-## C009 — VERDICT: PASS — confidence: medium
-- method: internal_consistency
-- evidence: paper.txt:32
-- reasoning: 78.4% across 9 tasks is internally consistent within Section 3. (Note: this number directly contradicts the abstract's 87.3% F1 — see C001.)
+### C007 — CLEAR — confidence: high
 
-## C010 — VERDICT: INCONCLUSIVE — confidence: low
-- method: external_corroboration
-- reason: not_retrievable
-- reasoning: The 0.4% improvement requires a baseline number to verify. The paper does not report the baseline value, so we cannot recompute the delta. Marking inconclusive rather than failed because the comparison may be correct relative to an internal baseline we cannot see.
+### C008 — CLEAR — confidence: high
 
-## C011 — VERDICT: PASS — confidence: medium
-- method: internal_consistency
-- evidence: paper.txt:35, paper.txt:8
-- reasoning: 40% memory drop at 4096 is consistent with the abstract claim and represents a plausible memory profile for sparse attention at long context. No conflicting information.
+### C010 — CLEAR — confidence: high
 
-## C012 — VERDICT: INCONCLUSIVE — confidence: medium
-- method: skip
-- reason: out_of_scope
-- reasoning: This is a hedged interpretation ("our results suggest"). The hedge caps the verdict at INCONCLUSIVE. The paper's GLUE numbers are weak evidence for a "recovers most of the performance" claim, but evaluating that judgment requires deciding what "most" means.
+### C012 — CLEAR — confidence: high
 
-## C013 — VERDICT: FAIL — confidence: high
-- method: internal_consistency
+### C013 — CLEAR — confidence: high
+
+### C005 — FLAGGED — confidence: high
+- evidence: paper.txt:11
+- reasoning: The abstract claim that the method "demonstrates that attention sparsity is sufficient for emergent reasoning capability" is presented as a finding without any citation. Such an extraordinary claim about emergent capability requires either a citation to a benchmark establishing the claim or a citation to prior work supporting the implication. Neither is provided.
+
+### C004 — CLEAR — confidence: medium
+
+
+## ambiguous
+
+### C001 — CLEAR — confidence: high
+
+### C002 — CLEAR — confidence: high
+
+### C003 — CLEAR — confidence: medium
+
+### C004 — CLEAR — confidence: high
+
+### C006 — CLEAR — confidence: high
+
+### C007 — CLEAR — confidence: high
+
+### C008 — CLEAR — confidence: high
+
+### C009 — CLEAR — confidence: high
+
+### C010 — INCONCLUSIVE — confidence: medium
+- reason: ambiguous_wording
+- reasoning: The claim "a 0.4% improvement over the standard attention baseline" is ambiguous about which baseline configuration it refers to. The paper does not specify whether the comparison is against vanilla attention with the same parameter count or a stronger baseline. The 0.4% delta also does not specify whether it is absolute or relative.
+
+### C011 — CLEAR — confidence: high
+
+### C012 — CLEAR — confidence: high
+
+### C013 — FLAGGED — confidence: high
 - evidence: paper.txt:44
-- reasoning: The Discussion section uses "we thus prove" for a claim about "sparsity is sufficient for emergent reasoning", but the paper contains no proof — only descriptive accuracy results. "Prove" is technically wrong; at most, the paper provides circumstantial evidence. This is a verbal overreach that materially misrepresents the strength of the paper's conclusions.
+- interpretations:
+  1. "prove" in the colloquial sense of "provide evidence for" — but then the rest of the sentence overstates what the evidence supports.
+  2. "prove" in the formal sense — but the paper provides no proof, only descriptive accuracy results.
+- reasoning: The phrasing "we thus prove that sparsity is sufficient for emergent reasoning" is ambiguous between formal and colloquial uses of "prove", and either reading is unsupported by the paper's evidence. The ambiguity matters because readers may take "prove" at face value.
+
+### C005 — CLEAR — confidence: medium
+
+
+## internal_contradiction
+
+### C002 — CLEAR — confidence: high
+
+### C003 — CLEAR — confidence: high
+
+### C004 — CLEAR — confidence: high
+
+### C005 — CLEAR — confidence: high
+
+### C006 — CLEAR — confidence: high
+
+### C007 — CLEAR — confidence: high
+
+### C008 — CLEAR — confidence: high
+
+### C010 — CLEAR — confidence: high
+
+### C011 — CLEAR — confidence: high
+
+### C012 — CLEAR — confidence: high
+
+### C013 — CLEAR — confidence: high
+
+### C001 — FLAGGED — confidence: high
+- evidence:
+  - paper.txt:7 — "achieves 87.3% F1 on the GLUE benchmark"
+  - paper.txt:32 — "EfficientFlow achieves an average score of 78.4% across 9 tasks"
+- reasoning: The abstract states 87.3% F1 on GLUE; the Results section reports 78.4% average across the 9 GLUE tasks. The paper does not introduce any auxiliary metric or split that could reconcile these numbers. The two numbers refer to the same evaluation but are not consistent.
+
+### C009 — FLAGGED — confidence: high
+- evidence:
+  - paper.txt:32 — "average score of 78.4%"
+  - paper.txt:7 — abstract claim of 87.3% F1
+- reasoning: Same contradiction as C001 — the results-section number contradicts the abstract claim. Both passages are flagged so the reader sees the inconsistency from either direction.
+
+
+## literature_collision
+
+### C001 — CLEAR — confidence: high
+
+### C002 — CLEAR — confidence: high
+
+### C003 — CLEAR — confidence: high
+
+### C005 — CLEAR — confidence: medium
+
+### C006 — CLEAR — confidence: high
+
+### C007 — CLEAR — confidence: high
+
+### C008 — CLEAR — confidence: high
+
+### C009 — CLEAR — confidence: high
+
+### C010 — CLEAR — confidence: medium
+
+### C011 — CLEAR — confidence: medium
+
+### C012 — CLEAR — confidence: medium
+
+### C013 — CLEAR — confidence: high
+
+### C004 — FLAGGED — confidence: high
+- evidence:
+  - paper.txt:9 — cites "Chen et al. (2024)" / [chen2024sparse]
+  - bibtex key chen2024sparse does not resolve in references.bib
+  - external search returns no paper matching this attribution
+- reasoning: The cited reference does not resolve to any retrievable record. There is no Chen et al. 2024 paper that introduces the sparse-attention approach the paper claims to build on. This is a fabricated_citation.
+
+
+## domain_violation
+
+### C001 — CLEAR — confidence: high
+
+### C002 — CLEAR — confidence: high
+
+### C004 — CLEAR — confidence: high
+
+### C006 — CLEAR — confidence: high
+
+### C007 — CLEAR — confidence: high
+
+### C008 — CLEAR — confidence: high
+
+### C009 — CLEAR — confidence: high
+
+### C010 — CLEAR — confidence: high
+
+### C011 — CLEAR — confidence: high
+
+### C012 — CLEAR — confidence: medium
+
+### C003 — CLEAR — confidence: high
+
+### C005 — INCONCLUSIVE — confidence: medium
+- reason: out_of_scope
+- reasoning: "Emergent reasoning" is not a settled, single-definition concept in the domain. While the paper's claim is unsupported and likely overreaching, it does not violate a textbook fact — the field is still actively debating what counts as emergent reasoning and what evidence demonstrates it.
+
+### C013 — INCONCLUSIVE — confidence: medium
+- reason: out_of_scope
+- reasoning: Same as C005 — the assertion "we thus prove that sparsity is sufficient for emergent reasoning" overreaches but does not violate an established field convention because emergent reasoning is not yet rigorously defined in the literature.

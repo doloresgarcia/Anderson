@@ -24,15 +24,28 @@ import json
 import sys
 from pathlib import Path
 
-# Canonical palette from conventions/graph_schema.md.
-COLORS = {
-    "PASS":         "#2ECC71",
-    "INCONCLUSIVE": "#F1C40F",
-    "FAIL":         "#E74C3C",
+# Canonical palettes — keep in sync with conventions/error_categories.md and
+# the graph node colors set by graph_builder.
+
+# Five-category palette for FLAGGED claims.
+CATEGORY_COLORS = {
+    "unreferenced":           "#4285F4",
+    "ambiguous":              "#FFBF00",
+    "internal_contradiction": "#FF6D00",
+    "literature_collision":   "#D32F2F",
+    "domain_violation":       "#7B1FA2",
+}
+
+# Aggregate verdict palette (per-claim and per-group rollup).
+VERDICT_COLORS = {
+    "CLEAR":        "#2ECC71",   # all checkers CLEAR
+    "INCONCLUSIVE": "#F1C40F",   # at least one INCONCLUSIVE, none FLAGGED
+    "FLAGGED":      "#E74C3C",   # at least one FLAGGED (graph_builder may
+                                 # override with the most-severe category color)
     "NOT_CHECKED":  "#95A5A6",
 }
 
-DEFAULT_COLOR = COLORS["NOT_CHECKED"]
+DEFAULT_COLOR = VERDICT_COLORS["NOT_CHECKED"]
 
 
 def to_cytoscape_elements(graph: dict) -> list[dict]:
@@ -46,7 +59,7 @@ def to_cytoscape_elements(graph: dict) -> list[dict]:
                 "label": g.get("title", g["id"]),
                 "caption": g.get("caption", ""),
                 "verdict": g.get("verdict", "NOT_CHECKED"),
-                "color": g.get("color") or COLORS.get(g.get("verdict", ""), DEFAULT_COLOR),
+                "color": g.get("color") or VERDICT_COLORS.get(g.get("verdict", ""), DEFAULT_COLOR),
                 "kind": "group",
                 "section": g.get("section", ""),
             }
@@ -54,6 +67,16 @@ def to_cytoscape_elements(graph: dict) -> list[dict]:
 
     for c in graph.get("claims", []):
         sentence = c.get("sentence", "")
+        # If graph_builder didn't supply an explicit color, fall back: prefer
+        # the most-severe-category color when categories are listed; else fall
+        # back to the verdict palette.
+        color = c.get("color")
+        if not color:
+            cats = c.get("flagged_categories") or []
+            if cats:
+                color = CATEGORY_COLORS.get(cats[0], DEFAULT_COLOR)
+            else:
+                color = VERDICT_COLORS.get(c.get("verdict", ""), DEFAULT_COLOR)
         elements.append({
             "data": {
                 "id": c["id"],
@@ -65,7 +88,8 @@ def to_cytoscape_elements(graph: dict) -> list[dict]:
                 "confidence": c.get("confidence", ""),
                 "verdict": c.get("verdict", "NOT_CHECKED"),
                 "verdict_confidence": c.get("verdict_confidence", ""),
-                "color": c.get("color") or COLORS.get(c.get("verdict", ""), DEFAULT_COLOR),
+                "flagged_categories": c.get("flagged_categories") or [],
+                "color": color,
                 "kind": "claim",
                 "page": c.get("page"),
                 "line": c.get("line"),
@@ -181,9 +205,13 @@ HTML_TEMPLATE = r"""<!doctype html>
   <div class="meta">…for the full claim, verdict, and reasoning. Drag to reposition. Scroll to zoom.</div>
 </div>
 <div id="legend">
-  <div class="row"><span class="swatch" style="background:#2ECC71"></span>PASS</div>
+  <div class="row"><span class="swatch" style="background:#4285F4"></span>unreferenced</div>
+  <div class="row"><span class="swatch" style="background:#FFBF00"></span>ambiguous</div>
+  <div class="row"><span class="swatch" style="background:#FF6D00"></span>internal_contradiction</div>
+  <div class="row"><span class="swatch" style="background:#D32F2F"></span>literature_collision</div>
+  <div class="row"><span class="swatch" style="background:#7B1FA2"></span>domain_violation</div>
+  <div class="row"><span class="swatch" style="background:#2ECC71"></span>CLEAR</div>
   <div class="row"><span class="swatch" style="background:#F1C40F"></span>INCONCLUSIVE</div>
-  <div class="row"><span class="swatch" style="background:#E74C3C"></span>FAIL</div>
   <div class="row"><span class="swatch" style="background:#95A5A6"></span>NOT CHECKED</div>
   <div class="edges">
     <div class="row"><span class="line"></span>supports</div>
@@ -299,6 +327,9 @@ function renderInfo(node) {
     html += '<div style="margin-top:8px;"><span class="verdict" style="background:' + d.color + '">' + d.verdict + '</span>';
     if (d.verdict_confidence) html += ' <span class="meta" style="margin-top:0;">(' + escapeHtml(d.verdict_confidence) + ')</span>';
     html += '</div>';
+    if (Array.isArray(d.flagged_categories) && d.flagged_categories.length) {
+      html += '<div class="meta">flagged: ' + d.flagged_categories.map(escapeHtml).join(", ") + '</div>';
+    }
     if (d.page != null) html += '<div class="meta">page ' + d.page + (d.line ? ", line " + d.line : "") + '</div>';
   }
   info.innerHTML = html;

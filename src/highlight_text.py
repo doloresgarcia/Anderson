@@ -40,23 +40,29 @@ from pathlib import Path
 # format). Importing rather than duplicating keeps both renderers in sync.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from highlight_paper import (  # noqa: E402
+    CATEGORIES,
+    CATEGORY_HEX,
+    SEVERITY,
     parse_claims_md,
     parse_verification_md,
     build_annotation_text,
     insert_trust_cover_page,
     trust_score,
+    most_severe_flagged,
+    flagged_categories,
+    claim_aggregate_verdict,
 )
 
-# Canonical palette (graph_schema.md).
-HIGHLIGHT_COLORS = {
-    "FAIL":         "#E74C3C",
-    "INCONCLUSIVE": "#F1C40F",
-}
+
+def _category_severity(cat: str) -> int:
+    """Index in SEVERITY (lower = more severe). Unknown categories sort last."""
+    return SEVERITY.index(cat) if cat in SEVERITY else 99
 
 
 def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
-    """Return [(start, end, claim_id, verdict, confidence), ...] sorted by
-    start, with overlaps resolved by keeping the earlier-start range.
+    """Return [(start, end, claim_id, category, confidence), ...] sorted by
+    start, where `category` is the most-severe flagged category for the claim
+    (or "INCONCLUSIVE" if no FLAGGED but at least one INCONCLUSIVE).
 
     Tries an exact literal match first; falls back to a whitespace-tolerant
     regex match (each whitespace run in the sentence allows any whitespace
@@ -64,9 +70,20 @@ def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
     """
     ranges: list[tuple] = []
     for cid, claim in claims.items():
-        v = verdicts.get(cid)
-        if not v or v["verdict"] not in HIGHLIGHT_COLORS:
-            continue
+        record = verdicts.get(cid, {})
+        cat = most_severe_flagged(record)
+        if cat is None:
+            # No FLAGGED categories. If anything is INCONCLUSIVE, mark the
+            # range with the special "INCONCLUSIVE" key so the renderer can
+            # still indicate it (used in HTML; PDF leaves it unhighlighted).
+            agg = claim_aggregate_verdict(record)
+            if agg != "INCONCLUSIVE":
+                continue
+            cat = "INCONCLUSIVE"
+            confidence = ""
+        else:
+            confidence = record[cat].get("confidence", "")
+
         sentence = (claim.get("sentence") or "").strip()
         if not sentence:
             continue
@@ -77,7 +94,7 @@ def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
             pos = text.find(sentence, idx)
             if pos == -1:
                 break
-            ranges.append((pos, pos + len(sentence), cid, v["verdict"], v.get("confidence", "")))
+            ranges.append((pos, pos + len(sentence), cid, cat, confidence))
             idx = pos + len(sentence)
             found = True
         if found:
@@ -89,7 +106,7 @@ def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
             continue
         pattern = r"\s+".join(re.escape(w) for w in words)
         for m in re.finditer(pattern, text):
-            ranges.append((m.start(), m.end(), cid, v["verdict"], v.get("confidence", "")))
+            ranges.append((m.start(), m.end(), cid, cat, confidence))
 
     ranges.sort()
     merged: list[tuple] = []
@@ -114,16 +131,26 @@ def char_range_to_lines(text: str, start: int, end: int) -> tuple[int, int]:
     return text.count("\n", 0, start) + 1, text.count("\n", 0, end) + 1
 
 
-def line_verdict_map(text: str, ranges: list[tuple]) -> dict[int, str]:
-    """{line_number: verdict} for any line that intersects a highlight range.
-    Lines spanning a FAIL keep FAIL even if also overlapped by INCONCLUSIVE."""
+def line_category_map(text: str, ranges: list[tuple]) -> dict[int, str]:
+    """{line_number: category_or_inconclusive} for any line intersecting a
+    highlight range. When a line is covered by multiple ranges, the most
+    severe FLAGGED category wins. INCONCLUSIVE is weakest (rendered only when
+    no FLAGGED category covers the line)."""
     out: dict[int, str] = {}
-    for start, end, _cid, verdict, _conf in ranges:
+    for _start, _end, _cid, cat, _conf in []:  # placeholder, replaced below
+        pass
+
+    def severity_rank(c: str) -> int:
+        if c == "INCONCLUSIVE":
+            return 999
+        return _category_severity(c)
+
+    for start, end, _cid, cat, _conf in ranges:
         sl, el = char_range_to_lines(text, start, end)
         for ln in range(sl, el + 1):
-            if out.get(ln) == "FAIL":
-                continue
-            out[ln] = verdict
+            current = out.get(ln)
+            if current is None or severity_rank(cat) < severity_rank(current):
+                out[ln] = cat
     return out
 
 
@@ -171,32 +198,39 @@ HTML_TEMPLATE = """<!doctype html>
   mark {{
     border-radius: 2px;
     padding: 1px 2px;
-    color: #1a1a1a;
     text-decoration: none;
   }}
-  mark.fail         {{ background-color: #E74C3C; color: #fff; }}
-  mark.inconclusive {{ background-color: #F1C40F; color: #1a1a1a; }}
+  mark.unreferenced           {{ background-color: #4285F4; color: #fff; }}
+  mark.ambiguous              {{ background-color: #FFBF00; color: #1a1a1a; }}
+  mark.internal_contradiction {{ background-color: #FF6D00; color: #fff; }}
+  mark.literature_collision   {{ background-color: #D32F2F; color: #fff; }}
+  mark.domain_violation       {{ background-color: #7B1FA2; color: #fff; }}
+  mark.inconclusive           {{ background-color: #F1C40F; color: #1a1a1a; }}
   mark sup {{
     font-size: 9px; font-weight: bold;
     margin-left: 2px; opacity: 0.85;
   }}
   #legend {{
     position: fixed; top: 20px; right: 20px;
-    background: white; padding: 8px 12px;
+    background: white; padding: 10px 14px;
     border: 1px solid #d0d0d0; border-radius: 4px;
     font-family: system-ui, sans-serif; font-size: 11px;
     box-shadow: 0 2px 6px rgba(0,0,0,.08);
   }}
   #legend .swatch {{ display: inline-block; width: 12px; height: 12px;
-    vertical-align: middle; margin-right: 4px; border-radius: 2px; }}
-  #legend .row {{ margin: 2px 0; }}
+    vertical-align: middle; margin-right: 6px; border-radius: 2px; }}
+  #legend .row {{ margin: 3px 0; }}
 </style>
 </head>
 <body>
 <h1>{slug}</h1>
-<div class="meta">{count_fail} FAIL · {count_inconclusive} INCONCLUSIVE highlighted. Hover for verdict.</div>
+<div class="meta">{count_flagged} FLAGGED · {count_inconclusive} INCONCLUSIVE highlighted. Hover for verdict.</div>
 <div id="legend">
-  <div class="row"><span class="swatch" style="background:#E74C3C"></span>FAIL</div>
+  <div class="row"><span class="swatch" style="background:#4285F4"></span>unreferenced</div>
+  <div class="row"><span class="swatch" style="background:#FFBF00"></span>ambiguous</div>
+  <div class="row"><span class="swatch" style="background:#FF6D00"></span>internal_contradiction</div>
+  <div class="row"><span class="swatch" style="background:#D32F2F"></span>literature_collision</div>
+  <div class="row"><span class="swatch" style="background:#7B1FA2"></span>domain_violation</div>
   <div class="row"><span class="swatch" style="background:#F1C40F"></span>INCONCLUSIVE</div>
 </div>
 <pre>{body}</pre>
@@ -205,10 +239,14 @@ HTML_TEMPLATE = """<!doctype html>
 """
 
 
-# Canonical palette as PyMuPDF RGB floats in [0, 1].
+# Canonical palette as PyMuPDF RGB floats in [0, 1] — keyed by error category.
 _PDF_RGB = {
-    "FAIL":         (0.906, 0.298, 0.235),  # #E74C3C
-    "INCONCLUSIVE": (0.945, 0.769, 0.059),  # #F1C40F
+    "unreferenced":           (0.259, 0.522, 0.957),  # #4285F4
+    "ambiguous":              (1.000, 0.749, 0.000),  # #FFBF00
+    "internal_contradiction": (1.000, 0.427, 0.000),  # #FF6D00
+    "literature_collision":   (0.827, 0.184, 0.184),  # #D32F2F
+    "domain_violation":       (0.482, 0.122, 0.635),  # #7B1FA2
+    "INCONCLUSIVE":           (0.945, 0.769, 0.059),  # #F1C40F
 }
 
 
@@ -244,19 +282,25 @@ def synthesize_pdf(
     LINE_H = 13
     MAX_CHARS = 85
 
-    line_verdicts = line_verdict_map(text, ranges)
+    line_categories = line_category_map(text, ranges)
 
     # First line per claim_id, for sticky-note placement.
     first_line_per_cid: dict[str, int] = {}
-    for start, end, cid, _verdict, _conf in ranges:
+    for start, end, cid, _cat, _conf in ranges:
         sl, _ = char_range_to_lines(text, start, end)
         first_line_per_cid.setdefault(cid, sl)
 
+    flagged_lines = sum(
+        1 for v in line_categories.values() if v in CATEGORIES
+    )
+    inconclusive_lines = sum(
+        1 for v in line_categories.values() if v == "INCONCLUSIVE"
+    )
     counts = {
-        "FAIL":              sum(1 for v in line_verdicts.values() if v == "FAIL"),
-        "INCONCLUSIVE":      sum(1 for v in line_verdicts.values() if v == "INCONCLUSIVE"),
-        "highlighted_lines": len(line_verdicts),
-        "annotations":       len(first_line_per_cid),
+        "flagged_lines":      flagged_lines,
+        "inconclusive_lines": inconclusive_lines,
+        "highlighted_lines":  len(line_categories),
+        "annotations":        len(first_line_per_cid),
     }
 
     doc = fitz.open()
@@ -280,15 +324,15 @@ def synthesize_pdf(
     placed_annots: set[str] = set()
 
     for orig_no, raw_line in enumerate(text.splitlines(), start=1):
-        verdict = line_verdicts.get(orig_no)
+        category = line_categories.get(orig_no)
         wrapped_lines = _wrap_line(raw_line if raw_line else " ", MAX_CHARS)
         for sub_idx, wrapped in enumerate(wrapped_lines):
             if y + LINE_H > PAGE_H - MARGIN:
                 page = doc.new_page(width=PAGE_W, height=PAGE_H)
                 y = MARGIN
 
-            if verdict:
-                rgb = _PDF_RGB[verdict]
+            if category:
+                rgb = _PDF_RGB.get(category, (0.6, 0.6, 0.6))
                 rect = fitz.Rect(
                     MARGIN - 3, y - LINE_H + 3,
                     PAGE_W - MARGIN + 3, y + 4,
@@ -308,11 +352,12 @@ def synthesize_pdf(
                     if cid in placed_annots:
                         continue
                     placed_annots.add(cid)
-                    v = verdicts.get(cid, {})
+                    record = verdicts.get(cid, {})
                     note_point = fitz.Point(PAGE_W - MARGIN + 8, y - 4)
-                    annot = page.add_text_annot(note_point, build_annotation_text(cid, v))
+                    annot = page.add_text_annot(note_point, build_annotation_text(cid, record))
                     annot.set_info(title=f"Anderson · {cid}")
-                    rgb = _PDF_RGB.get(v.get("verdict", ""), (0.6, 0.6, 0.6))
+                    severe = most_severe_flagged(record)
+                    rgb = _PDF_RGB.get(severe, (0.6, 0.6, 0.6))
                     annot.set_colors(stroke=rgb)
                     annot.update()
 
@@ -331,28 +376,36 @@ def synthesize_pdf(
     return counts
 
 
-def render(text: str, ranges: list[tuple], slug: str) -> tuple[str, dict]:
+def render(text: str, ranges: list[tuple], verdicts: dict, slug: str) -> tuple[str, dict]:
     parts: list[str] = []
     cursor = 0
-    counts = {"FAIL": 0, "INCONCLUSIVE": 0}
-    for start, end, cid, verdict, confidence in ranges:
+    counts = {"flagged": 0, "inconclusive": 0}
+    for start, end, cid, category, confidence in ranges:
         parts.append(html_escape(text[cursor:start]))
         snippet = html_escape(text[start:end])
-        css_class = verdict.lower()
-        title = f"{cid} — {verdict}" + (f" ({confidence})" if confidence else "")
+        # CSS class is the category name (or "inconclusive").
+        css_class = category if category in CATEGORIES else "inconclusive"
+        record = verdicts.get(cid, {})
+        flagged = flagged_categories(record)
+        if flagged:
+            label = ", ".join(flagged)
+            counts["flagged"] += 1
+        else:
+            label = "INCONCLUSIVE"
+            counts["inconclusive"] += 1
+        title = f"{cid} — {label}" + (f" (confidence: {confidence})" if confidence else "")
         parts.append(
             f'<mark class="{css_class}" id="claim-{cid}" title="{html_escape(title)}">'
             f'{snippet}<sup>{cid}</sup></mark>'
         )
         cursor = end
-        counts[verdict] = counts.get(verdict, 0) + 1
     parts.append(html_escape(text[cursor:]))
     body = "".join(parts)
     html = HTML_TEMPLATE.format(
         slug=html_escape(slug),
         body=body,
-        count_fail=counts["FAIL"],
-        count_inconclusive=counts["INCONCLUSIVE"],
+        count_flagged=counts["flagged"],
+        count_inconclusive=counts["inconclusive"],
     )
     return html, counts
 
@@ -404,18 +457,21 @@ def main() -> int:
 
     ranges = find_ranges(text, claims, verdicts)
 
-    # Track sentences we couldn't locate, for reviewer follow-up.
+    # Track sentences we couldn't locate, for reviewer follow-up. We expect a
+    # range for any claim with at least one FLAGGED or INCONCLUSIVE verdict
+    # (anything that should produce a highlight).
     matched_ids = {r[2] for r in ranges}
-    expected_ids = {
-        cid for cid, v in verdicts.items()
-        if v["verdict"] in HIGHLIGHT_COLORS and claims.get(cid, {}).get("sentence")
-    }
+    expected_ids = set()
+    for cid, record in verdicts.items():
+        agg = claim_aggregate_verdict(record)
+        if agg in ("FLAGGED", "INCONCLUSIVE") and claims.get(cid, {}).get("sentence"):
+            expected_ids.add(cid)
     unmatched = sorted(expected_ids - matched_ids)
 
     slug = review.name
 
     if not args.no_html:
-        html, html_counts = render(text, ranges, slug)
+        html, html_counts = render(text, ranges, verdicts, slug)
         html_out.parent.mkdir(parents=True, exist_ok=True)
         html_out.write_text(html)
         print(f"wrote {html_out}")

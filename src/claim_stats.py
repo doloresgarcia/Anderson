@@ -25,9 +25,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from highlight_paper import (  # noqa: E402
+    CATEGORIES,
+    SEVERITY,
     parse_claims_md,
     parse_verification_md,
     trust_score,
+    claim_aggregate_verdict,
+    flagged_categories,
 )
 
 # Closed lists from the conventions, used to keep table row order stable.
@@ -35,8 +39,10 @@ CLAIM_TYPES = (
     "result", "method", "prior_work", "background_fact",
     "assumption", "interpretation", "definition", "UNCLASSIFIED",
 )
-VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "NOT_CHECKED")
+VERDICTS = ("CLEAR", "FLAGGED", "INCONCLUSIVE", "NOT_CHECKED")
 CONFIDENCES = ("high", "medium", "low")
+# Categories listed in severity order (highest first), matching the report.
+CATEGORIES_BY_SEVERITY = SEVERITY
 
 
 def md_table(rows: list[list[str]], header: list[str]) -> str:
@@ -53,8 +59,7 @@ def stats(claims: dict, verdicts: dict, graph: dict | None) -> dict:
     # By type.
     type_counts = Counter(c.get("type") or "UNCLASSIFIED" for c in claims.values())
 
-    # Confidence (extraction) — note CLAIMS.md may not parse confidence into a
-    # column; if missing, treat as unknown.
+    # Extraction confidence.
     confidence_counts = Counter(c.get("confidence", "") or "(unknown)" for c in claims.values())
 
     # Hedged.
@@ -63,11 +68,10 @@ def stats(claims: dict, verdicts: dict, graph: dict | None) -> dict:
         for c in claims.values()
     )
 
-    # Verdict (per claim, mapping NOT_CHECKED for unverified).
-    per_claim_verdict: dict[str, str] = {}
-    for cid in claims:
-        v = verdicts.get(cid)
-        per_claim_verdict[cid] = v["verdict"] if v else "NOT_CHECKED"
+    # Per-claim aggregate verdict (CLEAR / FLAGGED / INCONCLUSIVE / NOT_CHECKED).
+    per_claim_verdict: dict[str, str] = {
+        cid: claim_aggregate_verdict(verdicts.get(cid, {})) for cid in claims
+    }
     verdict_counts = Counter(per_claim_verdict.values())
 
     # Type × verdict.
@@ -76,23 +80,38 @@ def stats(claims: dict, verdicts: dict, graph: dict | None) -> dict:
         t = claim.get("type") or "UNCLASSIFIED"
         type_verdict[(t, per_claim_verdict[cid])] += 1
 
-    # Methods used (verifier-side).
-    method_counts = Counter(
-        v["method"] for v in verdicts.values() if v.get("method")
-    )
+    # Per-category breakdown: counts of FLAGGED / INCONCLUSIVE / CLEAR per category.
+    category_counts: dict[str, dict[str, int]] = {
+        cat: {"FLAGGED": 0, "INCONCLUSIVE": 0, "CLEAR": 0}
+        for cat in CATEGORIES_BY_SEVERITY
+    }
+    for cid, record in verdicts.items():
+        for cat, entry in record.items():
+            v = entry.get("verdict")
+            if cat in category_counts and v in category_counts[cat]:
+                category_counts[cat][v] += 1
 
-    # INCONCLUSIVE reasons.
+    # Flagged-category co-occurrence: how many claims are flagged in each
+    # category? (counts a claim once per category it's flagged in)
+    flagged_in_category = Counter()
+    for record in verdicts.values():
+        for cat in flagged_categories(record):
+            flagged_in_category[cat] += 1
+
+    # INCONCLUSIVE reasons across all checkers.
     reason_counts = Counter(
-        v["reason"] for v in verdicts.values()
-        if v.get("verdict") == "INCONCLUSIVE" and v.get("reason")
+        entry["reason"]
+        for record in verdicts.values()
+        for entry in record.values()
+        if entry.get("verdict") == "INCONCLUSIVE" and entry.get("reason")
     )
 
-    # Coverage.
-    attempted = sum(1 for v in verdicts.values() if v["verdict"] in ("PASS", "FAIL", "INCONCLUSIVE"))
-    passed = verdict_counts.get("PASS", 0)
-    failed = verdict_counts.get("FAIL", 0)
+    # Coverage (per-claim).
+    cleared = verdict_counts.get("CLEAR", 0)
+    flagged = verdict_counts.get("FLAGGED", 0)
     inconclusive = verdict_counts.get("INCONCLUSIVE", 0)
     not_checked = verdict_counts.get("NOT_CHECKED", 0)
+    attempted = cleared + flagged + inconclusive
 
     # Per group (if graph available).
     groups_summary = []
@@ -121,11 +140,12 @@ def stats(claims: dict, verdicts: dict, graph: dict | None) -> dict:
         "hedged_counts": hedged_counts,
         "verdict_counts": verdict_counts,
         "type_verdict": type_verdict,
-        "method_counts": method_counts,
+        "category_counts": category_counts,
+        "flagged_in_category": flagged_in_category,
         "reason_counts": reason_counts,
         "attempted": attempted,
-        "passed": passed,
-        "failed": failed,
+        "cleared": cleared,
+        "flagged": flagged,
         "inconclusive": inconclusive,
         "not_checked": not_checked,
         "groups_summary": groups_summary,
@@ -147,10 +167,10 @@ def _trust_block(t: dict, n_claims: int) -> list[str]:
         "",
         f"**{t['score']} / 100** — {label}",
         "",
-        f"`{t['passed']} pass · {t['failed']} fail · {t['inconclusive']} inconclusive`"
+        f"`{t['clear']} clear · {t['flagged']} flagged · {t['inconclusive']} inconclusive`"
         f" — out of {t['attempted']} attempted of {n_claims} total claims",
         "",
-        "Weighting: PASS = 1.0, INCONCLUSIVE = 0.5, FAIL = 0.0; NOT_CHECKED",
+        "Weighting: CLEAR = 1.0, INCONCLUSIVE = 0.5, FLAGGED = 0.0; NOT_CHECKED",
         "claims are excluded from the denominator. Buckets: ≥85 high, ≥60",
         "medium, <60 low.",
         "",
@@ -240,29 +260,34 @@ def render_stats_md(slug: str, s: dict, t: dict) -> str:
     out += [
         "## Coverage",
         "",
-        f"- {s['attempted']} / {n} claims ({pct(s['attempted'], n)}) had a verification attempt",
+        f"- {s['attempted']} / {n} claims ({pct(s['attempted'], n)}) had at least one checker verdict",
     ]
     if s["attempted"]:
         out += [
-            f"- {s['passed']} / {s['attempted']} ({pct(s['passed'], s['attempted'])}) of attempts passed",
-            f"- {s['failed']} / {s['attempted']} ({pct(s['failed'], s['attempted'])}) failed",
-            f"- {s['inconclusive']} / {s['attempted']} ({pct(s['inconclusive'], s['attempted'])}) inconclusive",
+            f"- {s['cleared']} / {s['attempted']} ({pct(s['cleared'], s['attempted'])}) all CLEAR",
+            f"- {s['flagged']} / {s['attempted']} ({pct(s['flagged'], s['attempted'])}) FLAGGED in at least one category",
+            f"- {s['inconclusive']} / {s['attempted']} ({pct(s['inconclusive'], s['attempted'])}) INCONCLUSIVE only",
         ]
     out.append("")
 
-    # Methods used.
-    if s["method_counts"]:
-        out += [
-            "## Verification methods used",
-            "",
-            md_table(
-                [[m, str(c)] for m, c in s["method_counts"].most_common()],
-                ["method", "count"],
-            ),
-            "",
-        ]
+    # Per-category counts (severity-ordered).
+    cat_rows = []
+    for cat in CATEGORIES_BY_SEVERITY:
+        cnt = s["category_counts"].get(cat, {})
+        cat_rows.append([
+            cat,
+            str(cnt.get("FLAGGED", 0)),
+            str(cnt.get("INCONCLUSIVE", 0)),
+            str(cnt.get("CLEAR", 0)),
+        ])
+    out += [
+        "## By error category",
+        "",
+        md_table(cat_rows, ["category", "FLAGGED", "INCONCLUSIVE", "CLEAR"]),
+        "",
+    ]
 
-    # INCONCLUSIVE reasons.
+    # INCONCLUSIVE reasons across all checkers.
     if s["reason_counts"]:
         out += [
             "## INCONCLUSIVE reasons",
@@ -301,7 +326,7 @@ def one_line_summary(slug: str, s: dict, t: dict) -> str:
     score_str = f"{t['score']}/100 ({t['bucket']})" if t["score"] is not None else "—"
     return (
         f"{slug}: trust {score_str} · {s['n_claims']} claims · "
-        f"PASS={s['passed']} FAIL={s['failed']} "
+        f"CLEAR={s['cleared']} FLAGGED={s['flagged']} "
         f"INCONCLUSIVE={s['inconclusive']} NOT_CHECKED={s['not_checked']}"
     )
 

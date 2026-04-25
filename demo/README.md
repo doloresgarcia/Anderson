@@ -4,21 +4,26 @@ A planted-issue paper that *looks* like a credible 1-page ML manuscript and
 contains three problems by design:
 
 1. **Numerical inconsistency.** The abstract claims 87.3% F1 on GLUE; the
-   results section reports 78.4% average. Anderson catches this via
-   `internal_consistency` (claim **C001 → FAIL**).
+   results section reports 78.4% average. `checker_contradiction` catches
+   this and flags **both** ends of the contradiction
+   (**C001 → FLAGGED [internal_contradiction]** and
+   **C009 → FLAGGED [internal_contradiction]**).
 2. **Fabricated citation.** The introduction cites `Chen et al. (2024)` /
-   `[chen2024sparse]`, which doesn't resolve to any real record. Anderson's
-   `citation_audit` auto-FAILs this with `confidence: high` (claim
-   **C004**).
+   `[chen2024sparse]`, which doesn't resolve to any real record.
+   `checker_literature` flags this with `confidence: high`
+   (**C004 → FLAGGED [literature_collision]**).
 3. **Discussion overreach.** "We thus prove that sparsity is sufficient for
-   emergent reasoning." The paper provides no proof — the only evaluation
-   is a GLUE table. Anderson catches this via `internal_consistency` (claim
-   **C013 → FAIL**).
+   emergent reasoning." `checker_ambiguous` flags the formal-vs-colloquial
+   ambiguity of "prove" against the absence of any proof
+   (**C013 → FLAGGED [ambiguous]**), and the abstract-side version of the
+   same overreach is flagged for missing citation
+   (**C005 → FLAGGED [unreferenced]**).
 
-The demo also contains six legitimate claims (architecture, well-known
-background fact, internally-consistent memory numbers) that PASS, plus two
-interpretation/comparison claims that come back INCONCLUSIVE — exactly the
-right verdict when evidence is partial.
+The demo also contains seven legitimate claims (architecture, well-known
+background fact, internally-consistent memory numbers, one hedged
+interpretation) that all five checkers report `CLEAR`, plus one
+INCONCLUSIVE on the "0.4% improvement over baseline" claim because the
+baseline reference number isn't given.
 
 ## Run it
 

@@ -68,7 +68,7 @@ Outputs land in `reviews/__demo__/phase3/outputs/`:
 | `STATS.md` | trust score block, counts by type and verdict, type×verdict matrix, INCONCLUSIVE reasons |
 | `paper.highlighted.html` | text-mode browser companion to the PDF |
 
-The demo paper contains three planted problems — a fabricated `Chen et al. (2024)` citation, an abstract↔results numerical contradiction (87.3% vs 78.4%), and a "we thus prove" overreach in the discussion. Anderson catches all three; the trust score lands at **62/100 (medium)**.
+The demo paper contains three planted problems — a fabricated `Chen et al. (2024)` citation (caught as `literature_collision`), an abstract↔results numerical contradiction (87.3% vs 78.4%, caught as `internal_contradiction` and flagged on both ends), and a "we thus prove that sparsity is sufficient for emergent reasoning" overreach (caught as `unreferenced` on the abstract version and `ambiguous` on the discussion version). Anderson catches all three; the trust score lands at **58/100 (low)**.
 
 `make demo` only runs the deterministic Python scripts; the LLM-driven extraction and verification are pre-baked. To watch the full pipeline run live, see the next section.
 
@@ -108,7 +108,7 @@ and dispatches subagents. Each phase ends with a reviewer + arbiter pass and
 a commit; the orchestrator pauses for your OK before advancing.
 
 - **Phase 1.** `claim_extractor` → `literature_searcher` (bank first, then external) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
-- **Phase 2.** `strategist` → parallel `verifier` instances per selected claim → `graph_builder v2`. Three-bot review (critical + constructive + arbiter).
+- **Phase 2.** `strategist` → five **checker agents** in parallel — `checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`, `checker_literature`, `checker_domain` — each examining all claims for its error category and writing its section of `VERIFICATION.md` → `graph_builder v2`. Three-bot review (critical + constructive + arbiter).
 - **Phase 3.** `highlighter` (invokes `highlight_paper.py` or `highlight_text.py`), `graph_builder` (invokes `render_graph.py`), and `report_writer` (invokes `claim_stats.py` then writes `REPORT.md`) run in parallel. Three-bot review, then a human gate.
 
 ### 4. Read the outputs
@@ -135,13 +135,27 @@ python3 src/highlight_text.py reviews/my-slug
 
 ## Trust score
 
-The score weights `PASS=1.0`, `INCONCLUSIVE=0.5`, `FAIL=0.0`, with `NOT_CHECKED` excluded from the denominator:
+Each claim has an aggregate verdict computed from the five checkers — `FLAGGED` if any checker flagged it, else `INCONCLUSIVE` if any checker was inconclusive, else `CLEAR` if any checker examined it, else `NOT_CHECKED`. The trust score weights `CLEAR=1.0`, `INCONCLUSIVE=0.5`, `FLAGGED=0.0`, with `NOT_CHECKED` excluded from the denominator:
 
 ```
-score = round(100 * (PASS + 0.5 * INCONCLUSIVE) / attempted)
+score = round(100 * (CLEAR + 0.5 * INCONCLUSIVE) / attempted)
 ```
 
 Buckets: ≥85 → high (green), ≥60 → medium (yellow), <60 → low (red). The score appears as a colored cover page on `paper.highlighted.pdf`, as a banner at the top of `STATS.md`, and as the headline section of `REPORT.md`.
+
+## Error categories
+
+Phase 2 detects errors across five mutually exclusive categories (one checker per category), each with its own highlight color in the marked-up paper and graph:
+
+| category | color | meaning |
+|---|---|---|
+| `unreferenced` | blue `#4285F4` | needs a citation |
+| `ambiguous` | amber `#FFBF00` | unclear or underspecified |
+| `internal_contradiction` | orange `#FF6D00` | paper contradicts itself |
+| `literature_collision` | red `#D32F2F` | conflicts with published work |
+| `domain_violation` | purple `#7B1FA2` | conflicts with established knowledge |
+
+A sentence flagged in multiple categories is highlighted in the most-severe color (severity order: `domain_violation` > `literature_collision` > `internal_contradiction` > `ambiguous` > `unreferenced`); the click-through annotation lists all triggered categories. See `src/conventions/error_categories.md` for the evidence standards each checker requires before emitting `FLAGGED`.
 
 ## Literature bank
 
@@ -151,11 +165,12 @@ The bank is automatically symlinked into every review directory by `scaffold_rev
 
 ## Conventions (the domain logic)
 
-The four files in `src/conventions/` define what Anderson reasons about — keep these in sync with how you want the system to behave:
+The files in `src/conventions/` define what Anderson reasons about — keep these in sync with how you want the system to behave:
 
-- `graph_schema.md` — node and edge types, the canonical 4-color palette, the ≤20-group clustering rule, the Cytoscape.js HTML output spec
+- `error_categories.md` — the five error categories, their colors, evidence standards, severity order
 - `claim_taxonomy.md` — the seven claim types and how the extractor decides
-- `verification.md` — the six verification methods, type→method default mapping, evidence standards, external-source hierarchy
+- `graph_schema.md` — node and edge types, the ≤20-group clustering rule, the Cytoscape.js HTML output spec
+- `verification.md` — domain-specific refinements layered on top of `error_categories.md` (placeholder by default; checkers fall back to the built-in standards)
 - `confidence.md` — the discrete `high`/`medium`/`low` scale used everywhere
 
 Methodology (under `src/methodology/`) defines *how* the orchestrator runs; conventions define *what* it's reasoning about. Edits to convention files do not require touching role specs or the methodology.
