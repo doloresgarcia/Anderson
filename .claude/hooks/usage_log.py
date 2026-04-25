@@ -25,9 +25,12 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 CWD_REVIEW_RE = re.compile(r"(.+/reviews/([^/]+))(?:/(phase(\d+))(?:/.*)?)?$")
+PHASE_DIR_RE = re.compile(r"^phase(\d+)$")
+RECENCY_WINDOW_S = 600  # 10 minutes
 
 
 def _now_iso() -> str:
@@ -60,6 +63,48 @@ def _infer_slug_phase_from_recent_commit(project_dir: Path) -> tuple[str | None,
     return None, None
 
 
+def _infer_slug_phase_from_recent_activity(project_dir: Path) -> tuple[str | None, int | None]:
+    """Find the reviews/<slug>/phase<N>/ dir with the most recent file mtime
+    within RECENCY_WINDOW_S seconds. Works for fresh slugs that have no
+    phase-tagged commits yet — covers the gap _infer_..._from_recent_commit
+    misses on the first dispatch of a new review."""
+    reviews_root = project_dir / "reviews"
+    if not reviews_root.exists():
+        return None, None
+    now = time.time()
+    best: tuple[float, str, int] | None = None
+    try:
+        for slug_dir in reviews_root.iterdir():
+            if not slug_dir.is_dir() or slug_dir.name.startswith("."):
+                continue
+            for phase_dir in slug_dir.iterdir():
+                if not phase_dir.is_dir():
+                    continue
+                m = PHASE_DIR_RE.match(phase_dir.name)
+                if not m:
+                    continue
+                phase_num = int(m.group(1))
+                # Walk a few levels deep for the freshest mtime; cap depth
+                # to keep this hook fast.
+                phase_mtime = phase_dir.stat().st_mtime
+                for entry in phase_dir.rglob("*"):
+                    try:
+                        mt = entry.stat().st_mtime
+                        if mt > phase_mtime:
+                            phase_mtime = mt
+                    except Exception:
+                        continue
+                if now - phase_mtime > RECENCY_WINDOW_S:
+                    continue
+                if best is None or phase_mtime > best[0]:
+                    best = (phase_mtime, slug_dir.name, phase_num)
+    except Exception:
+        return None, None
+    if best is None:
+        return None, None
+    return best[1], best[2]
+
+
 def _resolve_target(cwd: str, agent_type: str, project_dir: Path) -> Path:
     review_dir = None
     phase_num = None
@@ -72,12 +117,19 @@ def _resolve_target(cwd: str, agent_type: str, project_dir: Path) -> Path:
         if m.group(4):
             phase_num = int(m.group(4))
 
-    if review_dir is None:
-        slug2, phase2 = _infer_slug_phase_from_recent_commit(project_dir)
-        if slug2:
+    if review_dir is None or phase_num is None:
+        slug2, phase2 = _infer_slug_phase_from_recent_activity(project_dir)
+        if slug2 and phase2:
             review_dir = project_dir / "reviews" / slug2
             slug = slug2
             phase_num = phase2
+
+    if review_dir is None or phase_num is None:
+        slug3, phase3 = _infer_slug_phase_from_recent_commit(project_dir)
+        if slug3:
+            review_dir = project_dir / "reviews" / slug3
+            slug = slug3
+            phase_num = phase3
 
     if review_dir is None or phase_num is None:
         global_dir = project_dir / ".claude" / "agent-memory" / "_global"
