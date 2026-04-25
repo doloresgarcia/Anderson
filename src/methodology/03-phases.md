@@ -69,8 +69,10 @@ arbiter). Findings classified A/B/C per `04-review.md`.
   `graph.final.html` (interactive Cytoscape.js viz, the primary visual
   deliverable), and `graph.final.svg` (static snapshot for inclusion in PDFs
   and slides).
-- `report_writer` (specialization of `executor`) — writes `REPORT.md` summarizing
-  what was checked, what failed, and why.
+- `report_writer` (specialization of `executor`) — first invokes
+  `src/claim_stats.py` to regenerate `STATS.md` (mechanical claim counts and
+  verdict breakdown), then writes `REPORT.md` summarizing what was checked,
+  what failed, and why, embedding the stats tables verbatim.
 
 **Deliverables (in `reviews/<slug>/phase3/outputs/`).**
 
@@ -78,6 +80,8 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 - `graph.final.html`
 - `graph.final.svg` (deferred — HTML is the primary visual)
 - `paper.highlighted.pdf`
+- `STATS.md`
+- `REPORT.md`
 - `REPORT.md`
 
 **Gate.** Human review of the highlighted PDF. Possible responses: APPROVE,

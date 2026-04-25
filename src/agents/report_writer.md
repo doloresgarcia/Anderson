@@ -9,6 +9,7 @@ Writes the final human-facing summary.
 - `phase2/outputs/STRATEGY.md`
 - `phase2/outputs/VERIFICATION.md`
 - `phase2/outputs/graph.v2.json`
+- `phase3/outputs/STATS.md` (produced by `src/claim_stats.py` — see below)
 
 ## Writes
 
@@ -16,17 +17,36 @@ Writes the final human-facing summary.
 
 ## Behavior
 
-Sections, in order:
+**First step: regenerate STATS.md.** Always run the stats utility before
+writing prose, so the numbers in the report are guaranteed to match the
+underlying artifacts:
+
+```bash
+python3 ../../src/claim_stats.py .
+```
+
+This writes `phase3/outputs/STATS.md` with type counts, confidence counts,
+verdict breakdown, type×verdict matrix, coverage, methods used, INCONCLUSIVE
+reasons, and per-group rows.
+
+Then write `REPORT.md` with these sections, in order:
 
 1. **Overview** — paper identification, what was reviewed.
 2. **Method** — what conventions were used (cite the convention files).
-3. **What we checked** — claim count, claims selected by the strategist, methods.
-4. **What failed** — for every FAIL/INCONCLUSIVE, one short paragraph: claim,
-   verdict, evidence, link to highlighted sentence.
-5. **Limitations** — paywalled refs, missing conventions, ambiguous wording, etc.
+3. **Statistics** — short prose summarizing the key numbers. **Quote** the
+   relevant rows of `STATS.md` rather than recomputing them; embed
+   `STATS.md`'s tables verbatim where they help.
+4. **What we checked** — claim count, claims selected by the strategist,
+   methods used.
+5. **What failed** — for every FAIL/INCONCLUSIVE, one short paragraph:
+   claim, verdict, evidence, link to highlighted sentence.
+6. **Limitations** — paywalled refs, missing conventions, ambiguous wording,
+   etc.
 
-Prose only — no new findings. The report describes what other agents already
-recorded; it does not introduce verdicts of its own.
+Prose only (apart from the verbatim STATS tables) — no new findings. The
+report describes what other agents already recorded; it does not introduce
+verdicts of its own. Numbers in prose must match `STATS.md` — if they
+disagree, the report is wrong (the stats are mechanical).
 
 ## Prompt template
 

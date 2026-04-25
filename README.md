@@ -32,7 +32,9 @@ anderson/
 │   ├── templates/           # CLAUDE.md templates dropped into per-paper review dirs
 │   ├── scaffold_review.py   # creates a new reviews/<slug>/ tree wired to a paper
 │   ├── render_graph.py      # graph.json → graph.html (Cytoscape.js)
-│   └── highlight_paper.py   # paper.pdf + VERIFICATION.md → paper.highlighted.pdf
+│   ├── highlight_paper.py   # paper.pdf + VERIFICATION.md → paper.highlighted.pdf
+│   ├── highlight_text.py    # paper.txt + VERIFICATION.md → highlighted PDF + HTML
+│   └── claim_stats.py       # CLAIMS.md + VERIFICATION.md → STATS.md (counts)
 ├── requirements.txt
 └── reviews/                 # one subdirectory per paper under review
 ```

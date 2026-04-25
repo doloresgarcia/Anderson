@@ -77,10 +77,19 @@ reason (e.g., paywalled reference, ambiguous wording). `confidence` values come
 from `conventions/confidence.md` and are orthogonal to the verdict — a
 `PASS` with `low` confidence is meaningful and different from `INCONCLUSIVE`.
 
+## `STATS.md`
+
+Mechanical claim statistics — type counts, extraction confidence, hedging,
+verdict breakdown, type×verdict matrix, coverage, methods used, INCONCLUSIVE
+reasons, per-group rows. Produced by `src/claim_stats.py`. No LLM in the
+loop; numbers are guaranteed to match `CLAIMS.md` and `VERIFICATION.md`.
+
 ## `REPORT.md`
 
-Human-facing summary, sectioned: Overview, Method, What we checked, What failed
-(claim-by-claim), Limitations.
+Human-facing summary, sectioned: Overview, Method, Statistics, What we
+checked, What failed (claim-by-claim), Limitations. The Statistics section
+embeds the relevant tables from `STATS.md` verbatim — prose must agree with
+those numbers.
 
 ## Highlighted paper
 

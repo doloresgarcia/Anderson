@@ -68,29 +68,53 @@ def parse_claims_md(path: Path) -> dict[str, dict]:
             "page": page,
             "line": row.get("line", ""),
             "type": row.get("type", ""),
+            "hedged": row.get("hedged", "").lower() == "true",
+            "confidence": row.get("confidence", "").lower(),
         }
     return rows
 
 
 def parse_verification_md(path: Path) -> dict[str, dict]:
-    """Return {claim_id: {verdict, reason}} from VERIFICATION.md.
+    """Return {claim_id: {verdict, confidence, method, reason}} from VERIFICATION.md.
 
-    VERIFICATION.md has one section per claim, header format:
+    Section format per methodology/05-artifacts.md:
+
         ## C001 — VERDICT: FAIL — confidence: medium
+        - method: numerical_recheck
+        - reason: out_of_scope          (only on INCONCLUSIVE)
+        - evidence:
+          - paper.txt:142
+        - reasoning: …
+
+    Returns empty dict if the file does not exist.
     """
     if not path.exists():
         return {}
     text = path.read_text()
     out: dict[str, dict] = {}
-    pattern = re.compile(
+
+    header_re = re.compile(
         r"^##\s+(C\d+)\s*[—–-]\s*VERDICT:\s*(\w+)(?:\s*[—–-]\s*confidence:\s*(\w+))?",
         re.MULTILINE,
     )
-    for m in pattern.finditer(text):
+    headers = list(header_re.finditer(text))
+    for i, m in enumerate(headers):
         cid = m.group(1)
         verdict = m.group(2).upper()
         confidence = (m.group(3) or "").lower()
-        out[cid] = {"verdict": verdict, "confidence": confidence}
+        body_start = m.end()
+        body_end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
+        body = text[body_start:body_end]
+
+        method_m = re.search(r"^-\s*method\s*:\s*([\w_]+)", body, re.MULTILINE)
+        reason_m = re.search(r"^-\s*reason\s*:\s*([\w_:.\-]+)", body, re.MULTILINE)
+
+        out[cid] = {
+            "verdict": verdict,
+            "confidence": confidence,
+            "method": (method_m.group(1) if method_m else "").strip(),
+            "reason": (reason_m.group(1) if reason_m else "").strip(),
+        }
     return out
 
 
