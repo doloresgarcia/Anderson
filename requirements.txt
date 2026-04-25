@@ -9,3 +9,11 @@ pymupdf>=1.24
 # Optional alternative PDF extractor (scaffold_review.py falls back to it
 # if pymupdf is not installed and the system has no `pdftotext`).
 # pypdf>=4.0
+
+# JSON Schema validation — used by .claude/hooks/validate_graph.py to
+# enforce src/conventions/graph_schema.json on every graph.v*.json write.
+jsonschema>=4,<5
+
+# BibTeX parsing — used by .claude/hooks/validate_bib.py to cross-check
+# [@key] citations in LITERATURE.md against entries in references.bib.
+bibtexparser>=1.4,<2

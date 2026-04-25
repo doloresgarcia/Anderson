@@ -4,32 +4,31 @@
     python src/scaffold_review.py --text  /path/to/paper.txt --slug my-slug
     python src/scaffold_review.py --arxiv 2401.12345 --slug my-slug
     python src/scaffold_review.py --doi 10.1234/abcde --slug my-slug
+    python src/scaffold_review.py --url https://example.com/paper.pdf --slug my-slug
 
 Produces:
 
     reviews/<slug>/
-      CLAUDE.md                       # rendered from templates/root_claude.md
+      CLAUDE.md                       # rendered from src/templates/per_review_claude.md
       prompt.md                       # blank, orchestrator fills first
-      methodology -> ../../src/methodology
-      conventions -> ../../src/conventions
-      agents      -> ../../src/agents
       paper/
         paper.pdf                     # if --paper given
+        paper.txt                     # extracted from PDF, or copied from --text
         paper.meta.json               # stub; user/agent fills
-      phase1/
-        CLAUDE.md
-        outputs/  agents/  review/  logs/
-      phase2/
-        CLAUDE.md
-        outputs/  agents/  review/  logs/
-      phase3/
-        CLAUDE.md
-        outputs/  agents/  review/  logs/
+      phase1/  outputs/  agents/  review/  logs/  prompt.md
+      phase2/  outputs/  agents/  review/  logs/  prompt.md
+      phase3/  outputs/  agents/  review/  logs/  prompt.md
 
 This script does *not* fetch papers from arXiv/DOI/URL. It records the
 identifier in `paper/paper.meta.json` and leaves fetching to the orchestrator's
 ingest step (which will run inside phase 1's first subagent dispatch). Keeping
 fetching out of scaffolding makes the script offline-safe and idempotent.
+
+Reviews are NOT self-contained. There are no per-review symlinks for
+methodology, conventions, agents, or the literature bank — those resolve via
+the repo (`.claude/agents/`, `src/methodology/`, `src/conventions/`,
+`literature_bank/`). The orchestrator at the repo-root `CLAUDE.md` dispatches
+subagents with absolute repo-rooted paths.
 """
 
 from __future__ import annotations
@@ -108,14 +107,6 @@ def render_template(template_path: Path, slots: dict[str, str]) -> str:
     return text
 
 
-def ensure_symlink(link: Path, target: Path) -> None:
-    if link.is_symlink() or link.exists():
-        if link.is_symlink() and Path(link.readlink()) == target:
-            return
-        raise SystemExit(f"refusing to overwrite existing path: {link}")
-    link.symlink_to(target)
-
-
 def make_meta(args: argparse.Namespace) -> dict:
     meta: dict = {
         "slug": args.slug,
@@ -157,20 +148,12 @@ def main() -> int:
     for phase in PHASES:
         for sub in PHASE_SUBDIRS:
             (review_dir / phase / sub).mkdir(parents=True)
-
-    ensure_symlink(review_dir / "methodology", (SRC / "methodology").resolve())
-    ensure_symlink(review_dir / "conventions", (SRC / "conventions").resolve())
-    ensure_symlink(review_dir / "agents", (SRC / "agents").resolve())
+        (review_dir / phase / "prompt.md").write_text("")
 
     slots = {"paper_slug": args.slug}
     (review_dir / "CLAUDE.md").write_text(
-        render_template(TEMPLATES / "root_claude.md", slots)
+        render_template(TEMPLATES / "per_review_claude.md", slots)
     )
-    for i, phase in enumerate(PHASES, start=1):
-        slots_phase = dict(slots, phase=str(i))
-        (review_dir / phase / "CLAUDE.md").write_text(
-            render_template(TEMPLATES / f"{phase}_claude.md", slots_phase)
-        )
 
     (review_dir / "paper" / "paper.meta.json").write_text(
         json.dumps(make_meta(args), indent=2) + "\n"
@@ -202,17 +185,10 @@ def main() -> int:
         else:
             shutil.copy(args.bib, review_dir / "paper" / "seed.bib")
 
-    literature_bank = REPO_ROOT / "literature_bank"
-    if literature_bank.is_dir():
-        ensure_symlink(review_dir / "literature_bank", literature_bank.resolve())
-    else:
-        print("warning: literature_bank/ not found at repo root; bank search will be skipped",
-              file=sys.stderr)
-
     (review_dir / "prompt.md").write_text("")
 
     print(f"scaffolded {review_dir}")
-    print("next: cd into it and start the orchestrator with that dir as the working dir")
+    print("next: from the repo root, run `claude` and dispatch `/phase1 " + args.slug + "`")
     return 0
 
 

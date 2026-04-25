@@ -9,7 +9,11 @@ Anderson is a multi-agent orchestrator that ingests a scientific paper and produ
 The architecture follows a "thin orchestrator + specialized subagents" pattern adapted from
 [jfc-mit/jfc](https://github.com/jfc-mit/jfc): the orchestrator never extracts claims, runs
 literature searches, or judges proofs itself — it dispatches subagents whose role
-specifications live in `src/agents/`, and tracks artifacts that subagents produce.
+specifications live in `.claude/agents/`, and tracks artifacts that subagents produce.
+
+The orchestrator is the main `claude` session driven by the repo-root
+`CLAUDE.md`. Subagents cannot spawn other subagents; all dispatch is flat from
+the main session.
 
 ## Phases
 
@@ -25,19 +29,24 @@ Per phase the orchestrator runs the loop **EXECUTE → REVIEW → CHECK → COMM
 
 ```
 anderson/
+├── .claude/
+│   ├── agents/                # subagent specs (frontmatter + body); 15 roles + _shared/executor_contract.md
+│   ├── commands/              # [Phase B] slash commands: /scaffold, /phase1, /phase2, /phase3, /render
+│   ├── settings.json          # permission allowlist
+│   └── profiles/balanced.json # [Phase E] documented model mix
+├── CLAUDE.md                  # root orchestrator — read by the main `claude` session at repo root
 ├── Makefile                   # convenience targets — `make demo`, `make graph`, `make stats`, …
 ├── README.md
-├── requirements.txt           # PyMuPDF
+├── requirements.txt           # PyMuPDF + jsonschema (graph hook) + bibtexparser (bib hook)
 ├── demo/                      # planted-issue demo paper + pre-baked phase-1/2 artifacts
-├── literature_bank/           # pre-collected reference PDFs (auto-symlinked into every review)
-├── reviews/                   # one subdirectory per paper under review
+├── literature_bank/           # pre-collected reference PDFs (read by literature_searcher via repo path)
+├── reviews/                   # one subdirectory per paper under review (no symlinks; absolute paths)
 └── src/
     ├── methodology/           # phase definitions, orchestration loop, review protocol, artifact specs
-    ├── agents/                # role specifications the orchestrator dispatches
     ├── conventions/           # error categories, claim taxonomy, graph schema, confidence scale
-    ├── templates/             # CLAUDE.md templates dropped into per-paper review dirs
+    ├── templates/             # per_review_claude.md (thin per-review CLAUDE.md template)
     ├── vendor/                # cytoscape.min.js (inlined into rendered graph HTML for offline viewing)
-    ├── scaffold_review.py     # creates a new reviews/<slug>/ tree wired to a paper
+    ├── scaffold_review.py     # creates a new reviews/<slug>/ tree (no symlinks; thin per-review CLAUDE.md)
     ├── render_graph.py        # graph.*.json → graph.*.html (Cytoscape.js, dark theme, self-contained)
     ├── highlight_paper.py     # paper.pdf + VERIFICATION.md → paper.highlighted.pdf
     ├── highlight_text.py      # paper.txt + VERIFICATION.md → highlighted PDF + HTML
@@ -75,38 +84,41 @@ The demo paper contains three planted problems — a fabricated `Chen et al. (20
 
 ## Running a real review (full pipeline)
 
-### 1. Scaffold the review
+### 1. Open Claude Code at the repo root
 
 ```bash
-# from a PDF:
-python3 src/scaffold_review.py --paper /path/to/paper.pdf --slug my-slug
-
-# or from plain text:
-python3 src/scaffold_review.py --text  /path/to/paper.txt --slug my-slug
-```
-
-This creates `reviews/my-slug/` with:
-- phase subdirectories (`phase1/`, `phase2/`, `phase3/`)
-- symlinks to `src/methodology/`, `src/conventions/`, `src/agents/`, and `literature_bank/`
-- a root `CLAUDE.md` that boots the orchestrator
-- `paper/paper.txt` (extracted from PDF via PyMuPDF, or copied as-is for `--text`)
-
-### 2. Open Claude Code in the review directory
-
-```bash
-cd reviews/my-slug
+cd /path/to/anderson
 claude
 ```
 
-### 3. Kick off the orchestrator
+The main `claude` session loads the repo-root `CLAUDE.md` and acts as the
+orchestrator. There is no `cd` into a per-review directory; the slug is the
+single positional arg to every phase command.
 
-In Claude Code, send the prompt:
+### 2. Scaffold and run
 
-> Read CLAUDE.md and start phase 1.
+In Claude Code, dispatch the slash commands:
 
-Claude Code is now the orchestrator. It reads the role specs under `agents/`
-and dispatches subagents. Each phase ends with a reviewer + arbiter pass and
-a commit; the orchestrator pauses for your OK before advancing.
+```
+/scaffold my-slug paper.pdf      # or paper.txt, arxiv:2401.12345, doi:..., url:...
+/phase1 my-slug
+/phase2 my-slug
+/phase3 my-slug
+/render my-slug                  # re-render phase-3 deterministic outputs
+```
+
+`/scaffold` shells out to `python3 src/scaffold_review.py` with the right
+flag inferred from the source format. The new scaffold creates **no
+symlinks** for methodology / conventions / agents / literature_bank — agents
+resolve those via the repo root.
+
+The orchestrator dispatches the role specs in `.claude/agents/` flat from
+the main session. Each phase ends with a reviewer + arbiter pass and a
+commit; the orchestrator pauses for your OK before advancing.
+
+Each subagent declares a static `model:` in its frontmatter. The default
+mix is documented in `.claude/profiles/balanced.json`. To override
+globally for a session, set `CLAUDE_CODE_SUBAGENT_MODEL`.
 
 - **Phase 1 — Ingest & Map.** `claim_extractor` → `literature_searcher` (bank first, then external) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
 - **Phase 2 — Strategy & Check.** `strategist` → five **checker agents** in parallel — `checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`, `checker_literature`, `checker_domain` — each examining every claim for its error category and writing its own section of `VERIFICATION.md` (verdicts `FLAGGED` / `CLEAR` / `INCONCLUSIVE`) → `graph_builder` (v2). Three-bot review (critical + constructive + arbiter).
@@ -115,6 +127,36 @@ a commit; the orchestrator pauses for your OK before advancing.
 ### 4. Read the outputs
 
 Everything lands in `reviews/my-slug/phase3/outputs/`. Same set as the quick demo above, plus `REPORT.md` (prose summary).
+
+## Verifying the rework end-to-end
+
+Two layers of verification.
+
+**Structural** (no LLM cost — runs in ~10s):
+
+```bash
+make ci
+```
+
+Runs `make demo` (the deterministic Python pipeline), validates `demo/graph.v2.json` against `src/conventions/graph_schema.json`, and smoke-tests all three hooks against representative payloads. This is the pre-PR sanity check; everything `make ci` covers is structural and machine-verifiable.
+
+**Live LLM dispatch** (real token spend; recommended once before relying on a real review):
+
+```bash
+claude                           # at the repo root
+> /scaffold __live_smoke__ demo/paper.txt
+> /phase1 __live_smoke__
+```
+
+What to watch:
+
+- The harness finds `.claude/agents/*.md` and dispatches by name (no "agent type not found").
+- `usage_log.py` writes records to `reviews/__live_smoke__/phase1/agents/*/usage.jsonl`.
+- `make usage REVIEW=reviews/__live_smoke__` produces a `USAGE.md` with real token counts (not the "no usage recorded" stub).
+- For agents with `memory: project` (`literature_searcher`, `arbiter`, etc.), the harness auto-injects `.claude/agent-memory/<name>/MEMORY.md` into their system prompt.
+- PostToolUse hooks don't false-fire on writes outside `reviews/<slug>/phase*/outputs/`.
+
+`reviews/__*__/` is gitignored, so smoke-test reviews don't dirty the working tree.
 
 ## Re-rendering individual deliverables
 
@@ -160,9 +202,9 @@ Buckets: ≥85 → high (green), ≥60 → medium (yellow), <60 → low (red). T
 
 ## Literature bank
 
-`literature_bank/` at the repo root holds reference PDFs the literature searcher checks **before** any external search. Drop new reference papers there as PDFs (any filename); the searcher reads them and tags matches `source: bank` in `LITERATURE.md`. External search runs only for claims the bank doesn't cover, biased toward peer-reviewed published work over preprints. See `src/agents/literature_searcher.md` for the full strategy.
+`literature_bank/` at the repo root holds reference PDFs the literature searcher checks **before** any external search. Drop new reference papers there as PDFs (any filename); the searcher reads them and tags matches `source: bank` in `LITERATURE.md`. External search runs only for claims the bank doesn't cover, biased toward peer-reviewed published work over preprints. See `.claude/agents/literature_searcher.md` for the full strategy.
 
-The bank is automatically symlinked into every review directory by `scaffold_review.py`. An empty bank is fine — the searcher just falls back to external search and logs the gap.
+The bank is read directly from the repo root by the literature_searcher subagent — no per-review symlink. An empty bank is fine — the searcher just falls back to external search and logs the gap.
 
 ## Conventions (the domain logic)
 

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/anderson-profile.json",
+  "name": "balanced",
+  "description": "Default Anderson model mix. Opus for the arbiter, Sonnet for cross-document reasoning agents (reviewers, hard checkers, strategist, fixer, literature_searcher), Haiku for the mechanical agents (extraction, graph building, mechanical checkers, highlighter, report writer). Override globally for one session with the CLAUDE_CODE_SUBAGENT_MODEL env var. Override per-agent by editing the static `model:` field in .claude/agents/<name>.md (this JSON is documentation only — agent frontmatter is the source of truth).",
+  "default_model": "claude-sonnet-4-6",
+  "agents": {
+    "claim_extractor":      "claude-haiku-4-5",
+    "literature_searcher":  "claude-sonnet-4-6",
+    "graph_builder":        "claude-haiku-4-5",
+    "strategist":           "claude-sonnet-4-6",
+    "checker_unreferenced": "claude-haiku-4-5",
+    "checker_ambiguous":    "claude-sonnet-4-6",
+    "checker_contradiction": "claude-sonnet-4-6",
+    "checker_literature":   "claude-sonnet-4-6",
+    "checker_domain":       "claude-sonnet-4-6",
+    "highlighter":          "claude-haiku-4-5",
+    "report_writer":        "claude-haiku-4-5",
+    "fixer":                "claude-sonnet-4-6",
+    "critical_reviewer":    "claude-sonnet-4-6",
+    "constructive_reviewer": "claude-sonnet-4-6",
+    "arbiter":              "claude-opus-4-7"
+  }
+}

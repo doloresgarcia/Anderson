@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anderson.local/schemas/graph.schema.json",
+  "$comment": "DRIFT NOTE — This JSON Schema is the executable validation contract for graph.v*.json. The prose source of truth lives at src/conventions/graph_schema.md, but the prose currently lags the new five-checker model in src/conventions/error_categories.md. Specifically: graph_schema.md still references the older verdict vocabulary PASS / FAIL / INCONCLUSIVE / NOT_CHECKED and a `verdict_reason` string; the new model (and demo/graph.v2.json) uses CLEAR / FLAGGED / INCONCLUSIVE plus a `flagged_categories` array per error_categories.md. This schema accepts the UNION of both vocabularies so artifacts written under either convention validate. Next maintainer: reconcile graph_schema.md with error_categories.md, then tighten this enum.",
+  "title": "Anderson claim graph",
+  "type": "object",
+  "required": ["groups", "claims", "edges"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "paper_slug": {"type": "string"},
+    "version": {"type": "string"},
+    "paper": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "slug": {"type": "string"},
+        "title": {"type": "string"},
+        "doi": {"type": "string"},
+        "arxiv": {"type": "string"}
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/group"}
+    },
+    "claims": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/claim"}
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"$ref": "#/$defs/group"},
+          {"$ref": "#/$defs/claim"}
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/edge"}
+    }
+  },
+  "$defs": {
+    "verdict": {
+      "type": "string",
+      "enum": ["CLEAR", "FLAGGED", "INCONCLUSIVE", "NOT_CHECKED", "PASS", "FAIL"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "claim_id": {
+      "type": "string",
+      "pattern": "^C\\d{3}$"
+    },
+    "group_id": {
+      "type": "string",
+      "pattern": "^G\\d{3}$"
+    },
+    "edge_id": {
+      "type": "string",
+      "pattern": "^E\\d{3,}$"
+    },
+    "flagged_categories": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "kind", "title", "claim_ids"],
+      "properties": {
+        "id": {"$ref": "#/$defs/group_id"},
+        "kind": {"const": "group"},
+        "title": {"type": "string"},
+        "caption": {"type": "string"},
+        "claim_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/claim_id"}
+        },
+        "dominant_type": {"type": "string"},
+        "verdict": {"$ref": "#/$defs/verdict"},
+        "color": {"$ref": "#/$defs/color"},
+        "section": {"type": "string"},
+        "page_range": {
+          "type": "array",
+          "items": {"type": "integer"},
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "flagged_categories": {"$ref": "#/$defs/flagged_categories"},
+        "verdict_reason": {"type": "string"}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "kind", "parent", "type", "sentence"],
+      "properties": {
+        "id": {"$ref": "#/$defs/claim_id"},
+        "kind": {"const": "claim"},
+        "parent": {"$ref": "#/$defs/group_id"},
+        "type": {"type": "string"},
+        "sentence": {"type": "string"},
+        "hedged": {"type": "boolean"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "verdict": {"$ref": "#/$defs/verdict"},
+        "verdict_confidence": {"$ref": "#/$defs/confidence"},
+        "verdict_reason": {"type": "string"},
+        "flagged_categories": {"$ref": "#/$defs/flagged_categories"},
+        "color": {"$ref": "#/$defs/color"},
+        "page": {"type": ["integer", "string"]},
+        "line": {"type": ["integer", "string"]},
+        "section": {"type": "string"},
+        "evidence": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "source", "target", "kind"],
+      "properties": {
+        "id": {"$ref": "#/$defs/edge_id"},
+        "source": {"$ref": "#/$defs/claim_id"},
+        "target": {"$ref": "#/$defs/claim_id"},
+        "kind": {
+          "type": "string",
+          "enum": ["supports", "depends_on", "contradicts", "support", "contradict", "dependency", "group_membership"]
+        },
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "provenance": {"type": "string"}
+      }
+    }
+  }
+}
