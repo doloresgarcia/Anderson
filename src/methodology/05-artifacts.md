@@ -3,6 +3,12 @@
 Every phase deliverable has a fixed format so downstream agents can parse it
 mechanically.
 
+Files documented as optional intermediates are allowed only when the
+orchestrator explicitly declares a large-paper parallelization plan and includes
+those paths in a role's output spec. They are not default phase deliverables.
+Downstream phases consume the final artifacts in `phase<N>/outputs/`, not shard
+or batch part files.
+
 ## `CLAIMS.md`
 
 Markdown table, one row per claim:
@@ -34,12 +40,105 @@ or `external` (retrieved via internet search). `confidence` values come from
 
 Bibtex keys must resolve in `references.bib` (also written by
 `literature_searcher`). Unresolvable keys are Category A at review.
+When assembled from batch intermediates, final sections are ordered by final
+`claim_id`, bank candidates appear before external candidates, local part-file
+keys are rewritten to final deduplicated keys, and every `[@key]` reference must
+resolve in final `references.bib`.
 
 ## `references.bib`
 
 BibTeX file written by `literature_searcher`. It must include every key cited
 from `LITERATURE.md`. It may be empty only when `LITERATURE.md` contains no
 citation keys.
+
+## Optional Phase 1 intermediates
+
+These files live under `reviews/<slug>/phase1/agents/...`, not under
+`phase1/outputs/`. They are merge inputs only.
+
+### `CLAIMS.part.md`
+
+Shard-local claim table written by a `claim_extractor` shard worker:
+
+```
+| temp_claim_id | type | sentence | hedged | confidence | page | line | section | provenance |
+|---------------|------|----------|--------|------------|------|------|---------|------------|
+| T001-001      | …    | "…"      | false  | high       | 3    | 14   | 2.1     | paper.txt:142 |
+```
+
+`temp_claim_id` values are temporary and must not use the final `C001` pattern.
+They only need to be unique across the declared shard run. The `sentence`,
+`type`, `hedged`, `confidence`, page/line/section, and provenance columns follow
+the same rules as final `CLAIMS.md`.
+
+### `claim_id_map.md`
+
+Serial claim-merge map written in the claim merge working directory:
+
+```
+| temp_claim_id | final_claim_id | prior_claim_id | status | normalized_sentence | provenance | note |
+|---------------|----------------|----------------|--------|---------------------|------------|------|
+| T001-001      | C001           | C001           | preserved | …                 | paper.txt:142 | … |
+| T002-004      | C019           | -              | inserted  | …                 | paper.txt:311 | … |
+| -             | -              | C007           | deleted   | …                 | paper.txt:208 | … |
+```
+
+`status` is `preserved`, `inserted`, or `deleted`. Changed claims are represented
+as deletion of the old exact `(normalized_sentence, provenance)` signature plus
+insertion of the new signature. The merge log must summarize insertions and
+deletions and state whether downstream Phase 1 artifacts need regeneration.
+
+### `coverage.md`
+
+Literature bank batch coverage manifest:
+
+```
+| claim_id | covered | best_relation | best_confidence | candidate_keys | reason |
+|----------|---------|---------------|-----------------|----------------|--------|
+| C001     | true    | supports      | high            | smith2020      | bank high-confidence support |
+| C002     | false   | related       | low             | lee2018        | no support/contradiction at medium+ |
+```
+
+Every assigned claim appears exactly once. `covered` is `true` only when the
+bank found at least one `supports` or `contradicts` candidate with `high` or
+`medium` confidence. `candidate_keys` are local to that batch part and must
+resolve in the sibling `references.part.bib` when present.
+
+### `uncovered.md`
+
+Barrier manifest produced only after all declared bank batches complete:
+
+```
+| claim_id | reason | bank_batches | notes |
+|----------|--------|--------------|-------|
+| C002     | no medium+ support/contradiction from bank | 001,002 | external search allowed |
+```
+
+External literature batches may search only claim IDs listed here. A claim not
+listed in `uncovered.md` is treated as bank-covered for the batched run.
+
+### `LITERATURE.part.md`
+
+Batch-local literature candidates. The structure matches final `LITERATURE.md`
+but covers only the batch's assigned claims:
+
+```
+## C001
+- [@smith2020] — supports — confidence high — bank — "snippet from paper text"
+```
+
+Keys are local to the part file and must resolve in the sibling
+`references.part.bib`. Bank batch parts use source `bank`; external batch parts
+use source `external`. The serial literature merge rewrites local keys to final
+deduplicated keys before writing `LITERATURE.md`.
+
+### `references.part.bib`
+
+Batch-local BibTeX file. It must include every key cited by the sibling
+`LITERATURE.part.md` and no fabricated records. Keys may conflict across
+batches; the serial literature merge deduplicates records by DOI, then arXiv id,
+then normalized title, resolves key conflicts deterministically, and writes the
+final `references.bib`.
 
 ## `graph.vN.json`
 

@@ -21,19 +21,27 @@ a recommendation in your output and let the orchestrator dispatch.
   the dispatch-listed inputs, the universal reads below, and your role file's
   `Reads` section. Do not read other files.
 - **Write only declared outputs.** Files outside the declared output list are
-  forbidden, except `plan.md` and `log.md` in the agent's own working dir
-  (`reviews/<slug>/phase<N>/agents/<role>/`).
+  forbidden, except `plan.md` and `log.md` in the invocation's own working dir.
+  The default working dir is `reviews/<slug>/phase<N>/agents/<role>/`; when the
+  orchestrator explicitly declares a shard, batch, or merge invocation, the
+  working dir may be a unique child directory under that role, such as
+  `reviews/<slug>/phase1/agents/claim_extractor/shards/001/` or
+  `reviews/<slug>/phase1/agents/literature_searcher/merge/`.
   A role's `Writes` section may list final phase deliverables or
-  orchestrator-declared intermediates (for example checker `section.md` files
-  or `graph.v1.skeleton.json`). The inherited working-dir `plan.md` and
-  `log.md` are always permitted and required by this contract even when they
-  are not repeated there.
+  orchestrator-declared intermediates (for example checker `section.md` files,
+  `graph.v1.skeleton.json`, `CLAIMS.part.md`, or `LITERATURE.part.md`). The
+  inherited working-dir `plan.md` and `log.md` are always permitted and
+  required by this contract even when they are not repeated there.
 - **Cite or abstain.** If a finding requires an external source and the source
   cannot be resolved, the finding is `INCONCLUSIVE`, not invented.
 - **Disjoint outputs.** Two parallel agents never write to the same file.
   Where a logical artifact is the union of several agents' work (e.g.
   `VERIFICATION.md`), each agent writes a section file under its own working
   dir and a sequential concat step assembles the final artifact.
+- **Intermediate artifacts are opt-in.** Shards, batches, part files, manifests,
+  and merge maps are allowed only when the orchestrator declares them in that
+  invocation's output spec. Default phase deliverables remain the final
+  artifacts under `reviews/<slug>/phase<N>/outputs/`.
 - **Logs.** End with a `log.md` in your working dir summarizing what you read,
   what you wrote, what (if anything) you abstained on, and any gaps the
   orchestrator should know about.
@@ -45,7 +53,8 @@ Every executor specialization reads:
 - `src/methodology/03-phases.md` — your phase section
 - `src/methodology/05-artifacts.md` — output formats
 - the role file (`.claude/agents/<your_name>.md`) — your specialization
-- the agent-specific reads listed in your role file
+- the agent-specific reads listed in your role file, including any
+  mode-specific reads for the invocation
 
 ## Universal output discipline
 

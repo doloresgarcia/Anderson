@@ -42,7 +42,8 @@ Within a phase, agents that write to disjoint files run in parallel:
 
 - Phase 1: `claim_extractor` runs first (the others depend on `CLAIMS.md`).
   `literature_searcher` and a graph-skeleton pass of `graph_builder` then run in
-  parallel; `graph_builder` re-runs once to merge.
+  parallel; `graph_builder` re-runs once to merge. For explicit large-paper
+  mode (`/phase1 <slug> --large`), Phase 1 uses the shard/batch sequence below.
 - Phase 2: `strategist` runs first. The five checker agents
   (`checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`,
   `checker_literature`, `checker_domain`) then run in parallel — one agent per
@@ -51,6 +52,56 @@ Within a phase, agents that write to disjoint files run in parallel:
   parallel; they write to different files.
 
 Cross-phase work is strictly sequential.
+
+### Phase 1 large-paper mode
+
+Large-paper mode is opt-in. The ordinary `/phase1 <slug>` flow remains valid
+for normal papers; `/phase1 <slug> --large` switches only Phase 1 execution to
+the following flat orchestration pattern.
+
+Keep no more than about 4 active workers at once for L-GATr-scale papers. If
+there are more claim shards or literature batches, run them in waves. The cap is
+for total active workers, so a graph-skeleton worker running beside literature
+batches counts against it.
+
+The sequence is:
+
+1. **Serial preflight and partitioning.** The orchestrator verifies scaffold
+   inputs, then chooses non-overlapping owned paper ranges for claim shards.
+   Shards may receive neighboring read-only context, but they emit claims only
+   for their owned range. This step may inspect paper structure, but it does not
+   extract claims.
+2. **Parallel claim shards.** The orchestrator dispatches multiple
+   `claim_extractor` instances directly. Each writes only
+   `reviews/<slug>/phase1/agents/claim_extractor/shards/<NNN>/CLAIMS.part.md`
+   plus its `plan.md` and `log.md`.
+3. **Serial claim merge.** The orchestrator mechanically merges shard outputs
+   into canonical `reviews/<slug>/phase1/outputs/CLAIMS.md`, preserving paper
+   order and normalizing IDs without adding claims. The merge step owns
+   `reviews/<slug>/phase1/agents/claim_extractor/merge/{claim_id_map.md,plan.md,log.md}`.
+4. **Parallel graph skeleton plus bank batches.** The graph-skeleton
+   `graph_builder` pass writes
+   `reviews/<slug>/phase1/outputs/graph.v1.skeleton.json` while
+   `literature_searcher` bank-batch workers write only
+   `reviews/<slug>/phase1/agents/literature_searcher/bank_batches/<NNN>/coverage.md`,
+   `LITERATURE.part.md`, and `references.part.bib`.
+5. **Serial bank barrier.** The orchestrator waits for all bank batches and
+   the skeleton, then records uncovered claim IDs under
+   `reviews/<slug>/phase1/agents/literature_searcher/barrier/`.
+6. **Parallel external batches.** For uncovered claims only,
+   `literature_searcher` external-batch workers write only
+   `reviews/<slug>/phase1/agents/literature_searcher/external_batches/<NNN>/LITERATURE.part.md`
+   and `references.part.bib`.
+7. **Serial literature merge.** The orchestrator merges bank and external part
+   files into canonical `LITERATURE.md` and `references.bib`, de-duplicating
+   keys without fabricating citations. The merge step owns
+   `reviews/<slug>/phase1/agents/literature_searcher/merge/{plan.md,log.md}`.
+8. **Serial finish.** The final `graph_builder` pass writes `graph.v1.json`,
+   the orchestrator writes `FINDINGS.md`, and critical review plus arbiter run
+   serially.
+
+Agents never spawn agents in this mode. Parallel safety comes from disjoint
+ownership paths; only serial merge steps write canonical Phase 1 outputs.
 
 ## Fixer dependency closures
 
@@ -61,7 +112,10 @@ downstream artifact that depends on it before re-review:
   `graph_builder` skeleton pass, then re-run the final `graph_builder` pass for
   `graph.v1.json`. If only `LITERATURE.md`, `references.bib`, or
   `graph.v1.skeleton.json` changes, re-run the final `graph_builder` pass. In
-  all cases, re-derive `FINDINGS.md`.
+  all cases, re-derive `FINDINGS.md`. For a `--large` run, preserve the large
+  dependency path: changed shard parts are merged serially into `CLAIMS.md`;
+  changed canonical claims trigger graph skeleton plus bank batches, barrier,
+  external batches, literature merge, final graph, and `FINDINGS.md`.
 - Phase 2: if `STRATEGY.md` changes, re-run all checker sections; if any
   checker section changes, re-concatenate `VERIFICATION.md` in canonical
   section order and re-run `graph_builder` for `graph.v2.json`.

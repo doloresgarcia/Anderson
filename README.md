@@ -19,7 +19,7 @@ the main session.
 
 | Phase | Purpose | Primary artifacts |
 |-------|---------|------------------|
-| 1. Ingest & Map  | Parse paper, extract claims, two-pass literature search (local bank → external), build initial claim graph | `CLAIMS.md`, `LITERATURE.md`, `references.bib`, `graph.v1.json`, `FINDINGS.md` |
+| 1. Ingest & Map  | Parse paper, extract claims, two-pass literature search (local bank → external), build initial claim graph | `CLAIMS.md`, `LITERATURE.md`, `references.bib`, `graph.v1.skeleton.json` (intermediate), `graph.v1.json`, `FINDINGS.md` |
 | 2. Strategy & Check | Run five specialized checker agents (one per error category) against the claims and merge their verdicts into the graph | `STRATEGY.md`, `VERIFICATION.md`, `graph.v2.json` |
 | 3. Report | Trust score, marked-up paper, interactive claim graph, statistics, prose summary | `graph.final.json`, `graph.final.html`, `STATS.md`, `REPORT.md`, highlighted PDF and/or HTML depending on input |
 
@@ -131,11 +131,15 @@ checkpoint commit; the orchestrator pauses for your OK before advancing. Phase
 3 reaches a human gate after arbiter PASS and makes the final commit only after
 you reply `APPROVE`.
 
+For unusually large papers, use `/phase1 my-slug --large`. This keeps the same
+Phase 1 deliverables but shards claim extraction, batches literature search, and
+caps active workers around four while preserving flat orchestration.
+
 Each subagent declares a static `model:` in its frontmatter. The default
 mix is documented in `.claude/profiles/balanced.json`. To override
 globally for a session, set `CLAUDE_CODE_SUBAGENT_MODEL`.
 
-- **Phase 1 — Ingest & Map.** `claim_extractor` → `literature_searcher` (bank first, then external; writes `LITERATURE.md` and `references.bib`) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
+- **Phase 1 — Ingest & Map.** `claim_extractor` → `literature_searcher` (bank first, then external; writes `LITERATURE.md` and `references.bib`) in parallel with the graph-skeleton `graph_builder` pass → final `graph_builder` merge → write `FINDINGS.md`. Single-bot review.
 - **Phase 2 — Strategy & Check.** `strategist` → five **checker agents** in parallel — `checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`, `checker_literature`, `checker_domain` — each examining every claim for its error category and writing its own section of `VERIFICATION.md` (verdicts `FLAGGED` / `CLEAR` / `INCONCLUSIVE`) → `graph_builder` (v2). Three-bot review (critical + constructive + arbiter).
 - **Phase 3 — Report.** `highlighter` (invokes `highlight_paper.py` or `highlight_text.py`), `graph_builder` (invokes `render_graph.py`), and `report_writer` (invokes `claim_stats.py` then writes `REPORT.md`) run in parallel. Three-bot review, then a human gate.
 

@@ -19,20 +19,46 @@ work, and emit a first-pass claim graph.
   uncovered claims (biased toward published, peer-reviewed papers over
   preprints); emits `LITERATURE.md` (claim → candidate references with
   confidence, source, and snippet).
-- `graph_builder` — consumes `CLAIMS.md` and `LITERATURE.md`, produces
-  `graph.v1.json` per `conventions/graph_schema.md`.
+- `graph_builder` — first emits `graph.v1.skeleton.json` from `CLAIMS.md`, then
+  consumes the skeleton plus `LITERATURE.md` and produces `graph.v1.json` per
+  `conventions/graph_schema.md`.
 
 **Deliverables (in `reviews/<slug>/phase1/outputs/`).**
 
 - `CLAIMS.md`
 - `LITERATURE.md`
 - `references.bib`
+- `graph.v1.skeleton.json` — intermediate claims-only graph used by the final
+  merge pass.
 - `graph.v1.json`
 - `FINDINGS.md` — short prose summary: how many claims, distribution by type, gaps
   identified at this stage.
 
 **Review.** Single-bot review (correctness/completeness of claim extraction and graph
 well-formedness). Arbiter PASS required to advance.
+
+### Phase 1 modes
+
+Default `/phase1 <slug>` is the ordinary path: one `claim_extractor`, then
+`literature_searcher` in parallel with the graph-skeleton `graph_builder` pass,
+then a serial final graph merge and `FINDINGS.md`.
+
+Explicit `/phase1 <slug> --large` uses the same deliverables but changes the
+execution plan for large papers:
+
+- serial preflight and paper partitioning into owned claim ranges
+- parallel claim-extraction shards, each writing only
+  `phase1/agents/claim_extractor/shards/<NNN>/CLAIMS.part.md`
+- serial claim merge into canonical `phase1/outputs/CLAIMS.md`
+- graph skeleton in parallel with bank-only literature batches
+- serial bank barrier to identify uncovered claims
+- parallel external-search literature batches for uncovered claims
+- serial literature merge into canonical `LITERATURE.md` and `references.bib`
+- serial final `graph.v1.json`, `FINDINGS.md`, review, and arbiter
+
+Keep the orchestration flat: the main session dispatches every shard and batch
+worker directly, and agents never spawn agents. For L-GATr-scale papers, keep
+roughly 4 active workers total and run excess shards or batches in waves.
 
 ### Phase 1 gotchas
 
