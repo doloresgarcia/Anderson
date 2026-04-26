@@ -1,0 +1,35 @@
+\begin{tikzpicture}[node distance=2cm, scale=0.7, every node/.style={transform shape}]
+\node (param) [rectangle, fill=gatrgrey, minimum width=12cm, minimum height=3cm, rounded corners, ] {};
+\node (minkowski) [rectangle, fill=gatrgrey, minimum width=12cm, minimum height=3cm, rounded corners, below of=param, yshift=-1.5cm] {};
+
+\node [rotate=90, font=\small, left of=param, xshift=2cm, yshift=5.5cm] {Parametrization};
+\node [rotate=90, font=\small, left of=minkowski, xshift=2cm, yshift=5.5cm] {Minkowski space};
+
+\node (xt) [font=\LARGE, left of=param, xshift=-2.5cm] {$x$};
+\node (pt) [font=\LARGE, left of=minkowski, xshift=-2.5cm] {$p$};
+\draw [arrow, color=gatrblue, line width=1] (xt.south) -- (pt.north) node[midway, right, font=\small] {};
+
+\node (gatr) at (-0.5,-3.5) {\includegraphics[scale=1]{figs/logo.png}};
+\draw [arrow, color=gatrgreen, line width=1] (pt.east) -- ([xshift=0.5cm]gatr.west) node[midway, above=0.1cm, font=\small] {};
+
+\node (vp1) [font=\LARGE, right of=gatr, xshift=2.5cm] {$v_p$};
+\draw [arrow, color=gatrgreen, line width=1] (gatr.east) -- (vp1.west)node[midway, above=0.1cm, font=\small] {};
+
+\node (vx1) [font=\LARGE, above of=vp1, yshift=0.4cm] {$v_x^\mathrm{raw}$};
+\draw [arrow, color=gatrblue, line width=1] (vp1.north) -- (vx1.south) node[midway,left, font=\small, yshift=0.6cm, xshift=-0.1cm] {};
+
+\node (vp2a) [font=\LARGE, above of=gatr, yshift=1.0cm, xshift=0.5cm] {$v_{x_m}$};
+\node (vp2b) [font=\LARGE, above of=vp2a, yshift=-1.4cm] {$v_{x_p}$};
+\draw [arrow, color=gatrred, line width=1] ([yshift=-0.8cm,xshift=0.5cm]gatr.north) -- (vp2a.south)node[midway, left=0.3cm, yshift=0.5cm, font=\small, rotate=90] {};
+
+\node (vx2) [font=\LARGE, above of=vx1, yshift=0.1cm, xshift=0.3cm] {$v_x^\mathrm{stable}$};
+\draw [arrow2, color=gatrgreen, line width=1] ([xshift=-0.3cm]vx1.north) -- ([xshift=-0.6cm]vx2.south);
+\draw [arrow2, color=gatrgreen, line width=1] ([xshift=-0.1cm]vx1.north) -- ([xshift=-0.4cm]vx2.south);
+\draw [arrow2, color=gatrgreen, line width=1] ([xshift=0.1cm]vx1.north) -- ([xshift=-0.2cm]vx2.south);
+\draw [arrow2, color=gatrgreen, line width=1] ([xshift=0.3cm]vx1.north) -- ([xshift=0cm]vx2.south);
+
+\node [rectangle, fill=gatrgrey, minimum width=0.4cm, minimum height=1.15cm, below of=vx2, yshift=1.05cm, xshift=-0.5cm, inner sep=0pt] {};
+
+\draw [arrow2, color=gatrred, line width=1] (vp2b.east) -- ++ (3.2cm, 0cm) -- ([xshift=-0.6cm]vx2.south);
+\draw [arrow2, color=gatrred, line width=1] ([yshift=0.1cm]vp2a.east) -- ++ (3.35cm, 0cm) -- ([xshift=-0.4cm]vx2.south);
+\end{tikzpicture}

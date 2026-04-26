@@ -1,0 +1,268 @@
+\providecommand{\href}[2]{#2}\begingroup\raggedright\begin{thebibliography}{10}
+
+\bibitem{Plehn:2022ftl}
+T.~Plehn, A.~Butter, B.~Dillon, T.~Heimel, C.~Krause, and R.~Winterhalder, {\it {Modern Machine Learning for LHC Physicists}},  \href{http://arxiv.org/abs/2211.01421}{{arXiv:2211.01421 [hep-ph]}}.
+
+\bibitem{Kasieczka:2019dbj}
+A.~Butter {\em et al.}, {\it {The Machine Learning landscape of top taggers}},  \href{http://dx.doi.org/10.21468/SciPostPhys.7.1.014}{SciPost Phys. {\bfseries 7} (2019)  014}, \href{http://arxiv.org/abs/1902.09914}{{arXiv:1902.09914 [hep-ph]}}.
+
+\bibitem{Nachman:2022emq}
+B.~Nachman {\em et al.}, {\it {Jets and Jet Substructure at Future Colliders}},  \href{http://dx.doi.org/10.3389/fphy.2022.897719}{Front. in Phys. {\bfseries 10} (2022)  897719}, \href{http://arxiv.org/abs/2203.07462}{{arXiv:2203.07462 [hep-ph]}}.
+
+\bibitem{Cogan:2014oua}
+J.~Cogan, M.~Kagan, E.~Strauss, and A.~Schwarztman, {\it {Jet-Images: Computer Vision Inspired Techniques for Jet Tagging}},  \href{http://dx.doi.org/10.1007/JHEP02(2015)118}{JHEP {\bfseries 02} (2015)  118}, \href{http://arxiv.org/abs/1407.5675}{{arXiv:1407.5675 [hep-ph]}}.
+
+\bibitem{Baldi:2014kfa}
+P.~Baldi, P.~Sadowski, and D.~Whiteson, {\it {Searching for Exotic Particles in High-Energy Physics with Deep Learning}},  \href{http://dx.doi.org/10.1038/ncomms5308}{Nature Commun. {\bfseries 5} (2014)  4308}, \href{http://arxiv.org/abs/1402.4735}{{arXiv:1402.4735 [hep-ph]}}.
+
+\bibitem{deOliveira:2015xxd}
+L.~de~Oliveira, M.~Kagan, L.~Mackey, B.~Nachman, and A.~Schwartzman, {\it {Jet-images \textemdash{} deep learning edition}},  \href{http://dx.doi.org/10.1007/JHEP07(2016)069}{JHEP {\bfseries 07} (2016)  069}, \href{http://arxiv.org/abs/1511.05190}{{arXiv:1511.05190 [hep-ph]}}.
+
+\bibitem{Gallicchio:2010sw}
+J.~Gallicchio and M.~D. Schwartz, {\it {Seeing in Color: Jet Superstructure}},  \href{http://dx.doi.org/10.1103/PhysRevLett.105.022001}{Phys. Rev. Lett. {\bfseries 105} (2010)  022001}, \href{http://arxiv.org/abs/1001.5027}{{arXiv:1001.5027 [hep-ph]}}.
+
+\bibitem{Kasieczka:2017nvn}
+G.~Kasieczka, T.~Plehn, M.~Russell, and T.~Schell, {\it {Deep-learning Top Taggers or The End of QCD?}},  \href{http://dx.doi.org/10.1007/JHEP05(2017)006}{JHEP {\bfseries 05} (2017)  006}, \href{http://arxiv.org/abs/1701.08784}{{arXiv:1701.08784 [hep-ph]}}.
+
+\bibitem{Butter:2017cot}
+A.~Butter, G.~Kasieczka, T.~Plehn, and M.~Russell, {\it {Deep-learned Top Tagging with a Lorentz Layer}},  \href{http://dx.doi.org/10.21468/SciPostPhys.5.3.028}{SciPost Phys. {\bfseries 5} (2018) 3, 028}, \href{http://arxiv.org/abs/1707.08966}{{arXiv:1707.08966 [hep-ph]}}.
+
+\bibitem{Gong:2022lye}
+S.~Gong, Q.~Meng, J.~Zhang, H.~Qu, C.~Li, S.~Qian, W.~Du, Z.-M. Ma, and T.-Y. Liu, {\it {An efficient Lorentz equivariant graph neural network for jet tagging}},  \href{http://dx.doi.org/10.1007/JHEP07(2022)030}{JHEP {\bfseries 07} (2022)  030}, \href{http://arxiv.org/abs/2201.08187}{{arXiv:2201.08187 [hep-ph]}}.
+
+\bibitem{Qiu:2022xvr}
+S.~Qiu, S.~Han, X.~Ju, B.~Nachman, and H.~Wang, {\it {Holistic approach to predicting top quark kinematic properties with the covariant particle transformer}},  \href{http://dx.doi.org/10.1103/PhysRevD.107.114029}{Phys. Rev. D {\bfseries 107} (2023) 11, 114029}, \href{http://arxiv.org/abs/2203.05687}{{arXiv:2203.05687 [hep-ph]}}.
+
+\bibitem{Bogatskiy:2022czk}
+A.~Bogatskiy, T.~Hoffman, D.~W. Miller, and J.~T. Offermann, {\it {PELICAN: Permutation Equivariant and Lorentz Invariant or Covariant Aggregator Network for Particle Physics}},  \href{http://arxiv.org/abs/2211.00454}{{arXiv:2211.00454 [hep-ph]}}.
+
+\bibitem{Qiu:2023ihi}
+S.~Qiu, S.~Han, X.~Ju, B.~Nachman, and H.~Wang, {\it {Parton labeling without matching: unveiling emergent labelling capabilities in regression models}},  \href{http://dx.doi.org/10.1140/epjc/s10052-023-11809-z}{Eur. Phys. J. C {\bfseries 83} (2023) 7, 622}, \href{http://arxiv.org/abs/2304.09208}{{arXiv:2304.09208 [hep-ph]}}.
+
+\bibitem{ruhe2023clifford}
+D.~Ruhe, J.~Brandstetter, and P.~Forr\'e, {\it Clifford group equivariant neural networks},  in {\em {Advances in Neural Information Processing Systems}}.
+\newblock 5, 2023.
+\newblock \href{http://arxiv.org/abs/2305.11141}{{arXiv:2305.11141 [cs.LG]}}.
+
+\bibitem{Butter:2022rso}
+S.~Badger {\em et al.}, {\it {Machine learning and LHC event generation}},  \href{http://dx.doi.org/10.21468/SciPostPhys.14.4.079}{SciPost Phys. {\bfseries 14} (2023) 4, 079}, \href{http://arxiv.org/abs/2203.07460}{{arXiv:2203.07460 [hep-ph]}}.
+
+\bibitem{Campbell:2022qmc}
+J.~M. Campbell {\em et al.}, {\it {Event generators for high-energy physics experiments}},  \href{http://dx.doi.org/10.21468/SciPostPhys.16.5.130}{SciPost Phys. {\bfseries 16} (2024) 5, 130}, \href{http://arxiv.org/abs/2203.11110}{{arXiv:2203.11110 [hep-ph]}}.
+
+\bibitem{Paganini:2017dwg}
+M.~Paganini, L.~de~Oliveira, and B.~Nachman, {\it {CaloGAN : Simulating 3D high energy particle showers in multilayer electromagnetic calorimeters with generative adversarial networks}},  \href{http://dx.doi.org/10.1103/PhysRevD.97.014021}{Phys. Rev. D {\bfseries 97} (2018) 1, 014021}, \href{http://arxiv.org/abs/1712.10321}{{arXiv:1712.10321 [hep-ex]}}.
+
+\bibitem{Ghosh:2020kkt}
+ATLAS, A.~Ghosh, {\it {Deep generative models for fast shower simulation in ATLAS}},  \href{http://dx.doi.org/10.1088/1742-6596/1525/1/012077}{J. Phys. Conf. Ser. {\bfseries 1525} (2020) 1, 012077}.
+
+\bibitem{Buhmann:2020pmy}
+E.~Buhmann, S.~Diefenbacher, E.~Eren, F.~Gaede, G.~Kasieczka, A.~Korol, and K.~Kr\"uger, {\it {Getting High: High Fidelity Simulation of High Granularity Calorimeters with High Speed}},  \href{http://dx.doi.org/10.1007/s41781-021-00056-0}{Comput. Softw. Big Sci. {\bfseries 5} (2021) 1, 13}, \href{http://arxiv.org/abs/2005.05334}{{arXiv:2005.05334 [physics.ins-det]}}.
+
+\bibitem{Buhmann:2023kdg}
+E.~Buhmann, F.~Gaede, G.~Kasieczka, A.~Korol, W.~Korcari, K.~Kr\"uger, and P.~McKeown, {\it {CaloClouds II: ultra-fast geometry-independent highly-granular calorimeter simulation}},  \href{http://dx.doi.org/10.1088/1748-0221/19/04/P04020}{JINST {\bfseries 19} (2024) 04, P04020}, \href{http://arxiv.org/abs/2309.05704}{{arXiv:2309.05704 [physics.ins-det]}}.
+
+\bibitem{Krause:2024avx}
+C.~Krause {\em et al.}, {\it {CaloChallenge 2022: A Community Challenge for Fast Calorimeter Simulation}},  \href{http://arxiv.org/abs/2410.21611}{{arXiv:2410.21611 [cs.LG]}}.
+
+\bibitem{Otten:2019hhl}
+S.~Otten, S.~Caron, W.~de~Swart, M.~van Beekveld, L.~Hendriks, C.~van Leeuwen, D.~Podareanu, R.~Ruiz~de Austri, and R.~Verheyen, {\it {Event Generation and Statistical Sampling for Physics with Deep Generative Models and a Density Information Buffer}},  \href{http://dx.doi.org/10.1038/s41467-021-22616-z}{Nature Commun. {\bfseries 12} (2021) 1, 2985}, \href{http://arxiv.org/abs/1901.00875}{{arXiv:1901.00875 [hep-ph]}}.
+
+\bibitem{Hashemi:2019fkn}
+B.~Hashemi, N.~Amin, K.~Datta, D.~Olivito, and M.~Pierini, {\it {LHC analysis-specific datasets with Generative Adversarial Networks}},  \href{http://arxiv.org/abs/1901.05282}{{arXiv:1901.05282 [hep-ex]}}.
+
+\bibitem{Butter:2019cae}
+A.~Butter, T.~Plehn, and R.~Winterhalder, {\it {How to GAN LHC Events}},  \href{http://dx.doi.org/10.21468/SciPostPhys.7.6.075}{SciPost Phys. {\bfseries 7} (2019) 6, 075}, \href{http://arxiv.org/abs/1907.03764}{{arXiv:1907.03764 [hep-ph]}}.
+
+\bibitem{Heimel:2022wyj}
+T.~Heimel, R.~Winterhalder, A.~Butter, J.~Isaacson, C.~Krause, F.~Maltoni, O.~Mattelaer, and T.~Plehn, {\it {MadNIS - Neural multi-channel importance sampling}},  \href{http://dx.doi.org/10.21468/SciPostPhys.15.4.141}{SciPost Phys. {\bfseries 15} (2023) 4, 141}, \href{http://arxiv.org/abs/2212.06172}{{arXiv:2212.06172 [hep-ph]}}.
+
+\bibitem{Ghosh:2022zdz}
+A.~Ghosh, X.~Ju, B.~Nachman, and A.~Siodmok, {\it {Towards a deep learning model for hadronization}},  \href{http://dx.doi.org/10.1103/PhysRevD.106.096020}{Phys. Rev. D {\bfseries 106} (2022) 9, 096020}, \href{http://arxiv.org/abs/2203.12660}{{arXiv:2203.12660 [hep-ph]}}.
+
+\bibitem{Bierlich:2023zzd}
+C.~Bierlich, P.~Ilten, T.~Menzo, S.~Mrenna, M.~Szewc, M.~K. Wilkinson, A.~Youssef, and J.~Zupan, {\it {Towards a data-driven model of hadronization using normalizing flows}},  \href{http://dx.doi.org/10.21468/SciPostPhys.17.2.045}{SciPost Phys. {\bfseries 17} (2024) 2, 045}, \href{http://arxiv.org/abs/2311.09296}{{arXiv:2311.09296 [hep-ph]}}.
+
+\bibitem{Janssen:2023lgz}
+T.~Jan\ss{}en and S.~Schumann, {\it {Machine learning efforts in Sherpa}},  \href{http://dx.doi.org/10.1088/1742-6596/2438/1/012144}{J. Phys. Conf. Ser. {\bfseries 2438} (2023) 1, 012144}.
+
+\bibitem{Chan:2023ume}
+J.~Chan, X.~Ju, A.~Kania, B.~Nachman, V.~Sangli, and A.~Siodmok, {\it {Fitting a deep generative hadronization model}},  \href{http://dx.doi.org/10.1007/JHEP09(2023)084}{JHEP {\bfseries 09} (2023)  084}, \href{http://arxiv.org/abs/2305.17169}{{arXiv:2305.17169 [hep-ph]}}.
+
+\bibitem{Heimel:2023ngj}
+T.~Heimel, N.~Huetsch, F.~Maltoni, O.~Mattelaer, T.~Plehn, and R.~Winterhalder, {\it {The MadNIS reloaded}},  \href{http://dx.doi.org/10.21468/SciPostPhys.17.1.023}{SciPost Phys. {\bfseries 17} (2024) 1, 023}, \href{http://arxiv.org/abs/2311.01548}{{arXiv:2311.01548 [hep-ph]}}.
+
+\bibitem{Heimel:2024wph}
+T.~Heimel, O.~Mattelaer, T.~Plehn, and R.~Winterhalder, {\it {Differentiable MadNIS-Lite}},  \href{http://arxiv.org/abs/2408.01486}{{arXiv:2408.01486 [hep-ph]}}.
+
+\bibitem{Bierlich:2024xzg}
+C.~Bierlich, P.~Ilten, T.~Menzo, S.~Mrenna, M.~Szewc, M.~K. Wilkinson, A.~Youssef, and J.~Zupan, {\it {Describing Hadronization via Histories and Observables for Monte-Carlo Event Reweighting}},  \href{http://arxiv.org/abs/2410.06342}{{arXiv:2410.06342 [hep-ph]}}.
+
+\bibitem{brehmer2023geometric}
+J.~Brehmer, P.~de~Haan, S.~Behrends, and T.~Cohen, {\it {Geometric Algebra Transformer}},  in {\em {Advances in Neural Information Processing Systems}}.
+\newblock 5, 2023.
+\newblock \href{http://arxiv.org/abs/2305.18415}{{arXiv:2305.18415 [cs.LG]}}.
+
+\bibitem{de2023euclidean}
+P.~De~Haan, T.~Cohen, and J.~Brehmer, {\it Euclidean, projective, conformal: Choosing a geometric algebra for equivariant transformers},  in {\em {Proceedings of The 27th International Conference on Artificial Intelligence and Statistics}}.
+\newblock PMLR, 02--04 May, 2024.
+\newblock \href{http://arxiv.org/abs/2311.04744}{{arXiv:2311.04744 [cs.LG]}}.
+
+\bibitem{Spinner:2024hjm}
+J.~Spinner, V.~Bres\'o, P.~de~Haan, T.~Plehn, J.~Thaler, and J.~Brehmer, {\it {Lorentz-Equivariant Geometric Algebra Transformers for High-Energy Physics}},  \href{http://arxiv.org/abs/2405.14806}{{arXiv:2405.14806 [physics.data-an]}}.
+
+\bibitem{hestenes1966space}
+D.~Hestenes, {\em Space-time Algebra}.
+\newblock Documents on modern physics. Gordon and Breach, 1966.
+\newblock \url{https://books.google.de/books?id=OoRmatRYcs4C}.
+
+\bibitem{DBLP:journals/corr/abs-2106-06610}
+S.~Villar, D.~W. Hogg, K.~Storey{-}Fisher, W.~Yao, and B.~Blum{-}Smith, {\it Scalars are universal: Gauge-equivariant machine learning, structured like classical physics},  CoRR (2021)  , \href{http://arxiv.org/abs/2106.06610}{{arXiv:2106.06610 [cs.LG]}}.
+
+\bibitem{vaswani2017attention}
+A.~Vaswani, N.~Shazeer, N.~Parmar, J.~Uszkoreit, L.~Jones, A.~N. Gomez, {\L}.~Kaiser, and I.~Polosukhin, {\it Attention is all you need},  Advances in neural information processing systems {\bfseries 30} (2017)  , \href{http://arxiv.org/abs/1706.03762}{{arXiv:1706.03762 [cs.CL]}}.
+
+\bibitem{xiong2020layer}
+R.~Xiong, Y.~Yang, D.~He, K.~Zheng, S.~Zheng, C.~Xing, H.~Zhang, Y.~Lan, L.~Wang, and T.~Liu, {\it On layer normalization in the transformer architecture},  in {\em {International Conference on Machine Learning}}, PMLR.
+\newblock 2020.
+\newblock \href{http://arxiv.org/abs/2002.04745}{{arXiv:2002.04745 [cs.LG]}}.
+
+\bibitem{hendrycks2016gaussian}
+D.~Hendrycks and K.~Gimpel, {\it Gaussian error linear units (gelus)},  \href{http://arxiv.org/abs/1606.08415}{{arXiv:1606.08415 [cs.LG]}}.
+
+\bibitem{Maitre:2024hzp}
+D.~Ma\^\i{}tre, V.~S. Ngairangbam, and M.~Spannowsky, {\it {Optimal Equivariant Architectures from the Symmetries of Matrix-Element Likelihoods}},  \href{http://arxiv.org/abs/2410.18553}{{arXiv:2410.18553 [hep-ph]}}.
+
+\bibitem{Bogatskiy:2023nnw}
+A.~Bogatskiy, T.~Hoffman, D.~W. Miller, J.~T. Offermann, and X.~Liu, {\it {Explainable equivariant neural networks for particle physics: PELICAN}},  \href{http://dx.doi.org/10.1007/JHEP03(2024)113}{JHEP {\bfseries 03} (2024)  113}, \href{http://arxiv.org/abs/2307.16506}{{arXiv:2307.16506 [hep-ph]}}.
+
+\bibitem{bronstein2021geometric}
+M.~M. Bronstein, J.~Bruna, T.~Cohen, and P.~Veli{\v c}kovi{\'c}, {\it Geometric deep learning: Grids, groups, graphs, geodesics, and gauges},  \href{http://arxiv.org/abs/2104.13478}{{arXiv:2104.13478 [cs.LG]}}.
+
+\bibitem{dao2022flashattention}
+T.~Dao, D.~Fu, S.~Ermon, A.~Rudra, and C.~R{\'e}, {\it {FlashAttention}: Fast and memory-efficient exact attention with {IO}-awareness},  {Advances in Neural Information Processing Systems} {\bfseries 35} (2022)  16344, \href{http://arxiv.org/abs/2205.14135}{{arXiv:2205.14135 [cs.LG]}}.
+
+\bibitem{Aylett-Bullock:2021hmo}
+J.~Aylett-Bullock, S.~Badger, and R.~Moodie, {\it {Optimising simulations for diphoton production at hadron colliders using amplitude neural networks}},  \href{http://dx.doi.org/10.1007/JHEP08(2021)066}{JHEP {\bfseries 08} (2021)  066}, \href{http://arxiv.org/abs/2106.09474}{{arXiv:2106.09474 [hep-ph]}}.
+
+\bibitem{Maitre:2021uaa}
+D.~Ma\^\i{}tre and H.~Truong, {\it {A factorisation-aware Matrix element emulator}},  \href{http://dx.doi.org/10.1007/JHEP11(2021)066}{JHEP {\bfseries 11} (2021)  066}, \href{http://arxiv.org/abs/2107.06625}{{arXiv:2107.06625 [hep-ph]}}.
+
+\bibitem{Badger:2022hwf}
+S.~Badger, A.~Butter, M.~Luchmann, S.~Pitz, and T.~Plehn, {\it {Loop amplitudes from precision networks}},  \href{http://dx.doi.org/10.21468/SciPostPhysCore.6.2.034}{SciPost Phys. Core {\bfseries 6} (2023)  034}, \href{http://arxiv.org/abs/2206.14831}{{arXiv:2206.14831 [hep-ph]}}.
+
+\bibitem{Maitre:2023dqz}
+D.~Ma\^\i{}tre and H.~Truong, {\it {One-loop matrix element emulation with factorisation awareness}},  \href{http://arxiv.org/abs/2302.04005}{{arXiv:2302.04005 [hep-ph]}}.
+
+\bibitem{madgraph}
+J.~Alwall {\em et al.}, {\it {The automated computation of tree-level and next-to-leading order differential cross sections, and their matching to parton shower simulations}},  \href{http://dx.doi.org/10.1007/JHEP07(2014)079}{JHEP {\bfseries 07} (2014)  079},
+\href{http://arxiv.org/abs/1405.0301}{{arXiv:1405.0301 [hep-ph]}}.
+%%CITATION = ARXIV:1405.0301;%%.
+
+\bibitem{zaheer2017deep}
+M.~Zaheer, S.~Kottur, S.~Ravanbakhsh, B.~Poczos, R.~Salakhutdinov, and A.~Smola, {\it Deep sets},  \href{http://arxiv.org/abs/1703.06114}{{arXiv:1703.06114 [cs.LG]}}.
+
+\bibitem{Heimel:2018mkt}
+T.~Heimel, G.~Kasieczka, T.~Plehn, and J.~M. Thompson, {\it {QCD or What?}},  \href{http://dx.doi.org/10.21468/SciPostPhys.6.3.030}{SciPost Phys. {\bfseries 6} (2019) 3, 030}, \href{http://arxiv.org/abs/1808.08979}{{arXiv:1808.08979 [hep-ph]}}.
+
+\bibitem{Sjostrand:2014zea}
+T.~Sjöstrand, S.~Ask, J.~R. Christiansen, R.~Corke, N.~Desai, P.~Ilten, S.~Mrenna, S.~Prestel, C.~O. Rasmussen, and P.~Z. Skands, {\it {An Introduction to PYTHIA 8.2}},  \href{http://dx.doi.org/10.1016/j.cpc.2015.01.024}{Comput. Phys. Commun. {\bfseries 191} (2015)  159},
+\href{http://arxiv.org/abs/1410.3012}{{arXiv:1410.3012 [hep-ph]}}.
+%%CITATION = ARXIV:1410.3012;%%.
+
+\bibitem{deFavereau:2013fsa}
+DELPHES 3, J.~de~Favereau, C.~Delaere, P.~Demin, A.~Giammanco, V.~Lema\^\i{}tre, A.~Mertens, and M.~Selvaggi, {\it {DELPHES 3, A modular framework for fast simulation of a generic collider experiment}},  \href{http://dx.doi.org/10.1007/JHEP02(2014)057}{JHEP {\bfseries 02} (2014)  057}, \href{http://arxiv.org/abs/1307.6346}{{arXiv:1307.6346 [hep-ex]}}.
+
+\bibitem{ATLAS:2018wis}
+ATLAS, M.~Aaboud {\em et al.}, {\it {Performance of top-quark and $W$-boson tagging with ATLAS in Run 2 of the LHC}},  \href{http://dx.doi.org/10.1140/epjc/s10052-019-6847-8}{Eur. Phys. J. C {\bfseries 79} (2019) 5, 375}, \href{http://arxiv.org/abs/1808.07858}{{arXiv:1808.07858 [hep-ex]}}.
+
+\bibitem{Moore:2018lsr}
+L.~Moore, K.~Nordstr\"om, S.~Varma, and M.~Fairbairn, {\it {Reports of My Demise Are Greatly Exaggerated: $N$-subjettiness Taggers Take On Jet Images}},  \href{http://dx.doi.org/10.21468/SciPostPhys.7.3.036}{SciPost Phys. {\bfseries 7} (2019) 3, 036}, \href{http://arxiv.org/abs/1807.04769}{{arXiv:1807.04769 [hep-ph]}}.
+
+\bibitem{Komiske:2018cqr}
+P.~T. Komiske, E.~M. Metodiev, and J.~Thaler, {\it {Energy Flow Networks: Deep Sets for Particle Jets}},  \href{http://dx.doi.org/10.1007/JHEP01(2019)121}{JHEP {\bfseries 01} (2019)  121}, \href{http://arxiv.org/abs/1810.05165}{{arXiv:1810.05165 [hep-ph]}}.
+
+\bibitem{Louppe:2017ipp}
+G.~Louppe, K.~Cho, C.~Becot, and K.~Cranmer, {\it {QCD-Aware Recursive Neural Networks for Jet Physics}},  \href{http://dx.doi.org/10.1007/JHEP01(2019)057}{JHEP {\bfseries 01} (2019)  057}, \href{http://arxiv.org/abs/1702.00748}{{arXiv:1702.00748 [hep-ph]}}.
+
+\bibitem{Qu:2019gqs}
+H.~Qu and L.~Gouskos, {\it {ParticleNet: Jet Tagging via Particle Clouds}},  \href{http://dx.doi.org/10.1103/PhysRevD.101.056019}{Phys. Rev. D {\bfseries 101} (2020) 5, 056019}, \href{http://arxiv.org/abs/1902.08570}{{arXiv:1902.08570 [hep-ph]}}.
+
+\bibitem{Qu:2022mxj}
+H.~Qu, C.~Li, and S.~Qian, {\it {Particle Transformer for Jet Tagging}},  \href{http://arxiv.org/abs/2202.03772}{{arXiv:2202.03772 [hep-ph]}}.
+
+\bibitem{Wu:2024thh}
+Y.~Wu, K.~Wang, C.~Li, H.~Qu, and J.~Zhu, {\it {Jet Tagging with More-Interaction Particle Transformer}},  \href{http://arxiv.org/abs/2407.08682}{{arXiv:2407.08682 [hep-ph]}}.
+
+\bibitem{kasieczka_gregor_2019_2603256}
+G.~Kasieczka, T.~Plehn, J.~Thompson, and M.~Russel, ``Top quark tagging reference dataset.'' \url{https://doi.org/10.5281/zenodo.2603256}, Mar., 2019.
+
+\bibitem{Alwall:2014hca}
+J.~Alwall, R.~Frederix, S.~Frixione, V.~Hirschi, F.~Maltoni, O.~Mattelaer, H.~S. Shao, T.~Stelzer, P.~Torrielli, and M.~Zaro, {\it {The automated computation of tree-level and next-to-leading order differential cross sections, and their matching to parton shower simulations}},  \href{http://dx.doi.org/10.1007/JHEP07(2014)079}{JHEP {\bfseries 07} (2014)  079}, \href{http://arxiv.org/abs/1405.0301}{{arXiv:1405.0301 [hep-ph]}}.
+
+\bibitem{delphes}
+DELPHES 3, J.~de~Favereau, C.~Delaere, P.~Demin, A.~Giammanco, V.~Lemaître, A.~Mertens, and M.~Selvaggi, {\it {DELPHES 3, A modular framework for fast simulation of a generic collider experiment}},  \href{http://dx.doi.org/10.1007/JHEP02(2014)057}{JHEP {\bfseries 02} (2014)  057},
+\href{http://arxiv.org/abs/1307.6346}{{arXiv:1307.6346 [hep-ex]}}.
+%%CITATION = ARXIV:1307.6346;%%.
+
+\bibitem{Bellagente:2019uyp}
+M.~Bellagente, A.~Butter, G.~Kasieczka, T.~Plehn, and R.~Winterhalder, {\it {How to GAN away Detector Effects}},  \href{http://dx.doi.org/10.21468/SciPostPhys.8.4.070}{SciPost Phys. {\bfseries 8} (2020) 4, 070}, \href{http://arxiv.org/abs/1912.00477}{{arXiv:1912.00477 [hep-ph]}}.
+
+\bibitem{Bellagente:2020piv}
+M.~Bellagente, A.~Butter, G.~Kasieczka, T.~Plehn, A.~Rousselot, R.~Winterhalder, L.~Ardizzone, and U.~K\"othe, {\it {Invertible Networks or Partons to Detector and Back Again}},  \href{http://dx.doi.org/10.21468/SciPostPhys.9.5.074}{SciPost Phys. {\bfseries 9} (2020)  074}, \href{http://arxiv.org/abs/2006.06685}{{arXiv:2006.06685 [hep-ph]}}.
+
+\bibitem{Backes:2022sph}
+M.~Backes, A.~Butter, M.~Dunford, and B.~Malaescu, {\it {An unfolding method based on conditional invertible neural networks (cINN) using iterative training}},  \href{http://dx.doi.org/10.21468/scipostphyscore.7.1.007}{SciPost Phys. Core {\bfseries 7} (2024) 1, 007}, \href{http://arxiv.org/abs/2212.08674}{{arXiv:2212.08674 [hep-ph]}}.
+
+\bibitem{Shmakov:2023kjj}
+A.~Shmakov, K.~Greif, M.~Fenton, A.~Ghosh, P.~Baldi, and D.~Whiteson, {\it {End-To-End Latent Variational Diffusion Models for Inverse Problems in High Energy Physics}},  \href{http://arxiv.org/abs/2305.10399}{{arXiv:2305.10399 [hep-ex]}}.
+
+\bibitem{Diefenbacher:2023wec}
+S.~Diefenbacher, G.-H. Liu, V.~Mikuni, B.~Nachman, and W.~Nie, {\it {Improving generative model-based unfolding with Schr\"odinger bridges}},  \href{http://dx.doi.org/10.1103/PhysRevD.109.076011}{Phys. Rev. D {\bfseries 109} (2024) 7, 076011}, \href{http://arxiv.org/abs/2308.12351}{{arXiv:2308.12351 [hep-ph]}}.
+
+\bibitem{Huetsch:2024quz}
+N.~Huetsch, J.~Mariño, {\em et al.}, {\it {The Landscape of Unfolding with Machine Learning}},  \href{http://arxiv.org/abs/2404.18807}{{arXiv:2404.18807 [hep-ph]}}.
+
+\bibitem{Butter:2022vkj}
+A.~Butter, T.~Heimel, T.~Martini, S.~Peitzsch, and T.~Plehn, {\it {Two invertible networks for the matrix element method}},  \href{http://dx.doi.org/10.21468/SciPostPhys.15.3.094}{SciPost Phys. {\bfseries 15} (2023) 3, 094}, \href{http://arxiv.org/abs/2210.00019}{{arXiv:2210.00019 [hep-ph]}}.
+
+\bibitem{Heimel:2023mvw}
+T.~Heimel, N.~Huetsch, R.~Winterhalder, T.~Plehn, and A.~Butter, {\it {Precision-Machine Learning for the Matrix Element Method}},  \href{http://arxiv.org/abs/2310.07752}{{arXiv:2310.07752 [hep-ph]}}.
+
+\bibitem{Alwall:2011uj}
+J.~Alwall, M.~Herquet, F.~Maltoni, O.~Mattelaer, and T.~Stelzer, {\it {MadGraph 5 : Going Beyond}},  \href{http://dx.doi.org/10.1007/JHEP06(2011)128}{JHEP {\bfseries 06} (2011)  128}, \href{http://arxiv.org/abs/1106.0522}{{arXiv:1106.0522 [hep-ph]}}.
+
+\bibitem{Cacciari:2008gp}
+M.~Cacciari, G.~P. Salam, and G.~Soyez, {\it {The anti-$k_t$ jet clustering algorithm}},  \href{http://dx.doi.org/10.1088/1126-6708/2008/04/063}{JHEP {\bfseries 04} (2008)  063}, \href{http://arxiv.org/abs/0802.1189}{{arXiv:0802.1189 [hep-ph]}}.
+
+\bibitem{Cacciari:2011ma}
+M.~Cacciari, G.~P. Salam, and G.~Soyez, {\it {FastJet User Manual}},  \href{http://dx.doi.org/10.1140/epjc/s10052-012-1896-2}{Eur. Phys. J. C {\bfseries 72} (2012)  1896}, \href{http://arxiv.org/abs/1111.6097}{{arXiv:1111.6097 [hep-ph]}}.
+
+\bibitem{ATLAS:2020ccu}
+ATLAS, G.~Aad {\em et al.}, {\it {Measurements of top-quark pair single- and double-differential cross-sections in the all-hadronic channel in $pp$ collisions at $\sqrt{s}=13~\textrm{TeV}$ using the ATLAS detector}},  \href{http://dx.doi.org/10.1007/JHEP01(2021)033}{JHEP {\bfseries 01} (2021)  033}, \href{http://arxiv.org/abs/2006.09274}{{arXiv:2006.09274 [hep-ex]}}.
+
+\bibitem{chen2018neural}
+R.~T. Chen, Y.~Rubanova, J.~Bettencourt, and D.~K. Duvenaud, {\it Neural ordinary differential equations},  {Advances in Neural Information Processing Systems} {\bfseries 31} (2018)  .
+
+\bibitem{Butter:2023fov}
+A.~Butter, N.~Huetsch, S.~Palacios~Schweitzer, T.~Plehn, P.~Sorrenson, and J.~Spinner, {\it {Jet Diffusion versus JetGPT -- Modern Networks for the LHC}},  \href{http://arxiv.org/abs/2305.10475}{{arXiv:2305.10475 [hep-ph]}}.
+
+\bibitem{lipman2023flowmatchinggenerativemodeling}
+Y.~Lipman, R.~T.~Q. Chen, H.~Ben-Hamu, M.~Nickel, and M.~Le, {\it Flow matching for generative modeling},  \href{http://arxiv.org/abs/2210.02747}{{arXiv:2210.02747 [cs.LG]}}.
+
+\bibitem{albergo2023stochastic}
+M.~S. Albergo, N.~M. Boffi, and E.~Vanden-Eijnden, {\it Stochastic interpolants: A unifying framework for flows and diffusions},  \href{http://arxiv.org/abs/2303.08797}{{arXiv:2303.08797 [cs.LG]}}.
+
+\bibitem{Favaro:2024rle}
+L.~Favaro, A.~Ore, S.~P. Schweitzer, and T.~Plehn, {\it {CaloDREAM -- Detector Response Emulation via Attentive flow Matching}},  \href{http://arxiv.org/abs/2405.09629}{{arXiv:2405.09629 [hep-ph]}}.
+
+\bibitem{adam}
+D.~P. {Kingma} and J.~{Ba}, {\it {Adam: A Method for Stochastic Optimization}},  \href{http://arxiv.org/abs/1412.6980}{{arXiv:1412.6980 [cs.LG]}}.
+
+\bibitem{chen2023symbolic}
+X.~Chen, C.~Liang, D.~Huang, E.~Real, K.~Wang, Y.~Liu, H.~Pham, X.~Dong, T.~Luong, C.-J. Hsieh, Y.~Lu, and Q.~V. Le, {\it Symbolic discovery of optimization algorithms},  \href{http://arxiv.org/abs/2302.06675}{{arXiv:2302.06675 [cs.LG]}}.
+
+\bibitem{DBLP:journals/corr/LoshchilovH16a}
+I.~Loshchilov and F.~Hutter, {\it {SGDR:} stochastic gradient descent with restarts},  CoRR (2016)  , \href{http://arxiv.org/abs/1608.03983}{{1608.03983 [cs.LG]}}.
+
+\end{thebibliography}\endgroup

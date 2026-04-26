@@ -1,0 +1,33 @@
+{
+   "sources" : [
+      {
+         "usage" : "toplevel",
+         "filename" : "paper.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "SciPost-bibstyle-arxiv.bst"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "SciPost-bibstyle.bst"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "literature.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "tepml.bst"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "tilman.bib"
+      }
+   ],
+   "version" : 2,
+   "texlive_version" : 2023,
+   "process" : {
+      "compiler" : "pdflatex"
+   }
+}
