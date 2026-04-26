@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -72,9 +73,85 @@ def _cytoscape_script_block() -> str:
     )
 
 
+# Layout constants for the deterministic grid placement (see
+# _compute_claim_positions).
+_CELL = 30           # per-claim cell size inside a group (claim node is 22px)
+_GROUP_PAD = 14      # inner whitespace between children's bbox and group edge
+_COLS_PER_ROW = 4    # groups per row across the canvas
+_GROUP_GAP_X = 36    # horizontal gap between groups
+_GROUP_GAP_Y = 56    # vertical gap between rows (also makes room for the
+                     # next row's title, which is drawn above its rectangle)
+
+
+def _compute_claim_positions(graph: dict) -> dict[str, tuple[float, float]]:
+    """Pre-compute absolute (x, y) positions for every claim node.
+
+    - Groups are emitted in the order they appear in the JSON, which is
+      paper order (graph_builder writes them top-to-bottom by section).
+    - Groups pack into rows of `_COLS_PER_ROW`. All slots in a row use
+      the same width (= max group width across the whole graph) so the
+      columns line up; each group is centered in its slot.
+    - Claims inside a group sit in a square-ish grid (`cols ≈ sqrt(N)`).
+    - Group rectangles auto-size around their children plus the CSS
+      `padding`. The group title is drawn *above* the rectangle, so we
+      only need vertical breathing room in `_GROUP_GAP_Y`, not extra
+      padding inside.
+    """
+    group_claims: dict[str, list[str]] = {}
+    for c in graph.get("claims", []):
+        gid = c.get("parent") or "_orphan"
+        group_claims.setdefault(gid, []).append(c["id"])
+
+    group_order = [g["id"] for g in graph.get("groups", [])]
+    for gid in group_claims:
+        if gid not in group_order:
+            group_order.append(gid)
+
+    # (gid, claim_ids, cols, rows, width, height) per group, in paper order.
+    boxes: list[tuple[str, list[str], int, int, float, float]] = []
+    for gid in group_order:
+        cids = group_claims.get(gid, [])
+        n = max(1, len(cids))
+        cols = max(1, math.ceil(math.sqrt(n)))
+        rows = math.ceil(n / cols)
+        w = cols * _CELL + 2 * _GROUP_PAD
+        h = rows * _CELL + 2 * _GROUP_PAD
+        boxes.append((gid, cids, cols, rows, w, h))
+
+    if not boxes:
+        return {}
+
+    slot_w = max(b[4] for b in boxes)
+    n_rows = math.ceil(len(boxes) / _COLS_PER_ROW)
+    row_heights = [
+        max(b[5] for b in boxes[r * _COLS_PER_ROW:(r + 1) * _COLS_PER_ROW])
+        for r in range(n_rows)
+    ]
+    row_y0 = [0.0]
+    for h in row_heights[:-1]:
+        row_y0.append(row_y0[-1] + h + _GROUP_GAP_Y)
+
+    positions: dict[str, tuple[float, float]] = {}
+    for idx, (gid, cids, cols, rows, w, h) in enumerate(boxes):
+        row_i, col_i = divmod(idx, _COLS_PER_ROW)
+        slot_x = col_i * (slot_w + _GROUP_GAP_X)
+        # Center the group horizontally inside its slot when narrower than slot_w.
+        x0 = slot_x + (slot_w - w) / 2 + _GROUP_PAD
+        y0 = row_y0[row_i] + _GROUP_PAD
+        for i, cid in enumerate(cids):
+            r, c = divmod(i, cols)
+            positions[cid] = (
+                x0 + c * _CELL + _CELL / 2,
+                y0 + r * _CELL + _CELL / 2,
+            )
+
+    return positions
+
+
 def to_cytoscape_elements(graph: dict) -> list[dict]:
     """Convert a graph.json (per the schema) into Cytoscape.js elements."""
     elements: list[dict] = []
+    positions = _compute_claim_positions(graph)
 
     for g in graph.get("groups", []):
         elements.append({
@@ -101,11 +178,11 @@ def to_cytoscape_elements(graph: dict) -> list[dict]:
                 color = CATEGORY_COLORS.get(cats[0], DEFAULT_COLOR)
             else:
                 color = VERDICT_COLORS.get(c.get("verdict", ""), DEFAULT_COLOR)
-        elements.append({
+        el: dict = {
             "data": {
                 "id": c["id"],
                 "parent": c.get("parent"),
-                "label": (sentence[:60] + "…") if len(sentence) > 60 else sentence,
+                "label": c["id"],
                 "sentence": sentence,
                 "type": c.get("type", ""),
                 "hedged": c.get("hedged", False),
@@ -118,7 +195,11 @@ def to_cytoscape_elements(graph: dict) -> list[dict]:
                 "page": c.get("page"),
                 "line": c.get("line"),
             }
-        })
+        }
+        if c["id"] in positions:
+            x, y = positions[c["id"]]
+            el["position"] = {"x": x, "y": y}
+        elements.append(el)
 
     for e in graph.get("edges", []):
         elements.append({
@@ -293,19 +374,21 @@ try {
     { selector: "node[kind = 'group']",
       style: {
         "background-color": "data(color)",
-        "background-opacity": 0.12,
+        "background-opacity": 0.10,
         "border-color": "data(color)",
-        "border-width": 3,
+        "border-width": 2,
         "border-opacity": 0.85,
         "label": "data(label)",
-        "font-size": 18,
+        "font-size": 13,
         "font-weight": 700,
         "font-family": "Inter, system-ui, sans-serif",
         "shape": "round-rectangle",
         "text-valign": "top",
         "text-halign": "center",
-        "text-margin-y": -10,
-        "padding": "24px",
+        "text-margin-y": -12,
+        "text-wrap": "wrap",
+        "text-max-width": "260px",
+        "padding": "8px",
         "color": "#e9ecf3",
         "text-outline-color": "#14161f",
         "text-outline-width": 2,
@@ -317,20 +400,19 @@ try {
         "background-color": "data(color)",
         "background-opacity": 0.95,
         "border-color": "data(color)",
-        "border-width": 1.5,
+        "border-width": 1,
         "label": "data(label)",
-        "font-size": 12,
-        "font-weight": 600,
+        "font-size": 7,
+        "font-weight": 700,
         "font-family": "Inter, system-ui, sans-serif",
-        "shape": "round-rectangle",
-        "width": 220,
-        "height": 56,
+        "shape": "ellipse",
+        "width": 22,
+        "height": 22,
         "text-valign": "center",
         "text-halign": "center",
         "color": "#14161f",
-        "text-wrap": "wrap",
-        "text-max-width": "200px",
-        "padding": "8px"
+        "text-wrap": "none",
+        "padding": "0px"
       }
     },
     { selector: "edge",
@@ -364,22 +446,12 @@ try {
     }
   ],
   layout: {
-    name: "cose",
-    nodeRepulsion: function() { return 50000; },
-    idealEdgeLength: function() { return 180; },
-    edgeElasticity: function() { return 100; },
-    nestingFactor: 1.5,
-    gravity: 0.4,
-    numIter: 2500,
-    padding: 80,
-    nodeOverlap: 40,
-    randomize: true,
-    componentSpacing: 120,
+    // Positions are pre-computed in Python (_compute_claim_positions).
+    // 'preset' uses node.position() as-is, so groups auto-size to wrap
+    // their grid of children — deterministic and tight.
+    name: "preset",
     fit: true,
-    animate: false,
-    initialTemp: 1000,
-    coolingFactor: 0.95,
-    minTemp: 1.0
+    padding: 30
   }
 });
 
