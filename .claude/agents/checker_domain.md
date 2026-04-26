@@ -21,6 +21,8 @@ Definition: `src/conventions/error_categories.md` § domain_violation
 - `reviews/<slug>/phase1/outputs/CLAIMS.md`
 - `reviews/<slug>/paper/paper.txt`
 - `reviews/<slug>/paper/paper.meta.json`
+- `literature_bank/` — for canonical-source lookup when a textbook or
+  reference work in the bank covers the violated principle
 - `src/conventions/error_categories.md`
 - `src/conventions/confidence.md`
 - `src/methodology/05-artifacts.md` (`VERIFICATION.md` format)

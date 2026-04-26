@@ -46,6 +46,7 @@
       "Edit(src/token_log.py)",
       "Write(src/migrate_review.py)",
       "Edit(src/scaffold_review.py)",
+      "Edit(src/phase1_large.py)",
       "Edit(requirements.txt)",
       "Edit(Makefile)",
       "Edit(README.md)",

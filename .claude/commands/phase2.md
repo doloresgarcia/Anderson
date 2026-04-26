@@ -47,6 +47,7 @@ Dispatch `.claude/agents/strategist.md`:
   - `reviews/$0/phase1/outputs/LITERATURE.md`
   - `reviews/$0/phase1/outputs/FINDINGS.md`
   - `src/conventions/error_categories.md`
+  - `src/conventions/verification.md`
 - output: `reviews/$0/phase2/outputs/STRATEGY.md`
 - working dir: `reviews/$0/phase2/agents/strategist/`
 
