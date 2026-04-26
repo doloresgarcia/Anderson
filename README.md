@@ -100,6 +100,12 @@ The main `claude` session loads the repo-root `CLAUDE.md` and acts as the
 orchestrator. There is no `cd` into a per-review directory; the slug is the
 single positional arg to every phase command.
 
+Codex support is a minimal wrapper over the same instruction graph. Claude Code
+remains the native full-pipeline runner; when using Codex, start at the repo
+root so Codex reads `AGENTS.md`, which delegates to `CLAUDE.md`,
+`.claude/commands/`, and `.claude/agents/`. There are no Codex-specific copies
+of the phase or agent instructions by design.
+
 ### 2. Scaffold and run
 
 In Claude Code, dispatch the slash commands:
