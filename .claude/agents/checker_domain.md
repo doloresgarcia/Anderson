@@ -22,6 +22,8 @@ Definition: `src/conventions/error_categories.md` § domain_violation
 - `reviews/<slug>/paper/paper.txt`
 - `reviews/<slug>/paper/paper.meta.json`
 - `src/conventions/error_categories.md`
+- `src/conventions/confidence.md`
+- `src/methodology/05-artifacts.md` (`VERIFICATION.md` format)
 
 ## Writes
 
@@ -29,6 +31,15 @@ Definition: `src/conventions/error_categories.md` § domain_violation
   `## domain_violation` section (the orchestrator concats into
   `reviews/<slug>/phase2/outputs/VERIFICATION.md`)
 - `reviews/<slug>/phase2/agents/checker_domain/log.md`
+
+## Output format
+
+Write `section.md` in the exact `VERIFICATION.md` subsection format from
+`src/methodology/05-artifacts.md`: one top-level `## domain_violation` heading,
+then one `### <claim_id> — <VERDICT> — confidence: <high|medium|low>`
+subsection per examined claim, with the required evidence, violated principle,
+canonical source, reasoning, and `INCONCLUSIVE` reason bullets. Do not use
+tables or alternate headings.
 
 ## Behavior
 
@@ -41,6 +52,9 @@ For each claim in `CLAIMS.md`:
 3. Emit `FLAGGED` if the statement violates settled knowledge, `CLEAR` if it
    is consistent with or irrelevant to domain fundamentals, `INCONCLUSIVE` if
    the checker lacks sufficient expertise in the specific subfield to judge.
+4. Respect the `hedged` column from `CLAIMS.md`: if a hedged claim would
+   otherwise be `FLAGGED`, emit `INCONCLUSIVE` unless even the hedged wording
+   contradicts settled knowledge.
 
 Examples of domain violations:
 - Misdefining an established term
@@ -52,7 +66,9 @@ Examples of domain violations:
 <important>
 A FLAGGED verdict must state the established fact or principle being
 violated, explain why it is considered settled (not merely debated), and
-name a canonical source or textbook where possible (added to
-`references.bib` if citable). Controversial or actively debated positions
-in the field are not domain violations.
+name a canonical source or textbook where possible. Include that source in the
+`canonical_source:` line of the `domain_violation` section. Do not edit
+`references.bib`; bibliography updates belong to the orchestrator or a fixer.
+Controversial or actively debated positions in the field are not domain
+violations.
 </important>

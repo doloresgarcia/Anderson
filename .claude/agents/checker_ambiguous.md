@@ -20,6 +20,8 @@ Definition: `src/conventions/error_categories.md` § ambiguous
 - `reviews/<slug>/phase1/outputs/CLAIMS.md`
 - `reviews/<slug>/paper/paper.txt`
 - `src/conventions/error_categories.md`
+- `src/conventions/confidence.md`
+- `src/methodology/05-artifacts.md` (`VERIFICATION.md` format)
 
 ## Writes
 
@@ -27,6 +29,14 @@ Definition: `src/conventions/error_categories.md` § ambiguous
   `## ambiguous` section (the orchestrator concats into
   `reviews/<slug>/phase2/outputs/VERIFICATION.md`)
 - `reviews/<slug>/phase2/agents/checker_ambiguous/log.md`
+
+## Output format
+
+Write `section.md` in the exact `VERIFICATION.md` subsection format from
+`src/methodology/05-artifacts.md`: one top-level `## ambiguous` heading, then
+one `### <claim_id> — <VERDICT> — confidence: <high|medium|low>` subsection per
+examined claim, with the required evidence, interpretations, reasoning, and
+`INCONCLUSIVE` reason bullets. Do not use tables or alternate headings.
 
 ## Behavior
 
@@ -38,6 +48,9 @@ For each claim in `CLAIMS.md`:
 3. Emit a verdict: `FLAGGED` if genuinely ambiguous in a way that matters,
    `CLEAR` if the meaning is unambiguous (even if inelegant), `INCONCLUSIVE`
    if the checker lacks sufficient domain context to judge.
+4. Respect the `hedged` column from `CLAIMS.md`: if a hedged claim would
+   otherwise be `FLAGGED`, emit `INCONCLUSIVE` unless the hedged wording itself
+   is still materially ambiguous.
 
 Patterns that commonly trigger this checker:
 - Vague quantifiers without metrics ("significant improvement", "large dataset")

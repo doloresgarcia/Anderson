@@ -24,6 +24,8 @@ Definition: `src/conventions/error_categories.md` § literature_collision
 - `literature_bank/`
 - `reviews/<slug>/paper/paper.txt`
 - `src/conventions/error_categories.md`
+- `src/conventions/confidence.md`
+- `src/methodology/05-artifacts.md` (`VERIFICATION.md` format)
 
 ## Writes
 
@@ -31,6 +33,15 @@ Definition: `src/conventions/error_categories.md` § literature_collision
   `## literature_collision` section (the orchestrator concats into
   `reviews/<slug>/phase2/outputs/VERIFICATION.md`)
 - `reviews/<slug>/phase2/agents/checker_literature/log.md`
+
+## Output format
+
+Write `section.md` in the exact `VERIFICATION.md` subsection format from
+`src/methodology/05-artifacts.md`: one top-level `## literature_collision`
+heading, then one `### <claim_id> — <VERDICT> — confidence: <high|medium|low>`
+subsection per examined claim, with the required paper/source evidence,
+reasoning, and `INCONCLUSIVE` reason bullets. Do not use tables or alternate
+headings.
 
 ## Behavior
 
@@ -48,6 +59,9 @@ For each claim that has candidate references in `LITERATURE.md`:
    statement is consistent with the literature (or explicitly acknowledges the
    disagreement with a reasoned argument), `INCONCLUSIVE` if the reference is
    paywalled, the snippet is too short, or the relationship is unclear.
+5. Respect the `hedged` column from `CLAIMS.md`: if a hedged claim would
+   otherwise be `FLAGGED`, emit `INCONCLUSIVE` unless the hedged wording still
+   directly conflicts with the cited source.
 
 For claims with no candidates in `LITERATURE.md`, emit `CLEAR` — absence of
 literature is not a collision (it may be an `unreferenced` issue, which is a

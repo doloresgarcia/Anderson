@@ -7,11 +7,11 @@
 - **Slug:** `test-1`
 - **Source:** `paper/paper.txt` (LaTeX source; `paper.meta.json` has every bibliographic field `null` and points at `reviews/review_1/paper_no_cite.tex`).
 
-Phase 1 ingested the paper, extracted **217 claims** (`C001`–`C217`) tagged with the seven-type taxonomy from `conventions/claim_taxonomy.md`, ran a targeted external search yielding **45 bibtex entries** in `references.bib`, attached candidate references to **73 of the 217 claims** in `LITERATURE.md`, and built a first-pass graph of **20 groups** with **217 claim nodes and 0 edges** in `graph.v1.json`. The paper is dominated by methodological / empirical statements (≈ 69% `method` + `result`), with a sizable `background_fact` tail in §2.1 (geometric-algebra preliminaries).
+Phase 1 ingested the paper, extracted **217 claims** (`C001`–`C187`, `C190`–`C219`; `C188` / `C189` removed after review) tagged with the seven-type taxonomy from `conventions/claim_taxonomy.md`, ran a targeted external search yielding **45 bibtex entries** in `references.bib`, attached candidate references to **73 of the 217 claims** in `LITERATURE.md`, and built a first-pass graph of **20 groups** with **217 claim nodes and 0 edges** in `graph.v1.json`. The paper is dominated by methodological / empirical statements (≈ 69% `method` + `result`), with a sizable `background_fact` tail in §2.1 (geometric-algebra preliminaries).
 
 ## 2. Claim counts
 
-- **Total claims:** 217 (`C001`–`C217`).
+- **Total claims:** 217 (`C001`–`C187`, `C190`–`C219`; intentional gap at `C188` / `C189`).
 - **UNCLASSIFIED:** 0.
 - **Hedged (`hedged=true`):** 4 — `C089` ("we attribute"), `C109` ("arguably"), `C136` ("might"), `C179` ("might"). All four carry `confidence=medium`.
 
@@ -35,11 +35,11 @@ Extraction confidence per `conventions/confidence.md`, taken from the `confidenc
 
 | level | count |
 |---|---|
-| `high` | 153 |
+| `high` | 149 |
 | `medium` | 64 |
-| `low` | 0 |
+| `low` | 4 |
 
-The four hedged rows are all `medium`; the remaining 60 `medium` rows correspond to ambiguous-type decisions or compound-sentence splits flagged in the extractor's log. There are **no `low`-confidence rows**, so no claim will be auto-skipped by the strategist's confidence rule.
+The four hedged rows are all `medium`; the remaining 60 `medium` rows correspond to ambiguous-type decisions or compound-sentence splits flagged in the extractor's log. The four `low` rows are `C036`, `C044`, `C060`, and `C148`, all demoted after review because the wording is ambitious, under-cited, or type-boundary-sensitive.
 
 ## 4. Group structure
 
@@ -78,14 +78,14 @@ Groups marked "multiple" sections (G001, G002, G003, G006, G008, G009, G011, G01
 - **Total candidate-reference bullets:** 113.
 - **Unique cited bibtex keys (used in `LITERATURE.md`):** 34.
 - **Total entries in `references.bib`:** 45.
-- **Unused entries in `references.bib`** (present in the bib but never cited by any `LITERATURE.md` bullet): **11** — `ATLAS:2018wis`, `Butter:2019cae`, `DBLP:journals/corr/LoshchilovH16a`, `delphes`, `Hashemi:2019fkn`, `Huetsch:2024quz`, `Komiske:2018cqr`, `Louppe:2017ipp`, `Moore:2018lsr`, `Otten:2019hhl`, `Qu:2019gqs`. Note that `delphes` is an alias for `deFavereau:2013fsa` (same arXiv ID 1307.6346); `LITERATURE.md` consistently uses the latter, leaving the alias orphaned.
+- **Unused entries in `references.bib` by `LITERATURE.md`:** **11** — `ATLAS:2018wis`, `Butter:2019cae`, `DBLP:journals/corr/LoshchilovH16a`, `delphes`, `Hashemi:2019fkn`, `Huetsch:2024quz`, `Komiske:2018cqr`, `Louppe:2017ipp`, `Moore:2018lsr`, `Otten:2019hhl`, `Qu:2019gqs`. This measures unused claim attachments, not paper citation coverage: all 11 keys appear in `paper.txt`. `delphes` is an alias for `deFavereau:2013fsa` (same arXiv ID 1307.6346); `LITERATURE.md` consistently uses the latter, leaving the alias orphaned.
 
 Distribution by relation across all 113 candidate bullets:
 
 | relation | count |
 |---|---|
-| `supports` | 74 |
-| `related` | 39 |
+| `supports` | 70 |
+| `related` | 43 |
 | `contradicts` | 0 |
 
 Confidence on candidate bullets is dominated by `high` (consistent with the searcher's policy of attaching only confirmed hits; tier-2 background_fact / textbook claims have empty buckets rather than `low`-confidence guesses).
@@ -96,26 +96,26 @@ The following are concrete gaps that downstream phases should be aware of. Every
 
 1. **No native page numbers.** `paper.txt` is the LaTeX source, so the `page` column in `CLAIMS.md` is `?` for all 217 rows and `paper.page=null` for every claim node in `graph.v1.json`. Group `page_range` fields are line ranges, not page ranges. The phase-3 highlighter (which expects to mark a PDF) will need to recover page coordinates by re-rendering the LaTeX or by mapping line numbers through the synthesized PDF produced by `src/highlight_text.py`. *(claim_extractor/log.md, graph_builder/log.md.)*
 2. **No structural claim-to-claim edges.** `graph.v1.json` has `"edges": []`. The skeleton-pass graph_builder log is explicit that the schema permits this in phase 1 ("missing edges is fine"), but it means the phase-2 strategist cannot use `depends_on` topology to prioritise. Phase 2's graph_builder will not introduce edges either without an extractor sidecar pass; reviewers may want to revisit. *(graph_builder/log.md, "Step 7" and "Notes / known gaps".)*
-3. **No `low`-confidence rows.** The extractor used only `high` and `medium`; none of the 217 rows is `low`. Either every claim is genuinely solid or the extractor under-used the `low` bucket. Reviewer should confirm. *(observed directly in CLAIMS.md.)*
+3. **Four `low`-confidence rows.** `C036`, `C044`, `C060`, and `C148` are now `low` after review. They are the main extraction-confidence caution points for phase 2. *(observed directly in CLAIMS.md.)*
 4. **Ambiguous-type rows the extractor flagged.** The extractor's log lists boundary cases the reviewer / strategist may want to revisit:
-   - `C036` (`result` chosen over `background_fact`) — uniqueness claim about the GA framework decomposition.
-   - `C044` (`result` over `prior_work`) — universal-approximation claim with no explicit citation, attributed to the present paper.
+   - `C036` (`result`, now `low` confidence, chosen over `background_fact`) — uniqueness claim about the GA framework decomposition.
+   - `C044` (`result`, now `low` confidence, over `prior_work`) — universal-approximation claim with no explicit citation, attributed to the present paper.
    - `C046` (`result` over `definition`) — exact equivariance statement.
-   - `C060` (`result` over `prior_work`) — "It can be shown that this architecture is maximally expressive" with no inline citation.
-   - `C148` (`result`, `medium` confidence) — CFM "optimal transport paths… uniquely suited" — could equally be `background_fact` or `interpretation`.
+   - `C060` (`result`, now `low` confidence, over `prior_work`) — "It can be shown that this architecture is maximally expressive" with no inline citation.
+   - `C148` (`result`, `low` confidence) — CFM "optimal transport paths… uniquely suited" — could equally be `background_fact` or `interpretation`.
    - `C152` (`background_fact` over `assumption`).
    - The taxonomy split `method` vs. `definition` for many architecture statements (e.g. `C054` "we define layer normalization using…") is fuzzy; the extractor consistently chose `method`.
    - `C181`, `C182`, `C187` — outlook/summary claims tagged `interpretation` rather than `result` because they generalise beyond the measurements shown.
    *(claim_extractor/log.md, "Ambiguous type decisions" and "Items the reviewer may want to revisit".)*
 5. **Skipped items the reviewer may want to add back.**
    - The geometric-algebra footnote at `paper.txt:166` (supersymmetric multiplets / higher-rank irreps) was skipped because it required substantive paraphrase.
-   - Code-availability URL claims `C188`, `C189` were *kept* but the extractor flags them as removable if the convention prefers to skip code-availability statements.
-   - `C015` (paper's contributions) was kept whole; could be split into three rows.
+   - Code-availability URL claims `C188`, `C189` were dropped after review; the claim ID gap is intentional.
+   - `C015` (paper's contributions) was split into `C015`, `C218`, and `C219` from `paper.txt:108`. The split rows remain `medium` confidence and should be checked against the source line if strict literal anchoring matters in phase 2.
    *(claim_extractor/log.md, "Items deliberately skipped" / "Items the reviewer may want to revisit".)*
 6. **No retrievable contradictory literature.** The literature_searcher found zero `contradicts` candidates across all 217 claims. This is not surprising for a methodology paper, but it means phase 2 cannot FAIL any claim purely on a literature mismatch and must rely on internal consistency, numerical recheck, or canonical-reference audit for FAIL verdicts. *(literature_searcher/log.md, "Possibly-contradicting prior work".)*
 7. **Tier-2 background-fact claims with no candidate.** §2.1 contains a long run of textbook geometric-algebra facts (e.g. C016–C020, C022, C026–C030) that the searcher intentionally left without candidates because they are textbook material rather than citable-paper assertions. The extractor's log explicitly invites the reviewer to drop them as too elementary; the searcher chose not to attach a Hestenes-1966-style reference because the paper itself does not `\cite` it. Phase 2 verifier will need to decide which of these to skip vs. check against a textbook. *(claim_extractor/log.md item 2; literature_searcher/log.md "No-result claims".)*
 8. **Stated-but-uncited expressivity claims (C036, C044, C060).** These present own-work assertions — uniqueness of the GA decomposition, most-compact-equivariant-representation / universal-approximation, maximally expressive among Lorentz-equivariant transformers — without naming a proof reference. The searcher attached `brehmer2023geometric` and `ruhe2023clifford` as `related` (medium-confidence) candidates but flagged that neither flatly supports the wording, recommending phase 2 treat these as INCONCLUSIVE candidates. *(literature_searcher/log.md, "No-result claims".)*
-9. **Unused / aliased bibtex entries.** Eleven keys exist in `references.bib` but are not cited by any `LITERATURE.md` bullet (listed in §5). One of them (`delphes`) is an exact alias of `deFavereau:2013fsa` and could be deduplicated; the other ten were apparently retrieved as background but never attached. None of these is a fabricated key — they all resolve to real arXiv records per the searcher's log — but the bib will look noisier than necessary to a reviewer. *(observed directly by set diff between `references.bib` and `LITERATURE.md`.)*
+9. **Unused / aliased bibtex entries.** Eleven keys exist in `references.bib` but are not cited by any `LITERATURE.md` bullet (listed in §5). All 11 appear in `paper.txt`, so this is claim-attachment noise rather than uncited-paper noise. One unused-by-attachment key (`delphes`) is an exact alias of `deFavereau:2013fsa` and could be deduplicated; the other unused-by-attachment keys were apparently retrieved as background but never attached. None of these is a fabricated key — they all resolve to real arXiv records per the searcher's log — but the bib will look noisier than necessary to a reviewer. *(observed directly by set diff between `references.bib` and `LITERATURE.md`, plus paper-text citation check.)*
 10. **`paper.meta.json` is empty.** Title, authors, year, venue, DOI, arxiv, url, source_pdf are all `null`; only `slug` and `source_text` are set. The graph_builder filled `paper.title` and `paper.authors` in `graph.v1.json` from the title line at the top of `CLAIMS.md`, not from the meta file. Phase 3 will need a populated meta file (or accept the title from `CLAIMS.md` as canonical). *(graph_builder/log.md "Notes / known gaps".)*
 
 ## 7. Phase-2 prompts (suggestions only, not commitments)
@@ -131,4 +131,3 @@ The strategist owns method choice; the notes below only flag where the counts in
 ## 8. Deferred to phase 3
 
 - **Page-number recovery (F01).** All 217 (post-fix: 217 with new IDs C218 / C219, gap at C188 / C189) `CLAIMS.md` rows carry `page = ?` and every claim node in `graph.v1.json` has `page: null`, because `paper.txt` is the LaTeX source rather than a paginated PDF. The arbiter (phase-1 round-1 ARBITRATION.md) explicitly accepts F01 being open for the round-2 review provided this deferral is recorded here. Recovery is intentionally deferred to phase 3: the natural recovery point is the `highlighter` dispatch, where `src/highlight_text.py` already synthesizes a paginated PDF and can back-fill page coordinates for both `CLAIMS.md` and the claim nodes in the graph (or `graph.final.json`). Until then, the `line` column and `paper.txt:<line>` provenance remain the canonical locator for each claim. No phase-1 fix is attempted in this round.
-

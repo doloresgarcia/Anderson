@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from highlight_paper import (  # noqa: E402
     CATEGORIES,
     SEVERITY,
+    ClaimsParseError,
     parse_claims_md,
     parse_verification_md,
     trust_score,
@@ -353,7 +354,11 @@ def main() -> int:
         print(f"error: CLAIMS.md not found at {claims_md}", file=sys.stderr)
         return 2
 
-    claims = parse_claims_md(claims_md)
+    try:
+        claims = parse_claims_md(claims_md)
+    except ClaimsParseError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
     verdicts = parse_verification_md(verification_md)
     graph = json.loads(graph_v2_json.read_text()) if graph_v2_json.exists() else None
 

@@ -19,6 +19,13 @@ spending tokens on a full phase-3 redo.
 ## Preflight
 
 Verify `reviews/$0/` exists. If not, tell the user to scaffold first and stop.
+Verify the deterministic renderer inputs exist before running targets:
+`reviews/$0/phase1/outputs/CLAIMS.md`,
+`reviews/$0/phase2/outputs/VERIFICATION.md`, at least one of
+`reviews/$0/phase3/outputs/graph.final.json` or
+`reviews/$0/phase2/outputs/graph.v2.json`, and at least one of
+`reviews/$0/paper/paper.pdf` or `reviews/$0/paper/paper.txt`. If any are
+missing, surface the missing path and stop.
 
 ## Steps
 
@@ -67,8 +74,9 @@ After running, list the regenerated files so the user knows what to open:
 - `reviews/$0/phase3/outputs/graph.final.html` (or `graph.v2.html` if
   fallback) — graph render
 - `reviews/$0/phase3/outputs/STATS.md` — refreshed stats
-- `reviews/$0/phase3/outputs/paper.highlighted.pdf` (or `.html`) —
-  highlights
+- `reviews/$0/phase3/outputs/paper.highlighted.pdf` and/or
+  `reviews/$0/phase3/outputs/paper.highlighted.html` — highlights, depending
+  on input mode and PyMuPDF availability
 - `reviews/$0/USAGE.md` — token usage summary
 
 If any step failed, summarize which one and its error so the user can fix

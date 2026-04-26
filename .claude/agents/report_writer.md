@@ -15,6 +15,7 @@ You write only to your declared output paths.
 ## Reads
 
 - `reviews/<slug>/paper/paper.meta.json`
+- `reviews/<slug>/phase1/outputs/CLAIMS.md`
 - `reviews/<slug>/phase1/outputs/FINDINGS.md`
 - `reviews/<slug>/phase2/outputs/STRATEGY.md`
 - `reviews/<slug>/phase2/outputs/VERIFICATION.md`
@@ -34,7 +35,7 @@ Sections, in order:
 
 1. **Overview** — paper identification, what was reviewed.
 2. **Method** — what conventions and error categories were used (cite
-   `src/conventions/error_categories.md` and checker agent specs).
+   `src/conventions/error_categories.md` and name the checker roles that ran).
 3. **What we checked** — claim count, claims selected by the strategist,
    which checkers ran.
 4. **Findings by category** — one subsection per error category that produced
@@ -53,5 +54,7 @@ Prose only — no new findings. The report describes what the checker agents
 already recorded; it does not introduce verdicts of its own.
 </important>
 
-You may shell out via Bash to "python3 src/claim_stats.py reviews/<slug>" to
-refresh STATS.md before composing the report file.
+You may shell out via Bash to `python3 src/claim_stats.py reviews/<slug>` to
+refresh `STATS.md` before composing the report file. `STATS.md` is a declared
+output owned by this invocation; use it for counts, but do not rewrite its
+mechanical contents by hand.

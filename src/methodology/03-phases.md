@@ -1,7 +1,8 @@
 # Phases
 
-Three phases. Each phase ends with a commit; phase 2 has a review-arbiter gate; phase
-3 has a human gate before final delivery.
+Three phases. Phases 1 and 2 end with a checkpoint commit after arbiter PASS.
+Phase 3 reaches a human gate after arbiter PASS and commits final artifacts only
+after human APPROVE.
 
 ## Phase 1 — Ingest & Map
 
@@ -25,6 +26,7 @@ work, and emit a first-pass claim graph.
 
 - `CLAIMS.md`
 - `LITERATURE.md`
+- `references.bib`
 - `graph.v1.json`
 - `FINDINGS.md` — short prose summary: how many claims, distribution by type, gaps
   identified at this stage.
@@ -61,8 +63,9 @@ agents against the claims, and update the graph with their findings.
   - `checker_contradiction` — internal contradictions
   - `checker_literature` — conflicts with published literature
   - `checker_domain` — violations of established domain knowledge
-  Each checker appends its section to `VERIFICATION.md` with verdicts
-  `FLAGGED` / `CLEAR` / `INCONCLUSIVE`.
+  Each checker writes its own `section.md` with verdicts `FLAGGED` / `CLEAR` /
+  `INCONCLUSIVE`; the orchestrator concatenates the five sections into
+  `VERIFICATION.md` in canonical section order.
 - `graph_builder` — re-runs to merge checker findings onto the graph, emitting
   `graph.v2.json`.
 
@@ -80,9 +83,10 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 - Checker agents are independent; do not let them write to the same file
   simultaneously. Each writes its section first under
   `phase2/agents/<checker_name>/section.md`; the orchestrator's concat step
-  assembles `VERIFICATION.md` in category severity order: `unreferenced`,
+  assembles `VERIFICATION.md` in canonical section order: `unreferenced`,
   `ambiguous`, `internal_contradiction`, `literature_collision`,
-  `domain_violation`.
+  `domain_violation`. This order is for deterministic assembly only; highlight
+  severity remains defined by `conventions/error_categories.md`.
 - All five checkers always run. If a checker finds nothing to flag for any
   claim, its section still appears in `VERIFICATION.md` with all `CLEAR`
   entries.
@@ -95,6 +99,8 @@ arbiter). Findings classified A/B/C per `04-review.md`.
     the evidence.
   - Strategist skipped an `importance=high` claim → re-run checkers for it.
   - A checker used the wrong category → reassign the finding.
+  - Any changed checker section → re-concatenate `VERIFICATION.md` and re-run
+    `graph_builder` so `graph.v2.json` matches the current sections.
 
 ## Phase 3 — Report
 
@@ -102,39 +108,46 @@ arbiter). Findings classified A/B/C per `04-review.md`.
 
 **Subagents dispatched.**
 
-- `highlighter` — reads `graph.v2.json` and `VERIFICATION.md`; produces
-  `paper.highlighted.pdf` and `paper.highlighted.html` with flagged sentences
-  color-coded by error category per `conventions/error_categories.md`.
+- `highlighter` — reads `graph.v2.json` and `VERIFICATION.md`; produces the
+  highlighted paper with `FLAGGED` sentences color-coded by error category and
+  `INCONCLUSIVE` sentences colored yellow. PDF input produces
+  `paper.highlighted.pdf`; text input produces `paper.highlighted.html` and,
+  when PyMuPDF is available, a synthesized `paper.highlighted.pdf`.
 - `graph_builder` — final pass; emits `graph.final.json`. The HTML
   visualization (`graph.final.html`) is rendered separately by
   `python3 src/render_graph.py`, invoked by `make graph` or the
   phase-3 dispatcher.
-- `report_writer` (specialization of `executor`) — writes `REPORT.md` summarizing
-  what was checked, what failed, and why.
+- `report_writer` (specialization of `executor`) — invokes
+  `src/claim_stats.py` for `STATS.md`, then writes `REPORT.md` summarizing what
+  was checked, what failed, and why.
 
 **Deliverables (in `reviews/<slug>/phase3/outputs/`).**
 
 - `graph.final.json`
 - `graph.final.html` (rendered from `graph.final.json` by `src/render_graph.py`)
-- `paper.highlighted.pdf`
-- `paper.highlighted.html`
+- `paper.highlighted.pdf` (PDF input, or text input when PyMuPDF is available)
+- `paper.highlighted.html` (text input)
+- `STATS.md`
 - `REPORT.md`
 
-**Gate.** Human review of the highlighted PDF. Possible responses: APPROVE,
-ITERATE (fix in phase 3 scope), REGRESS(N) (re-open phase N).
+**Gate.** Human review of the highlighted paper, graph, stats, and report.
+Possible responses: APPROVE (commit final Phase 3 artifacts), ITERATE (fix in
+phase 3 scope, re-run affected outputs and review, then return to this gate),
+REGRESS(N) (re-open phase N without making the final Phase 3 commit).
 
 ### Phase 3 gotchas
 
 - If most claims in `VERIFICATION.md` are `INCONCLUSIVE` because the
-  verification conventions are the placeholder, the highlighted PDF will have
-  few highlights and the report will say "inconclusive" a lot. That is the
-  intended degraded output, not a phase-3 bug. Tell the user; do not paper
-  over it.
+  verification conventions are the placeholder, the highlighted paper output
+  will have many yellow highlights and the report will say "inconclusive" a
+  lot. That is the intended degraded output, not a phase-3 bug. Tell the user;
+  do not paper over it.
 - Phase-3 specific Category-A triggers (in addition to the global ones):
-  - A highlight in `paper.highlighted.pdf` whose claim_id has no `FLAGGED`
-    entry in `VERIFICATION.md`.
-  - A highlight whose color does not match the most severe flagged category
-    for that claim per `conventions/error_categories.md`.
+  - A highlight in the highlighted paper output whose claim_id has no
+    `FLAGGED` or `INCONCLUSIVE` entry in `VERIFICATION.md`.
+  - A `FLAGGED` highlight whose color does not match the most severe flagged
+    category for that claim per `conventions/error_categories.md`, or an
+    `INCONCLUSIVE` highlight that is not yellow.
   - A node in `graph.final.json` lacking the verdict layer when
     `graph.v2.json` had it.
   - The phase-3 prose summary introducing a verdict that is not in

@@ -11,7 +11,8 @@
   ESCALATE), and writes `phase<N>/review/ARBITRATION.md`.
 
 Phase 1 uses a single reviewer + arbiter (single-bot mode). Phase 2 uses both
-reviewers + arbiter. Phase 3 uses both reviewers + arbiter, then a human gate.
+reviewers + arbiter. Phase 3 uses both reviewers + arbiter, then a human gate
+before the final commit.
 
 ## Finding classification
 

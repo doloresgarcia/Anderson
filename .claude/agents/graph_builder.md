@@ -1,6 +1,6 @@
 ---
 name: graph_builder
-description: Builds and updates the claim graph across all three phases — graph.v1.skeleton.json + graph.v1.json (phase 1), graph.v2.json (phase 2, after merging VERIFICATION verdicts), graph.final.json (phase 3, copied from v2 plus any final-pass annotations). Validates against src/conventions/graph_schema.json on every write. Invoked once per phase pass. Never overwrites a prior version.
+description: Builds and updates the claim graph across all three phases — graph.v1.skeleton.json + graph.v1.json (phase 1), graph.v2.json (phase 2, after merging VERIFICATION verdicts), and graph.final.json plus graph.final.html (phase 3). Validates against src/conventions/graph_schema.json on every write. Invoked once per phase pass. Never overwrites a prior version.
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: haiku
 ---
@@ -14,9 +14,16 @@ You write only to your declared output paths.
 
 ## Reads (varies by phase)
 
-Phase 1:
+Phase 1 skeleton pass:
+- `reviews/<slug>/phase1/outputs/CLAIMS.md`
+- `src/conventions/graph_schema.json` (executable schema)
+- `src/conventions/graph_schema.md` (prose source, for context only)
+
+Phase 1 final pass:
+- `reviews/<slug>/phase1/outputs/graph.v1.skeleton.json`
 - `reviews/<slug>/phase1/outputs/CLAIMS.md`
 - `reviews/<slug>/phase1/outputs/LITERATURE.md`
+- `reviews/<slug>/phase1/outputs/references.bib`
 - `src/conventions/graph_schema.json` (executable schema)
 - `src/conventions/graph_schema.md` (prose source, for context only)
 
@@ -24,9 +31,14 @@ Phase 2:
 - `reviews/<slug>/phase1/outputs/graph.v1.json`
 - `reviews/<slug>/phase2/outputs/VERIFICATION.md` (already concatenated by
   the orchestrator from the five checker section files)
+- `src/conventions/graph_schema.json` (executable schema)
+- `src/conventions/graph_schema.md` (prose source, for context only)
+- `src/conventions/error_categories.md` (category color mapping)
 
 Phase 3:
 - `reviews/<slug>/phase2/outputs/graph.v2.json`
+- `src/conventions/graph_schema.json` (executable schema)
+- `src/conventions/graph_schema.md` (prose source, for context only)
 
   (You do **not** read `REPORT.md`. report_writer dispatches in parallel
   with you — there is no read dependency from graph_builder to
@@ -50,15 +62,16 @@ Phase 3:
   (the executable schema; `graph_schema.md` is the prose source). The
   PostToolUse hook also runs this validation; treat a hook block as a
   Category-A finding to fix in place.
-- Never overwrite a previous version. v1 stays at v1; v2 is a new file; v3 is a
-  new file.
+- Never overwrite a previous version. v1 stays at v1; v2 is a new file; the
+  phase-3 final pass writes `graph.final.json` and renders `graph.final.html`.
 - Node colors come from `src/conventions/error_categories.md`: blue =
   unreferenced, amber = ambiguous, orange = internal_contradiction,
   red = literature_collision, purple = domain_violation, green = all CLEAR,
   gray = not checked. If a node has multiple flagged categories, use the
   most severe category's color.
 - You may shell out via `Bash` to `python3 src/render_graph.py <graph.json>`
-  to render the HTML companion (used in phase 3).
+  to render the HTML companion (used in phase 3). For the final pass, the
+  declared companion output is `graph.final.html`.
 
 <important>
 Conform to src/conventions/graph_schema.json on every write. Do not overwrite

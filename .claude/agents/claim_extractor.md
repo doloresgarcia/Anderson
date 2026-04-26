@@ -1,6 +1,6 @@
 ---
 name: claim_extractor
-description: Extracts every verifiable claim from a paper into reviews/<slug>/phase1/outputs/CLAIMS.md, one row per claim with stable claim_id, taxonomy type, verbatim sentence, and page/line provenance back into paper.txt. Invoke first in phase 1, after the paper has been ingested. Outputs CLAIMS.md plus plan.md/log.md in its working dir. Tags claims UNCLASSIFIED if conventions/claim_taxonomy.md is the placeholder.
+description: Extracts every verifiable claim from a paper into reviews/<slug>/phase1/outputs/CLAIMS.md, one row per claim with stable claim_id, taxonomy type, verbatim sentence, hedged flag, confidence, and page/line provenance back into paper.txt. Invoke first in phase 1, after the paper has been ingested. Outputs CLAIMS.md plus plan.md/log.md in its working dir. Tags claims UNCLASSIFIED if conventions/claim_taxonomy.md is the placeholder.
 tools: Read, Write, Edit, Glob, Grep
 model: haiku
 ---
@@ -18,6 +18,7 @@ You write only to your declared output paths.
 - `reviews/<slug>/paper/paper.txt`
 - `reviews/<slug>/paper/paper.meta.json`
 - `src/conventions/claim_taxonomy.md` (defines what counts as a claim and the type set)
+- `src/conventions/confidence.md` (defines confidence values)
 - `src/methodology/05-artifacts.md` (CLAIMS.md format)
 
 ## Writes
@@ -35,8 +36,14 @@ one row in `CLAIMS.md` with:
 - the type from the taxonomy (or `UNCLASSIFIED` if the taxonomy file is the
   placeholder)
 - the literal sentence (verbatim — quote, do not paraphrase)
+- `hedged` as `true` or `false`, using the taxonomy's hedging definition
+- `confidence` using the values in `src/conventions/confidence.md`
 - page, line, section
 - byte/line provenance into `paper.txt`
+
+The table must include the exact `CLAIMS.md` columns from
+`src/methodology/05-artifacts.md`, including `hedged` and `confidence`, even
+when a claim is tagged `UNCLASSIFIED`.
 
 If the taxonomy file is the placeholder, every claim is tagged `UNCLASSIFIED` and
 the issue is logged in `log.md`. The orchestrator will surface this as a Category B

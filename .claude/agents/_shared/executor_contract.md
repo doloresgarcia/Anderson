@@ -17,11 +17,17 @@ a recommendation in your output and let the orchestrator dispatch.
 - **Plan first, write second.** Before producing any output file, write a
   `plan.md` in the agent's working directory listing what you intend to do, in
   what order, and which inputs you will read. Then execute the plan.
-- **Read-only outside the working dir.** Inputs are listed in the dispatch
-  message. Do not read other files.
+- **Read-only outside the working dir.** Your allowed input set is the union of
+  the dispatch-listed inputs, the universal reads below, and your role file's
+  `Reads` section. Do not read other files.
 - **Write only declared outputs.** Files outside the declared output list are
   forbidden, except `plan.md` and `log.md` in the agent's own working dir
   (`reviews/<slug>/phase<N>/agents/<role>/`).
+  A role's `Writes` section may list final phase deliverables or
+  orchestrator-declared intermediates (for example checker `section.md` files
+  or `graph.v1.skeleton.json`). The inherited working-dir `plan.md` and
+  `log.md` are always permitted and required by this contract even when they
+  are not repeated there.
 - **Cite or abstain.** If a finding requires an external source and the source
   cannot be resolved, the finding is `INCONCLUSIVE`, not invented.
 - **Disjoint outputs.** Two parallel agents never write to the same file.

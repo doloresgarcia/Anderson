@@ -170,7 +170,14 @@ def build_report(review_dir: Path) -> Dict[str, Any]:
 
     for phase, role, rec in iter_usage_records(review_dir):
         duration_s = _duration_seconds(rec)
-        transcript = rec.get("transcript_path")
+        # Prefer agent_transcript_path (the subagent's own transcript) per
+        # Claude Code SubagentStop hook docs. Fall back to transcript_path
+        # only when older usage_log records don't carry the agent path.
+        # transcript_path is the main session transcript; reading it would
+        # over-count main-session tokens against the subagent.
+        agent_transcript = rec.get("agent_transcript_path") or rec.get("agentTranscriptPath")
+        main_transcript = rec.get("transcript_path") or rec.get("transcriptPath")
+        transcript = agent_transcript or main_transcript
         tokens = _empty_tokens()
         transcript_status = "ok"
         if not transcript:
@@ -194,6 +201,8 @@ def build_report(review_dir: Path) -> Dict[str, Any]:
             "role": role,
             "agent_id": rec.get("agent_id"),
             "session_id": rec.get("session_id"),
+            "agent_transcript_path": agent_transcript,
+            "main_transcript_path": main_transcript,
             "transcript_path": transcript,
             "transcript_status": transcript_status,
             "duration_s": round(duration_s, 2),
@@ -205,6 +214,8 @@ def build_report(review_dir: Path) -> Dict[str, Any]:
                 "phase": phase,
                 "role": role,
                 "agent_id": rec.get("agent_id"),
+                "agent_transcript_path": agent_transcript,
+                "main_transcript_path": main_transcript,
                 "transcript_path": transcript,
                 "status": transcript_status,
             })

@@ -35,6 +35,12 @@ or `external` (retrieved via internet search). `confidence` values come from
 Bibtex keys must resolve in `references.bib` (also written by
 `literature_searcher`). Unresolvable keys are Category A at review.
 
+## `references.bib`
+
+BibTeX file written by `literature_searcher`. It must include every key cited
+from `LITERATURE.md`. It may be empty only when `LITERATURE.md` contains no
+citation keys.
+
 ## `graph.vN.json`
 
 JSON conforming to `conventions/graph_schema.md`. Minimum top-level shape (the
@@ -122,21 +128,32 @@ from `conventions/confidence.md`.
 Human-facing summary, sectioned: Overview, Method, What we checked, What failed
 (claim-by-claim), Limitations.
 
+## `STATS.md`
+
+Deterministic stats written by `src/claim_stats.py`: trust score block, claim
+counts, aggregate verdict counts, category breakdowns, inconclusive reasons, and
+per-group rows derived from `CLAIMS.md` and `VERIFICATION.md`.
+
 ## Highlighted paper
 
-`paper.highlighted.pdf` and `paper.highlighted.html`. Highlight color encodes
-the error category (per `conventions/error_categories.md`):
+Highlighted output depends on input mode. PDF input produces
+`paper.highlighted.pdf`. Text input produces `paper.highlighted.html` and, when
+PyMuPDF is available, a synthesized `paper.highlighted.pdf`. Highlight color
+encodes the error category for `FLAGGED` claims and yellow for
+`INCONCLUSIVE` claims:
 
 - blue (`#4285F4`) — `unreferenced` (needs a citation)
 - amber (`#FFBF00`) — `ambiguous` (unclear or underspecified)
 - orange (`#FF6D00`) — `internal_contradiction` (self-contradictory)
 - red (`#D32F2F`) — `literature_collision` (conflicts with published work)
 - purple (`#7B1FA2`) — `domain_violation` (conflicts with established knowledge)
+- yellow (`#F1C40F`) — `INCONCLUSIVE` (checked but not resolved)
 - (no highlight) — all CLEAR or not checked
 
 When a sentence triggers multiple categories, the highlight uses the most
 severe category's color. Severity order (highest first): `domain_violation`,
 `literature_collision`, `internal_contradiction`, `ambiguous`, `unreferenced`.
 
-Each highlighted span carries a tooltip / margin note listing **all** triggered
-categories and linking back to each `VERIFICATION.md` section.
+Each `FLAGGED` span carries a tooltip / margin note listing **all** triggered
+categories and linking back to each `VERIFICATION.md` section. Each
+`INCONCLUSIVE` span links back to the unresolved checker reason.

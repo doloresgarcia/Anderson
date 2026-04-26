@@ -100,29 +100,43 @@ paper's own claim.
 | `confidence` | yes | `high`/`medium`/`low`, per `conventions/confidence.md` |
 | `provenance` | yes | a `paper.txt:line` pointer, OR the literal `"inferred"` if the relationship was inferred by the agent rather than explicitly stated |
 
-## Canonical color palette
+## Canonical color model
 
-**Used everywhere — graph nodes, highlighted PDF, REPORT.md inline tables.**
-One source of truth.
+**Used everywhere — graph nodes, highlighted paper, REPORT.md inline tables.**
+The base verdict palette covers non-flagged states:
 
 | name | hex | meaning |
 |---|---|---|
 | green | `#2ECC71` | all checked claims `CLEAR` |
 | yellow | `#F1C40F` | at least one `INCONCLUSIVE`, no `FLAGGED` |
-| red | `#E74C3C` | at least one `FLAGGED` |
 | gray | `#95A5A6` | none checked / all `skip` |
+
+`FLAGGED` claims use the color of their most severe flagged error category from
+`conventions/error_categories.md`:
+
+| category | hex |
+|---|---|
+| `domain_violation` | `#7B1FA2` |
+| `literature_collision` | `#D32F2F` |
+| `internal_contradiction` | `#FF6D00` |
+| `ambiguous` | `#FFBF00` |
+| `unreferenced` | `#4285F4` |
+
+`FLAGGED` groups inherit the most severe flagged category color among their
+child claims. If a legacy graph has a `FLAGGED` node without category metadata,
+the fallback color is red (`#E74C3C`).
 
 Properties:
 
 - **Colorblind-safe enough.** Green and red are distinguishable by lightness
   in deuteranopia/protanopia simulations; yellow is distinct from both.
-- **Highlighted PDF restriction.** The PDF only renders red and yellow as
-  highlights. `green` and `gray` translate to "no highlight" — there is no
-  positive marking for verified or unchecked sentences (would be visual
-  noise).
+- **Highlighted paper restriction.** The highlighter renders category colors
+  for `FLAGGED` claims and yellow for `INCONCLUSIVE` claims. `green` and `gray`
+  translate to "no highlight" — there is no positive marking for verified or
+  unchecked sentences (would be visual noise).
 - **REPORT.md.** Markdown does not support inline color, but section ordering
-  and prose mirrors the palette: red findings first, then yellow, then green
-  summary, then gray ("not checked").
+  and prose mirror the verdict model: flagged findings first, then
+  inconclusive findings, then clear summary, then not-checked notes.
 
 Edges in the HTML are neutral gray (`#7F8C8D`). Edge *kind* is encoded by line
 style, not color:
@@ -137,23 +151,27 @@ style, not color:
 
 Map directly from `VERIFICATION.md`:
 
-- claim has a verdict in `VERIFICATION.md` → `claim.verdict` = that verdict
+- claim has a verdict in `VERIFICATION.md` → `claim.verdict` = the aggregate
+  verdict for that claim
 - claim has no row → `claim.verdict` = `NOT_CHECKED`
-- `claim.color` from the palette: `CLEAR` → green, `FLAGGED` → red,
-  `INCONCLUSIVE` → yellow, `NOT_CHECKED` → gray.
+- `claim.flagged_categories` lists every category that reported `FLAGGED`
+- `claim.color`: `CLEAR` → green, `INCONCLUSIVE` → yellow, `NOT_CHECKED` →
+  gray, `FLAGGED` → most severe category color.
 
 ### Per group
 
 ```
-if any child verdict is FLAGGED:                       group = FLAGGED,         red
+if any child verdict is FLAGGED:                       group = FLAGGED, category color
 elif any child verdict is INCONCLUSIVE:             group = INCONCLUSIVE, yellow
 elif every child verdict is CLEAR:                   group = CLEAR,         green
 else (mix of CLEAR and NOT_CHECKED, or all NOT_CHECKED):
                                                     group = NOT_CHECKED,  gray
 ```
 
-A single FLAGGED anywhere is intentionally enough to color a whole group red —
-the goal is to draw the reader's eye to the failure, not to average it out.
+A single FLAGGED anywhere is intentionally enough to put the whole group in a
+flagged state — the goal is to draw the reader's eye to the failure, not to
+average it out. The displayed color is the most severe flagged category among
+the group's children.
 
 ## Clustering algorithm
 
@@ -321,7 +339,7 @@ Every emitted JSON is checked. Failure of any rule is auto-Category-A:
 - every `edge.source` and `edge.target` resolves to a `claim` node
 - no edge has source == target
 - every node carries provenance or has `confidence ≤ medium`
-- color hex matches the verdict per the palette table
+- color hex matches the verdict/category color model
 - no edge of kind `contradicts` has confidence `low` and `provenance: "inferred"`
   (an inferred contradiction without a paper anchor is too weak — promote to
   `medium` confidence with a real anchor or drop the edge)

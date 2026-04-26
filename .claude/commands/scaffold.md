@@ -42,10 +42,18 @@ If `$0` or `$1` is empty, tell the user the correct invocation
    the user sees the scaffolded directories. If the directory does not exist,
    surface the scaffolder's stderr verbatim and stop.
 
-4. **Print next steps.** Tell the user:
+4. **Print next steps.** Make the final message conditional on the source type.
+   For local `--paper` / `--text`, tell the user:
 
    > Scaffolded `reviews/$0/`. Edit `reviews/$0/paper/paper.meta.json` if
    > needed, then run `/phase1 $0` to begin.
+
+   For remote `--arxiv` / `--doi` / `--url`, tell the user:
+
+   > Scaffolded `reviews/$0/` with the remote identifier recorded in
+   > `reviews/$0/paper/paper.meta.json`. The paper was not fetched; add
+   > `reviews/$0/paper/paper.txt` manually or re-run `/scaffold $0
+   > <local.pdf|local.txt>` before `/phase1 $0`.
 
 Do not dispatch any subagents in this command. Scaffold is offline and
 deterministic.

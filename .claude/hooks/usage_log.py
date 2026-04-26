@@ -2,9 +2,10 @@
 """SubagentStop hook: append a per-dispatch usage record.
 
 Records dispatch metadata to a JSONL file the orchestrator and `src/token_log.py`
-later read. SubagentStop has no documented token-count fields, so this hook
-only records routing info (transcript_path is the load-bearing field —
-src/token_log.py post-hoc reads the transcript JSONL for token sums).
+later read. SubagentStop does not include token counts directly, so this hook
+records routing info. `agent_transcript_path` is the load-bearing field for
+token attribution; `src/token_log.py` post-hoc reads that transcript JSONL for
+token sums.
 
 NEVER blocks. NEVER raises. Always exits 0. Runs on every SubagentStop in
 the project, including ones unrelated to Anderson reviews.
@@ -154,12 +155,28 @@ def main() -> None:
     except Exception:
         sys.exit(0)
 
+    # Per Claude Code SubagentStop hook docs (code.claude.com/docs/en/hooks),
+    # `agent_transcript_path` is the SUBAGENT'S transcript and is what we
+    # want for token attribution; `transcript_path` is the parent (main)
+    # session transcript. Older payloads may only have `transcript_path` —
+    # record both, prefer agent_transcript_path downstream.
+    agent_tx = (
+        payload.get("agent_transcript_path")
+        or payload.get("agentTranscriptPath")
+        or ""
+    )
+    main_tx = (
+        payload.get("transcript_path")
+        or payload.get("transcriptPath")
+        or ""
+    )
     record = {
         "timestamp": _now_iso(),
         "agent_type": payload.get("agent_type") or payload.get("agentType") or "",
         "agent_id": payload.get("agent_id") or payload.get("agentId") or "",
         "session_id": payload.get("session_id") or payload.get("sessionId") or "",
-        "transcript_path": payload.get("transcript_path") or payload.get("transcriptPath") or "",
+        "agent_transcript_path": agent_tx,
+        "transcript_path": main_tx,
         "cwd": payload.get("cwd") or "",
     }
 

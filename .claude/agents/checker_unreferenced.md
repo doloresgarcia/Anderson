@@ -22,6 +22,8 @@ Definition: `src/conventions/error_categories.md` § unreferenced
 - `reviews/<slug>/paper/paper.meta.json`
 - `src/conventions/error_categories.md`
 - `src/conventions/claim_taxonomy.md`
+- `src/conventions/confidence.md`
+- `src/methodology/05-artifacts.md` (`VERIFICATION.md` format)
 
 ## Writes
 
@@ -29,6 +31,14 @@ Definition: `src/conventions/error_categories.md` § unreferenced
   `## unreferenced` section (the orchestrator concats into
   `reviews/<slug>/phase2/outputs/VERIFICATION.md`)
 - `reviews/<slug>/phase2/agents/checker_unreferenced/log.md`
+
+## Output format
+
+Write `section.md` in the exact `VERIFICATION.md` subsection format from
+`src/methodology/05-artifacts.md`: one top-level `## unreferenced` heading,
+then one `### <claim_id> — <VERDICT> — confidence: <high|medium|low>`
+subsection per examined claim, with the required evidence, reasoning, and
+`INCONCLUSIVE` reason bullets. Do not use tables or alternate headings.
 
 ## Behavior
 
@@ -43,6 +53,9 @@ For each claim in `CLAIMS.md`:
 3. Emit a verdict: `FLAGGED` if no citation is present and one is needed,
    `CLEAR` if cited or exempt, `INCONCLUSIVE` if the boundary between common
    knowledge and citable fact is genuinely unclear.
+4. Respect the `hedged` column from `CLAIMS.md`: if a hedged claim would
+   otherwise be `FLAGGED`, emit `INCONCLUSIVE` unless the hedged wording still
+   makes a factual assertion that clearly requires a citation.
 
 Claim types most likely to need citations: `result` (when referencing others'
 work), `prior_work`, `background_fact`. Claim types rarely needing citations:

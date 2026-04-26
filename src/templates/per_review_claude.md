@@ -13,7 +13,7 @@ at the **repo-root `CLAUDE.md`**; this file is just paper-specific framing.
 
 - phase 1: `reviews/{{paper_slug}}/phase1/outputs/` — CLAIMS.md, LITERATURE.md, references.bib, graph.v1.json, FINDINGS.md
 - phase 2: `reviews/{{paper_slug}}/phase2/outputs/` — STRATEGY.md, VERIFICATION.md, graph.v2.json
-- phase 3: `reviews/{{paper_slug}}/phase3/outputs/` — graph.final.json + graph.final.html, paper.highlighted.{pdf,html}, REPORT.md, STATS.md
+- phase 3: `reviews/{{paper_slug}}/phase3/outputs/` — graph.final.json + graph.final.html, STATS.md, REPORT.md, paper.highlighted.pdf (PDF input; also text input if PyMuPDF is available), paper.highlighted.html (text input)
 
 ## Notes
 

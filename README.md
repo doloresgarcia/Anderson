@@ -4,7 +4,7 @@ Anderson is a multi-agent orchestrator that ingests a scientific paper and produ
 
 1. A **claim graph** of the paper, built per the conventions in `src/conventions/`.
 2. A **verification report** identifying which claims could not be verified or are not well supported by the paper itself or the surrounding literature.
-3. The **paper with sentences highlighted** that fail verification, plus a **trust score** cover page summarizing the review.
+3. The **paper with sentences highlighted** for flagged or inconclusive verification findings, plus a **trust score** cover page summarizing the review.
 
 The architecture follows a "thin orchestrator + specialized subagents" pattern adapted from
 [jfc-mit/jfc](https://github.com/jfc-mit/jfc): the orchestrator never extracts claims, runs
@@ -19,11 +19,11 @@ the main session.
 
 | Phase | Purpose | Primary artifacts |
 |-------|---------|------------------|
-| 1. Ingest & Map  | Parse paper, extract claims, two-pass literature search (local bank → external), build initial claim graph | `CLAIMS.md`, `LITERATURE.md`, `graph.v1.json` |
+| 1. Ingest & Map  | Parse paper, extract claims, two-pass literature search (local bank → external), build initial claim graph | `CLAIMS.md`, `LITERATURE.md`, `references.bib`, `graph.v1.json`, `FINDINGS.md` |
 | 2. Strategy & Check | Run five specialized checker agents (one per error category) against the claims and merge their verdicts into the graph | `STRATEGY.md`, `VERIFICATION.md`, `graph.v2.json` |
-| 3. Report | Trust score, marked-up paper, interactive claim graph, statistics, prose summary | `STATS.md`, `paper.highlighted.pdf`, `graph.final.html`, `REPORT.md` |
+| 3. Report | Trust score, marked-up paper, interactive claim graph, statistics, prose summary | `graph.final.json`, `graph.final.html`, `STATS.md`, `REPORT.md`, highlighted PDF and/or HTML depending on input |
 
-Per phase the orchestrator runs the loop **EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE**.
+Phases 1 and 2 run **EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE**. Phase 3 runs **EXECUTE → REVIEW → CHECK → HUMAN GATE → COMMIT**, so the final commit happens only after human approval.
 
 ## Repository layout
 
@@ -73,10 +73,15 @@ Outputs land in `reviews/__demo__/phase3/outputs/`:
 
 | file | what it is |
 |------|------------|
-| `paper.highlighted.pdf` | cover page with the trust score, then the paper with five-category color-coded highlights and clickable per-claim comments |
+| `paper.highlighted.pdf` | cover page with the trust score, then the paper with five-category `FLAGGED` highlights, yellow `INCONCLUSIVE` highlights, and clickable per-claim comments |
 | `graph.final.html` | dark-theme Cytoscape compound graph — fully self-contained (Cytoscape.js inlined), opens in any browser, works offline |
 | `STATS.md` | trust score block, counts by type and aggregate verdict, type×verdict matrix, **per-error-category breakdown**, INCONCLUSIVE reasons across all five checkers, per-group rows |
 | `paper.highlighted.html` | text-mode browser companion to the PDF |
+
+The demo uses text input, so both highlighted HTML and synthesized PDF are
+expected when PyMuPDF is installed. For real reviews, PDF input produces the
+highlighted PDF; text input produces highlighted HTML and, when PyMuPDF is
+available, a synthesized highlighted PDF.
 
 The demo paper contains three planted problems — a fabricated `Chen et al. (2024)` citation (caught as `literature_collision`), an abstract↔results numerical contradiction (87.3% vs 78.4%, caught as `internal_contradiction` and flagged on both ends), and a "we thus prove that sparsity is sufficient for emergent reasoning" overreach (caught as `unreferenced` on the abstract version and `ambiguous` on the discussion version). Anderson catches all three; the trust score lands at **58/100 (low)**.
 
@@ -115,20 +120,24 @@ resolve those via the repo root.
 **arxiv / doi / url sources are recorded but not fetched.** `/scaffold my-slug arxiv:2401.12345` (or `doi:...`, `url:...`) writes the identifier into `paper.meta.json` and stops there — you have to put the paper text into `reviews/my-slug/paper/paper.txt` yourself before `/phase1` will run. (Auto-fetch is a deferred follow-up.)
 
 The orchestrator dispatches the role specs in `.claude/agents/` flat from
-the main session. Each phase ends with a reviewer + arbiter pass and a
-commit; the orchestrator pauses for your OK before advancing.
+the main session. Phases 1 and 2 end with a reviewer + arbiter PASS and a
+checkpoint commit; the orchestrator pauses for your OK before advancing. Phase
+3 reaches a human gate after arbiter PASS and makes the final commit only after
+you reply `APPROVE`.
 
 Each subagent declares a static `model:` in its frontmatter. The default
 mix is documented in `.claude/profiles/balanced.json`. To override
 globally for a session, set `CLAUDE_CODE_SUBAGENT_MODEL`.
 
-- **Phase 1 — Ingest & Map.** `claim_extractor` → `literature_searcher` (bank first, then external) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
+- **Phase 1 — Ingest & Map.** `claim_extractor` → `literature_searcher` (bank first, then external; writes `LITERATURE.md` and `references.bib`) → `graph_builder` → write `FINDINGS.md`. Single-bot review.
 - **Phase 2 — Strategy & Check.** `strategist` → five **checker agents** in parallel — `checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`, `checker_literature`, `checker_domain` — each examining every claim for its error category and writing its own section of `VERIFICATION.md` (verdicts `FLAGGED` / `CLEAR` / `INCONCLUSIVE`) → `graph_builder` (v2). Three-bot review (critical + constructive + arbiter).
 - **Phase 3 — Report.** `highlighter` (invokes `highlight_paper.py` or `highlight_text.py`), `graph_builder` (invokes `render_graph.py`), and `report_writer` (invokes `claim_stats.py` then writes `REPORT.md`) run in parallel. Three-bot review, then a human gate.
 
 ### 4. Read the outputs
 
-Everything lands in `reviews/my-slug/phase3/outputs/`. Same set as the quick demo above, plus `REPORT.md` (prose summary).
+Everything lands in `reviews/my-slug/phase3/outputs/`: `graph.final.json`,
+`graph.final.html`, `STATS.md`, `REPORT.md`, and the applicable highlighted
+paper output(s) for the input mode.
 
 ## Verifying the rework end-to-end
 
@@ -194,7 +203,7 @@ Phase 2 detects errors across five mutually exclusive categories. One checker ag
 | `literature_collision` | red `#D32F2F` | conflicts with published work |
 | `domain_violation` | purple `#7B1FA2` | conflicts with established knowledge |
 
-A sentence flagged in multiple categories is highlighted in the most-severe color (severity order: `domain_violation` > `literature_collision` > `internal_contradiction` > `ambiguous` > `unreferenced`); the click-through annotation lists all triggered categories with each checker's reasoning. See `src/conventions/error_categories.md` for the evidence standard each checker requires before emitting `FLAGGED`.
+A sentence flagged in multiple categories is highlighted in the most-severe color (severity order: `domain_violation` > `literature_collision` > `internal_contradiction` > `ambiguous` > `unreferenced`); the click-through annotation lists all triggered categories with each checker's reasoning. `INCONCLUSIVE` sentences are highlighted yellow. See `src/conventions/error_categories.md` for the evidence standard each checker requires before emitting `FLAGGED`.
 
 ## Trust score
 

@@ -13,12 +13,21 @@ and stop.
 
 ## 0. Preflight
 
-1. Verify `reviews/$0/phase1/outputs/graph.v1.json` and
-   `reviews/$0/phase1/outputs/CLAIMS.md` exist. If not, tell the user to run
-   `/phase1 $0` first and stop.
-2. Skim `reviews/$0/phase1/outputs/FINDINGS.md` so you know the claim count
+1. Verify all required Phase 1 deliverables exist:
+   `reviews/$0/phase1/outputs/CLAIMS.md`,
+   `reviews/$0/phase1/outputs/LITERATURE.md`,
+   `reviews/$0/phase1/outputs/references.bib`,
+   `reviews/$0/phase1/outputs/graph.v1.json`, and
+   `reviews/$0/phase1/outputs/FINDINGS.md`. If not, tell the user to run
+   `/phase1 $0` first and stop. `CLAIMS.md`, `LITERATURE.md`,
+   `graph.v1.json`, and `FINDINGS.md` must be non-empty; `references.bib`
+   may be empty only if `LITERATURE.md` contains no citation keys.
+2. Verify `reviews/$0/phase1/review/ARBITRATION.md` exists and its first line
+   is `PASS`. If not, do not advance; surface the prior verdict and stop.
+3. Verify `reviews/$0/paper/paper.txt` still exists and is non-empty.
+4. Skim `reviews/$0/phase1/outputs/FINDINGS.md` so you know the claim count
    and any gaps the strategist should be aware of.
-3. Read methodology:
+5. Read methodology:
    - `src/methodology/03-phases.md` § Phase 2
    - `src/methodology/03a-orchestration.md` § Parallelism (Phase 2)
    - `src/methodology/04-review.md`
@@ -57,7 +66,11 @@ For each checker `<role>` ∈ {`checker_unreferenced`, `checker_ambiguous`,
   - `reviews/$0/phase1/outputs/graph.v1.json`
   - `reviews/$0/phase2/outputs/STRATEGY.md`
   - `reviews/$0/paper/paper.txt`
+  - `reviews/$0/paper/paper.meta.json`
   - `src/conventions/error_categories.md`
+  - `src/conventions/claim_taxonomy.md`
+  - `src/conventions/confidence.md`
+  - `src/methodology/05-artifacts.md`
   - `literature_bank/` (for `checker_literature` and `checker_domain`)
 - output: `reviews/$0/phase2/agents/<role>/section.md`
 - working dir: `reviews/$0/phase2/agents/<role>/`
@@ -68,8 +81,9 @@ Wait for all five to complete.
 
 You (the orchestrator, **not** a subagent) write
 `reviews/$0/phase2/outputs/VERIFICATION.md` by concatenating the five
-checker sections in canonical severity order. This is a deterministic
-merge — no LLM judgment needed, and no subagent owns this artifact:
+checker sections in canonical section order. This is a deterministic merge
+order, not a severity ranking; no LLM judgment is needed, and no subagent owns
+this artifact:
 
 ```bash
 cat reviews/$0/phase2/agents/checker_unreferenced/section.md \
@@ -93,6 +107,7 @@ Dispatch `.claude/agents/graph_builder.md` to merge the verdicts into
   - `reviews/$0/phase1/outputs/graph.v1.json`
   - `reviews/$0/phase2/outputs/VERIFICATION.md` (already concatenated above)
   - `src/conventions/graph_schema.json`
+  - `src/conventions/graph_schema.md`
   - `src/conventions/error_categories.md`
 - output: `reviews/$0/phase2/outputs/graph.v2.json`
 - working dir: `reviews/$0/phase2/agents/graph_builder/`
@@ -125,10 +140,13 @@ Read `reviews/$0/phase2/review/ARBITRATION.md` (verdict on line 1).
 
 - **PASS** → COMMIT.
 - **ITERATE** → dispatch `.claude/agents/fixer.md` with the A/B findings.
-  Targeted re-runs: if the fixer touches a checker section, re-dispatch only
-  that checker; if it touches the graph, re-dispatch `graph_builder`. Then
-  re-dispatch both reviewers and the arbiter. At most **one** iterate
-  cycle; second ITERATE → escalate to the user.
+  Apply the dependency closure before re-review: if `STRATEGY.md` changed,
+  re-dispatch all five checkers; if any checker section changed or any checker
+  was re-run, re-concatenate `VERIFICATION.md` in canonical section order and
+  re-dispatch `graph_builder` for `graph.v2.json`. If the graph alone changed,
+  re-dispatch `graph_builder` or validate the corrected `graph.v2.json` before
+  review. Then re-dispatch both reviewers and the arbiter. At most **one**
+  iterate cycle; second ITERATE → escalate to the user.
 - **ESCALATE** → surface verbatim and stop.
 
 ## 4. COMMIT

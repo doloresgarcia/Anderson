@@ -20,7 +20,8 @@ from pathlib import Path
 LIT_NAME = "LITERATURE.md"
 BIB_NAME = "references.bib"
 PATH_RE = re.compile(r"reviews/[^/]+/phase\d+/outputs/(LITERATURE\.md|references\.bib)$")
-CITATION_RE = re.compile(r"\[@([A-Za-z0-9_:.\-]+)\]")
+BRACKET_CITATION_RE = re.compile(r"\[([^\[\]]*@[^][]*)\]")
+CITATION_KEY_RE = re.compile(r"(?<![\w@])@([A-Za-z0-9_:.\-]+)")
 BIB_KEY_RE = re.compile(r"^\s*@\w+\s*\{\s*([A-Za-z0-9_:.\-]+)\s*,", re.MULTILINE)
 
 
@@ -39,7 +40,10 @@ def _exit_block(message: str, file_path: str = ""):
 
 
 def _extract_citations(text: str) -> set[str]:
-    return set(CITATION_RE.findall(text))
+    keys: set[str] = set()
+    for citation_group in BRACKET_CITATION_RE.findall(text):
+        keys.update(CITATION_KEY_RE.findall(citation_group))
+    return keys
 
 
 def _extract_bib_keys(text: str) -> set[str]:

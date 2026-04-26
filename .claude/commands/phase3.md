@@ -1,5 +1,5 @@
 ---
-description: Run Phase 3 (highlights, final graph, report) in parallel, three-bot review, commit, then human gate.
+description: Run Phase 3 (highlights, final graph, report) in parallel, three-bot review, human gate, then final commit.
 argument-hint: <slug>
 arguments: [slug]
 ---
@@ -13,15 +13,24 @@ and stop.
 
 ## 0. Preflight
 
-1. Verify `reviews/$0/phase2/outputs/graph.v2.json` and
-   `reviews/$0/phase2/outputs/VERIFICATION.md` exist. If not, tell the user
-   to run `/phase2 $0` first and stop.
-2. Read methodology:
+1. Verify all required upstream deliverables exist and are non-empty:
+   `reviews/$0/phase1/outputs/CLAIMS.md`,
+   `reviews/$0/phase1/outputs/FINDINGS.md`,
+   `reviews/$0/phase2/outputs/STRATEGY.md`,
+   `reviews/$0/phase2/outputs/VERIFICATION.md`, and
+   `reviews/$0/phase2/outputs/graph.v2.json`. If not, tell the user to run
+   the missing prior phase first and stop.
+2. Verify `reviews/$0/phase2/review/ARBITRATION.md` exists and its first line
+   is `PASS`. If not, do not advance; surface the prior verdict and stop.
+3. Verify `reviews/$0/paper/paper.txt` exists and is non-empty. For the
+   highlighter, `reviews/$0/paper/paper.pdf` is preferred when present;
+   otherwise text mode uses `paper.txt`.
+4. Read methodology:
    - `src/methodology/03-phases.md` § Phase 3
    - `src/methodology/03a-orchestration.md` § Parallelism (Phase 3)
    - `src/methodology/04-review.md`
 
-Loop: **EXECUTE → REVIEW → CHECK → COMMIT → HUMAN GATE**.
+Loop: **EXECUTE → REVIEW → CHECK → HUMAN GATE → COMMIT**.
 
 ## 1. EXECUTE — three subagents in parallel
 
@@ -42,8 +51,9 @@ Dispatch `.claude/agents/highlighter.md`:
   invoke `python3 src/highlight_text.py reviews/$0` (writes both HTML and,
   if PyMuPDF is installed, a synthesized PDF).
 - outputs:
-  - `reviews/$0/phase3/outputs/paper.highlighted.pdf` (always, if highlighter ran without error)
-  - `reviews/$0/phase3/outputs/paper.highlighted.html` (text-input mode only)
+  - `reviews/$0/phase3/outputs/paper.highlighted.pdf` (PDF input; also text
+    input when PyMuPDF is available)
+  - `reviews/$0/phase3/outputs/paper.highlighted.html` (text-input mode)
 - working dir: `reviews/$0/phase3/agents/highlighter/`
 
 ### 1b. graph_builder (final)
@@ -53,12 +63,12 @@ Dispatch `.claude/agents/graph_builder.md`:
 - inputs:
   - `reviews/$0/phase2/outputs/graph.v2.json`
   - `src/conventions/graph_schema.json`
+  - `src/conventions/graph_schema.md`
 - behavior: copy `graph.v2.json` to `graph.final.json`, then invoke
   `python3 src/render_graph.py reviews/$0/phase3/outputs/graph.final.json`.
 - outputs:
   - `reviews/$0/phase3/outputs/graph.final.json`
-  - `reviews/$0/phase3/outputs/graph.final.html` (and/or `.svg`) from the
-    renderer
+  - `reviews/$0/phase3/outputs/graph.final.html` from the renderer
 - working dir: `reviews/$0/phase3/agents/graph_builder/`
 
 ### 1c. report_writer
@@ -68,6 +78,7 @@ Dispatch `.claude/agents/report_writer.md`:
 - inputs:
   - `reviews/$0/phase1/outputs/CLAIMS.md`
   - `reviews/$0/phase1/outputs/FINDINGS.md`
+  - `reviews/$0/paper/paper.meta.json`
   - `reviews/$0/phase2/outputs/STRATEGY.md`
   - `reviews/$0/phase2/outputs/VERIFICATION.md`
   - `reviews/$0/phase2/outputs/graph.v2.json`
@@ -105,42 +116,63 @@ Then dispatch `.claude/agents/arbiter.md`:
 
 Read `reviews/$0/phase3/review/ARBITRATION.md`.
 
-- **PASS** → COMMIT.
+- **PASS** → HUMAN GATE.
 - **ITERATE** → dispatch `.claude/agents/fixer.md` with the A/B findings.
-  Re-dispatch only the affected agent(s) (e.g. just `report_writer` if the
-  finding is in `REPORT.md`), then re-run both reviewers and the arbiter. At
-  most one iterate cycle; second ITERATE → escalate.
+  Apply the dependency closure before re-review: highlighter findings require
+  regenerated highlighted outputs; graph findings require `graph.final.json`
+  and `graph.final.html`; report/stat findings require `STATS.md` and
+  `REPORT.md`. Re-dispatch only the affected owning agent(s), then re-run both
+  reviewers and the arbiter. At most one pre-gate iterate cycle; second
+  ITERATE → escalate.
 - **ESCALATE** → surface verbatim and stop (do **not** proceed to the human
   gate without a PASS).
 
-## 4. COMMIT
+## 4. HUMAN GATE
+
+Print a summary to the user listing the expected outputs for the current input
+mode and asking for explicit confirmation. Include only the highlighted output
+bullet(s) that apply: PDF input expects `paper.highlighted.pdf`; text input
+expects `paper.highlighted.html` and also `paper.highlighted.pdf` when PyMuPDF
+is available. Do **not** commit yet, do **not** dispatch anything else, do
+**not** modify files, and do **not** declare the run finished until the user
+responds.
+
+```
+Phase 3 ready for human review for $0. Expected outputs:
+
+  - reviews/$0/phase3/outputs/graph.final.json
+  - reviews/$0/phase3/outputs/graph.final.html
+  - reviews/$0/phase3/outputs/STATS.md
+  - reviews/$0/phase3/outputs/REPORT.md
+  - <applicable highlighted paper output(s) for this input mode>
+
+Please review the highlighted paper, the rendered graph, the stats, and the
+report. Reply with one of:
+
+  - APPROVE     — accept the run as final and commit Phase 3.
+  - ITERATE: <notes> — fix within phase-3 scope, re-run review, then return to this gate.
+  - REGRESS N: <notes> — re-open phase N (1 or 2); no Phase 3 final commit.
+```
+
+Response handling:
+
+- **APPROVE** → COMMIT.
+- **ITERATE** → dispatch `fixer` with the human notes, regenerate the affected
+  Phase 3 outputs through their owning path (highlighter, graph_builder, or
+  report_writer / `claim_stats.py`), run REVIEW and CHECK again, then return to
+  HUMAN GATE. Do not commit before the next APPROVE.
+- **REGRESS N** → stop and tell the user to run `/phaseN $0` after addressing
+  the notes. Do not make the final Phase 3 commit.
+
+## 5. COMMIT
+
+Only after human APPROVE:
 
 ```
 git add reviews/$0/phase3/
 git commit -m "phase3(report): highlights + final graph + report [$0]"
 ```
 
-## 5. HUMAN GATE
+Then print:
 
-Print a summary to the user listing the four expected outputs and asking
-for explicit confirmation. Do **not** dispatch anything else, do **not**
-modify files, and do **not** declare the run finished until the user
-responds.
-
-```
-Phase 3 complete for $0. Expected outputs:
-
-  - reviews/$0/phase3/outputs/paper.highlighted.pdf
-  - reviews/$0/phase3/outputs/graph.final.html
-  - reviews/$0/phase3/outputs/STATS.md
-  - reviews/$0/phase3/outputs/REPORT.md
-
-Please review the highlighted PDF, the rendered graph, the stats, and the
-report. Reply with one of:
-
-  - APPROVE     — accept the run as final.
-  - ITERATE: <notes> — fix within phase-3 scope and re-run review.
-  - REGRESS N: <notes> — re-open phase N (1 or 2).
-```
-
-Stop and wait for the user's response. Do nothing further until then.
+> Phase 3 approved and committed for `$0`.

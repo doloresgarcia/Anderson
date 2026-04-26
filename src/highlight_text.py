@@ -14,16 +14,16 @@ Writes:
 - reviews/<slug>/phase3/outputs/paper.highlighted.html
 - reviews/<slug>/phase3/outputs/paper.highlighted.pdf  (if PyMuPDF available)
 
-Color palette is the canonical one from conventions/graph_schema.md:
-  red    (#E74C3C) — FAIL
-  yellow (#F1C40F) — INCONCLUSIVE
-PASS and NOT_CHECKED produce no highlight.
+Color palette follows conventions/error_categories.md and graph_schema.md:
+  FLAGGED       — most severe error-category color
+  INCONCLUSIVE  — yellow (#F1C40F)
+CLEAR and NOT_CHECKED produce no highlight.
 
 The HTML is self-contained (no JS, no CDN) — `<mark>` spans for the highlights,
 anchor ids `claim-<id>`, and hover tooltips with the verdict.
 
 The PDF is synthesized from paper.txt with PyMuPDF — A4, single column,
-line-level highlight bands behind any line that contains a FAIL/INCONCLUSIVE
+line-level highlight bands behind any line that contains a FLAGGED/INCONCLUSIVE
 sentence. Line-level (not character-level) is intentional: with a plain-text
 input we have no original layout to preserve, so coloring whole lines is both
 robust and visually clearer than mid-line highlights in a synthesized PDF.
@@ -43,6 +43,7 @@ from highlight_paper import (  # noqa: E402
     CATEGORIES,
     CATEGORY_HEX,
     SEVERITY,
+    ClaimsParseError,
     parse_claims_md,
     parse_verification_md,
     build_annotation_text,
@@ -59,16 +60,119 @@ def _category_severity(cat: str) -> int:
     return SEVERITY.index(cat) if cat in SEVERITY else 99
 
 
+def _line_offsets(text: str) -> list[int]:
+    starts = [0]
+    for m in re.finditer("\n", text):
+        starts.append(m.end())
+    return starts
+
+
+def _line_span(text: str, starts: list[int], line_no: int) -> tuple[int, int] | None:
+    if line_no < 1 or line_no > len(starts):
+        return None
+    start = starts[line_no - 1]
+    if line_no < len(starts):
+        end = starts[line_no] - 1
+    else:
+        end = len(text)
+    return start, end
+
+
+def _claim_anchor_line(claim: dict) -> int | None:
+    provenance = str(claim.get("provenance") or "")
+    m = re.search(r":(\d+)(?:-\d+)?$", provenance)
+    if m:
+        return int(m.group(1))
+    line = str(claim.get("line") or "").strip()
+    if line.isdigit():
+        return int(line)
+    return None
+
+
+def _sentence_matches(
+    text: str,
+    sentence: str,
+    start: int = 0,
+    end: int | None = None,
+) -> list[tuple[int, int]]:
+    end = len(text) if end is None else end
+    matches: list[tuple[int, int]] = []
+
+    idx = start
+    while True:
+        pos = text.find(sentence, idx, end)
+        if pos == -1:
+            break
+        matches.append((pos, pos + len(sentence)))
+        idx = pos + len(sentence)
+    if matches:
+        return matches
+
+    words = sentence.split()
+    if len(words) < 2:
+        return []
+    pattern = r"\s+".join(re.escape(w) for w in words)
+    return [
+        (start + m.start(), start + m.end())
+        for m in re.finditer(pattern, text[start:end])
+    ]
+
+
+_OVERLAP_STOPWORDS = {
+    "the", "and", "for", "that", "this", "with", "from", "into", "onto",
+    "are", "was", "were", "will", "can", "our", "its", "their", "then",
+    "than", "also", "only", "using", "used", "use", "not",
+}
+
+
+def _content_tokens(s: str) -> set[str]:
+    return {
+        t for t in re.findall(r"[A-Za-z0-9]+", s.lower())
+        if len(t) > 2 and t not in _OVERLAP_STOPWORDS
+    }
+
+
+def _line_fallback_range(
+    text: str,
+    starts: list[int],
+    line_no: int | None,
+    sentence: str,
+) -> tuple[int, int] | None:
+    if line_no is None:
+        return None
+    span = _line_span(text, starts, line_no)
+    if span is None:
+        return None
+    start, end = span
+    line = text[start:end]
+    sentence_tokens = _content_tokens(sentence)
+    line_tokens = _content_tokens(line)
+    if not sentence_tokens or not line_tokens:
+        return None
+    overlap = sentence_tokens & line_tokens
+    min_common = min(2, len(sentence_tokens))
+    if len(overlap) < min_common or len(overlap) / len(sentence_tokens) < 0.35:
+        return None
+
+    left = len(line) - len(line.lstrip())
+    right = len(line.rstrip())
+    if right <= left:
+        return None
+    return start + left, start + right
+
+
 def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
     """Return [(start, end, claim_id, category, confidence), ...] sorted by
     start, where `category` is the most-severe flagged category for the claim
     (or "INCONCLUSIVE" if no FLAGGED but at least one INCONCLUSIVE).
 
-    Tries an exact literal match first; falls back to a whitespace-tolerant
-    regex match (each whitespace run in the sentence allows any whitespace
-    in the text, so soft-wrapped paragraphs match too).
+    When the CLAIMS.md row has a `paper.txt:<line>` provenance (or numeric
+    `line` value), searches near that line first. If the extracted sentence is
+    a paraphrase that cannot be matched literally, the provenance line is used
+    as a bounded fallback only when it shares meaningful content tokens.
     """
     ranges: list[tuple] = []
+    starts = _line_offsets(text)
     for cid, claim in claims.items():
         record = verdicts.get(cid, {})
         cat = most_severe_flagged(record)
@@ -80,7 +184,11 @@ def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
             if agg != "INCONCLUSIVE":
                 continue
             cat = "INCONCLUSIVE"
-            confidence = ""
+            confidence = next(
+                (e.get("confidence", "") for e in record.values()
+                 if e.get("verdict") == "INCONCLUSIVE"),
+                "",
+            )
         else:
             confidence = record[cat].get("confidence", "")
 
@@ -88,25 +196,25 @@ def find_ranges(text: str, claims: dict, verdicts: dict) -> list[tuple]:
         if not sentence:
             continue
 
-        idx = 0
-        found = False
-        while True:
-            pos = text.find(sentence, idx)
-            if pos == -1:
-                break
-            ranges.append((pos, pos + len(sentence), cid, cat, confidence))
-            idx = pos + len(sentence)
-            found = True
-        if found:
+        anchor_line = _claim_anchor_line(claim)
+        matches: list[tuple[int, int]] = []
+        if anchor_line is not None:
+            start_span = _line_span(text, starts, max(1, anchor_line - 2))
+            end_span = _line_span(text, starts, min(len(starts), anchor_line + 2))
+            if start_span and end_span:
+                matches = _sentence_matches(text, sentence, start_span[0], end_span[1])
+
+        if not matches:
+            matches = _sentence_matches(text, sentence)
+
+        if matches:
+            for start, end in matches:
+                ranges.append((start, end, cid, cat, confidence))
             continue
 
-        # Whitespace-tolerant fallback for soft-wrapped sentences.
-        words = sentence.split()
-        if len(words) < 2:
-            continue
-        pattern = r"\s+".join(re.escape(w) for w in words)
-        for m in re.finditer(pattern, text):
-            ranges.append((m.start(), m.end(), cid, cat, confidence))
+        fallback = _line_fallback_range(text, starts, anchor_line, sentence)
+        if fallback:
+            ranges.append((fallback[0], fallback[1], cid, cat, confidence))
 
     ranges.sort()
     merged: list[tuple] = []
@@ -261,7 +369,7 @@ def synthesize_pdf(
     margin sticky-note per highlighted claim describing the verdict.
 
     Layout is intentionally minimal: A4, single column, Helvetica 10pt, lines
-    wrapped at ~85 characters. Any line that intersects a FAIL or
+    wrapped at ~85 characters. Any line that intersects a FLAGGED or
     INCONCLUSIVE highlight range gets a colored band; the first line of each
     flagged claim also gets a clickable sticky-note annotation whose content
     is the full verdict + reasoning from VERIFICATION.md (built by
@@ -428,6 +536,8 @@ def main() -> int:
                    help="skip PDF synthesis (HTML only)")
     p.add_argument("--no-html", action="store_true",
                    help="skip HTML output (PDF only)")
+    p.add_argument("--allow-unmatched", action="store_true",
+                   help="exit zero even when flagged/inconclusive claims cannot be matched")
     args = p.parse_args()
 
     review = args.review_dir
@@ -447,7 +557,11 @@ def main() -> int:
             return 2
 
     text = text_path.read_text(errors="replace")
-    claims = parse_claims_md(claims_md)
+    try:
+        claims = parse_claims_md(claims_md)
+    except ClaimsParseError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
     verdicts = parse_verification_md(verification_md)
 
     if not verdicts:
@@ -487,6 +601,13 @@ def main() -> int:
 
     if unmatched:
         print(f"  unmatched (sentence not found in paper.txt): {unmatched}")
+        if not args.allow_unmatched:
+            print(
+                "error: unmatched flagged/inconclusive claims; "
+                "rerun with --allow-unmatched to accept this deliberately",
+                file=sys.stderr,
+            )
+            return 1
     return 0
 
 

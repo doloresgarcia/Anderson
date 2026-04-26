@@ -15,17 +15,22 @@ and stop.
 
 1. Verify `reviews/$0/` exists. If not, tell the user to run
    `/scaffold $0 <source>` first and stop.
-2. Verify `reviews/$0/paper/paper.txt` exists and is non-empty. If not, the
+2. Verify the scaffold control files and directories exist:
+   `reviews/$0/CLAUDE.md`, `reviews/$0/prompt.md`,
+   `reviews/$0/paper/paper.meta.json`, and
+   `reviews/$0/phase1/{outputs,agents,review,logs}/`. If any are missing, tell
+   the user the scaffold is incomplete and stop.
+3. Verify `reviews/$0/paper/paper.txt` exists and is non-empty. If not, the
    review was scaffolded from `--arxiv` / `--doi` / `--url` (which only
    record the identifier in `paper.meta.json` and do not fetch). Stop and
    tell the user to either supply the paper text manually or re-run
    `/scaffold $0 <local.pdf|local.txt>`.
-3. Read `reviews/$0/CLAUDE.md` for paper meta.
-4. Read `reviews/$0/prompt.md`. If it is empty or absent, write the user's
+4. Read `reviews/$0/CLAUDE.md` for paper meta.
+5. Read `reviews/$0/prompt.md`. If it is empty, write the user's
    exact `/phase1 $0` invocation (and any surrounding free-text from the
    user's message) into it as the first action — this is the orchestrator's
    prompt-of-record for the run.
-5. Read the relevant methodology so the dispatch is faithful to spec:
+6. Read the relevant methodology so the dispatch is faithful to spec:
    - `src/methodology/03-phases.md` § Phase 1
    - `src/methodology/03a-orchestration.md` § Parallelism (Phase 1)
    - `src/methodology/04-review.md`
@@ -47,6 +52,7 @@ Dispatch `.claude/agents/claim_extractor.md` with:
   - `reviews/$0/paper/paper.txt`
   - `reviews/$0/paper/paper.meta.json`
   - `src/conventions/claim_taxonomy.md`
+  - `src/conventions/confidence.md`
   - `src/methodology/05-artifacts.md`
 - output:
   - `reviews/$0/phase1/outputs/CLAIMS.md`
@@ -60,8 +66,9 @@ In a single message, dispatch both subagents simultaneously:
 
 - `.claude/agents/literature_searcher.md`:
   - inputs: `reviews/$0/phase1/outputs/CLAIMS.md`,
-    `reviews/$0/paper/paper.txt`, `literature_bank/`,
-    `src/conventions/claim_taxonomy.md`
+    `reviews/$0/paper/paper.txt`, `reviews/$0/paper/paper.meta.json`,
+    `src/conventions/claim_taxonomy.md`, `src/conventions/confidence.md`,
+    `src/methodology/05-artifacts.md`, `literature_bank/`
   - output: `reviews/$0/phase1/outputs/LITERATURE.md` and
     `reviews/$0/phase1/outputs/references.bib`
   - working dir: `reviews/$0/phase1/agents/literature_searcher/`
@@ -69,7 +76,7 @@ In a single message, dispatch both subagents simultaneously:
   literature edges yet):
   - inputs: `reviews/$0/phase1/outputs/CLAIMS.md`,
     `src/conventions/graph_schema.json`,
-    `src/conventions/claim_taxonomy.md`
+    `src/conventions/graph_schema.md`
   - output: `reviews/$0/phase1/outputs/graph.v1.skeleton.json`
   - working dir: `reviews/$0/phase1/agents/graph_builder_skeleton/`
 
@@ -86,6 +93,7 @@ skeleton:
   - `reviews/$0/phase1/outputs/LITERATURE.md`
   - `reviews/$0/phase1/outputs/references.bib`
   - `src/conventions/graph_schema.json`
+  - `src/conventions/graph_schema.md`
 - output: `reviews/$0/phase1/outputs/graph.v1.json`
 - working dir: `reviews/$0/phase1/agents/graph_builder/`
 
@@ -127,11 +135,15 @@ line.
 - **PASS** → proceed to COMMIT.
 - **ITERATE** → dispatch `.claude/agents/fixer.md` with the listed Category A
   and B findings as the prompt, the relevant phase-1 outputs as inputs, and
-  the same output paths the original agents used. After fixer completes,
-  **re-derive `FINDINGS.md`** from the (possibly modified) `CLAIMS.md` /
-  `LITERATURE.md` so the counts and gap notes reflect the current state, not
-  the pre-fix state — phase 2 will read FINDINGS.md and silent staleness
-  has bitten us before. Then re-dispatch `critical_reviewer` and `arbiter`.
+  the same output paths the original agents used. After fixer completes, apply
+  the dependency closure before review: if `CLAIMS.md` changed, re-dispatch
+  `literature_searcher` and the `graph_builder` skeleton pass from the current
+  claims, then re-run the final `graph_builder` merge. If only
+  `LITERATURE.md`, `references.bib`, or `graph.v1.skeleton.json` changed,
+  re-run the final `graph_builder` merge so `graph.v1.json` matches the
+  current claim/literature set. In all cases, **re-derive `FINDINGS.md`** from
+  the current `CLAIMS.md` / `LITERATURE.md` so counts and gap notes reflect the
+  current state. Then re-dispatch `critical_reviewer` and `arbiter`.
   Iterate at most **once**; if the second arbiter verdict is still ITERATE,
   escalate to the user.
 - **ESCALATE** → surface the arbiter's reasoning to the user verbatim and

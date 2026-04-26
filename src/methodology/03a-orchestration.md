@@ -3,7 +3,8 @@
 ## Loop (per phase)
 
 ```
-EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
+Phases 1-2: EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
+Phase 3:   EXECUTE → REVIEW → CHECK → HUMAN GATE → COMMIT
 ```
 
 1. **EXECUTE.** Spawn each phase's subagents. Pass them: their role file
@@ -15,8 +16,11 @@ EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
    - Category A → spawn `fixer` (a specialization of `executor`), re-review.
    - Category B → spawn `fixer` once, accept on re-review unless new A.
    - Category C → record, do not re-review.
-4. **COMMIT.** Conventional commit `<type>(phase<N>): <description>`.
-5. **ADVANCE.** Move to the next phase, or to the human gate.
+4. **COMMIT / GATE.** Phases 1 and 2 commit after arbiter PASS. Phase 3
+   pauses for human review after arbiter PASS and commits only after APPROVE.
+5. **ADVANCE.** Move to the next phase after a phase checkpoint commit. Phase 3
+   has no automatic advance; ITERATE loops within phase 3 and REGRESS reopens
+   the requested earlier phase.
 
 ## Dispatch contract
 
@@ -48,6 +52,24 @@ Within a phase, agents that write to disjoint files run in parallel:
 
 Cross-phase work is strictly sequential.
 
+## Fixer dependency closures
+
+After a fixer changes an upstream artifact, regenerate every deterministic
+downstream artifact that depends on it before re-review:
+
+- Phase 1: if `CLAIMS.md` changes, re-run `literature_searcher` and the
+  `graph_builder` skeleton pass, then re-run the final `graph_builder` pass for
+  `graph.v1.json`. If only `LITERATURE.md`, `references.bib`, or
+  `graph.v1.skeleton.json` changes, re-run the final `graph_builder` pass. In
+  all cases, re-derive `FINDINGS.md`.
+- Phase 2: if `STRATEGY.md` changes, re-run all checker sections; if any
+  checker section changes, re-concatenate `VERIFICATION.md` in canonical
+  section order and re-run `graph_builder` for `graph.v2.json`.
+- Phase 3: regenerate the owning outputs for the affected surface: highlighter
+  outputs for highlight issues, `graph.final.json` plus `graph.final.html` for
+  graph issues, and `STATS.md` plus a fresh `report_writer` pass for
+  report/stat issues.
+
 ## Context budget
 
 The orchestrator's own context stays compact. Each subagent receives at most:
@@ -61,8 +83,9 @@ not preemptively flood it.
 
 ## Health monitoring
 
-- Commit before each subagent dispatch so any failure has a clean rollback point.
+- Use `git status` before dispatching risky work and keep partial outputs inside
+  the phase working tree until the review/fix loop reaches a checkpoint.
 - Long-running agents (>10 min with no new output) are respawned from the last
-  commit.
+  phase checkpoint or clean pre-dispatch state.
 - Append the original user prompt to `reviews/<slug>/prompt.md` as the very first
   action of the orchestrator.

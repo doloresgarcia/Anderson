@@ -17,7 +17,10 @@ You write only to your declared output paths.
 ## Reads
 
 - `reviews/<slug>/phase1/outputs/CLAIMS.md`
+- `reviews/<slug>/paper/paper.txt`
 - `reviews/<slug>/paper/paper.meta.json`
+- `src/conventions/claim_taxonomy.md`
+- `src/conventions/confidence.md`
 - `src/methodology/05-artifacts.md` (LITERATURE.md format)
 - `literature_bank/` — repository-level directory of pre-collected PDFs
 - Optional: a `--bib` seed file or `--corpus` pointer

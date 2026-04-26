@@ -90,8 +90,10 @@ the paper's field would recognize as wrong.
 - **Evidence standard for FLAGGED:** The checker must state the established
   fact or principle being violated, explain why it is established (naming a
   canonical source or textbook where possible), and show how the paper's
-  statement conflicts with it. If a canonical reference is citable, cite it
-  in `references.bib`.
+  statement conflicts with it. If a canonical reference is citable, name it in
+  the checker output's `canonical_source:` field; bibliography updates are
+  handled by the orchestrator or a fixer because checker agents do not own
+  `references.bib`.
 - **Not this category:** Controversial or actively debated positions in the
   field are not domain violations. The violated knowledge must be settled and
   uncontroversial among practitioners.
@@ -107,6 +109,8 @@ the paper's field would recognize as wrong.
 | `domain_violation`      | purple  | `#7B1FA2` | Conflicts with established knowledge |
 
 Sentences that pass all checkers or were not checked receive no highlight.
+Sentences with an aggregate `INCONCLUSIVE` verdict and no `FLAGGED` category
+use the yellow inconclusive highlight defined in `graph_schema.md`.
 
 When a single sentence triggers multiple categories, apply the color of the
 **most severe** category. Severity order (highest first):

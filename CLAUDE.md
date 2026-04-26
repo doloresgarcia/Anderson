@@ -31,8 +31,9 @@ the user's original request, then create the task list of phases and reviews.
 </important>
 
 <important>
-Commit before each subagent dispatch. A failed subagent must have a clean
-rollback point.
+Commit at phase checkpoints, not before every subagent. Use `git status` before
+dispatching risky work and keep failed or partial agent output inside that
+phase's working tree until the review/fix loop reaches PASS.
 </important>
 
 <important>
@@ -52,19 +53,23 @@ accept a phase whose `LITERATURE.md` keys cannot be resolved in
 ## Loop (per phase, in order)
 
 ```
-EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
+Phases 1-2: EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE
+Phase 3:   EXECUTE → REVIEW → CHECK → HUMAN GATE → COMMIT
 ```
 
-Each phase command runs EXECUTE → REVIEW → CHECK → COMMIT and pauses before
-ADVANCE. The user issues `/phase<N+1>` to advance.
+Phase 1 and 2 commands commit only after arbiter PASS, then pause before
+ADVANCE. The user issues `/phase<N+1>` to advance. Phase 3 reaches the human
+gate after arbiter PASS and commits only after explicit human APPROVE; a
+post-gate ITERATE re-runs the affected Phase 3 work and review before returning
+to the gate.
 
 ## Phase summary
 
 | Phase | Slash command | Subagents | Reviewers | Gate |
 |-------|---------------|-----------|-----------|------|
-| 1 | `.claude/commands/phase1.md` | claim_extractor → (literature_searcher ∥ graph_builder) → graph_builder | critical_reviewer + arbiter | commit |
-| 2 | `.claude/commands/phase2.md` | strategist → (5× checker_*) → graph_builder | critical_reviewer + constructive_reviewer + arbiter | commit |
-| 3 | `.claude/commands/phase3.md` | highlighter ∥ graph_builder ∥ report_writer | critical_reviewer + constructive_reviewer + arbiter | **human gate** |
+| 1 | `.claude/commands/phase1.md` | claim_extractor → (literature_searcher ∥ graph_builder) → graph_builder | critical_reviewer + arbiter | arbiter PASS → commit |
+| 2 | `.claude/commands/phase2.md` | strategist → (5× checker_*) → graph_builder | critical_reviewer + constructive_reviewer + arbiter | arbiter PASS → commit |
+| 3 | `.claude/commands/phase3.md` | highlighter ∥ graph_builder ∥ report_writer | critical_reviewer + constructive_reviewer + arbiter | arbiter PASS → human APPROVE → commit |
 
 `∥` means run in parallel from the main session.
 

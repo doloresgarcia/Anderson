@@ -20,6 +20,8 @@ Definition: `src/conventions/error_categories.md` § internal_contradiction
 - `reviews/<slug>/phase1/outputs/CLAIMS.md`
 - `reviews/<slug>/paper/paper.txt`
 - `src/conventions/error_categories.md`
+- `src/conventions/confidence.md`
+- `src/methodology/05-artifacts.md` (`VERIFICATION.md` format)
 
 ## Writes
 
@@ -27,6 +29,14 @@ Definition: `src/conventions/error_categories.md` § internal_contradiction
   `## internal_contradiction` section (the orchestrator concats into
   `reviews/<slug>/phase2/outputs/VERIFICATION.md`)
 - `reviews/<slug>/phase2/agents/checker_contradiction/log.md`
+
+## Output format
+
+Write `section.md` in the exact `VERIFICATION.md` subsection format from
+`src/methodology/05-artifacts.md`: one top-level `## internal_contradiction`
+heading, then one `### <claim_id> — <VERDICT> — confidence: <high|medium|low>`
+subsection per examined claim, with the required evidence, reasoning, and
+`INCONCLUSIVE` reason bullets. Do not use tables or alternate headings.
 
 ## Behavior
 
@@ -40,6 +50,9 @@ Definition: `src/conventions/error_categories.md` § internal_contradiction
    For claims with no contradiction, emit `CLEAR`. Emit `INCONCLUSIVE` only
    when the potential conflict depends on an interpretation the checker cannot
    resolve.
+4. Respect the `hedged` column from `CLAIMS.md`: if a hedged claim would
+   otherwise be `FLAGGED`, emit `INCONCLUSIVE` unless the hedged wording still
+   directly contradicts another paper statement.
 
 <important>
 Both contradicting passages must be quoted with provenance
