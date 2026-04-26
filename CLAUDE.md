@@ -86,14 +86,13 @@ their canonical repo paths.
 Each subagent declares a static `model:` in its frontmatter. To override
 globally for a session, set the `CLAUDE_CODE_SUBAGENT_MODEL` env var. The
 default mix lives in `.claude/profiles/balanced.json` for documentation
-purposes (Phase E).
+purposes.
 
 ## Token usage
 
-Phase E adds `src/token_log.py`, which post-hoc parses subagent transcripts
-under `~/.claude/projects/.../subagents/` for `usage.input_tokens` /
-`usage.output_tokens` and writes `reviews/<slug>/USAGE.md`. Until then,
-wall-time is the proxy.
+`src/token_log.py` post-hoc parses subagent transcripts under
+`~/.claude/projects/.../subagents/` for `usage.input_tokens` /
+`usage.output_tokens` and writes `reviews/<slug>/USAGE.md`.
 
 ## When to escalate to the user
 

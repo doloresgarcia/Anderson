@@ -31,9 +31,9 @@ Phases 1 and 2 run **EXECUTE → REVIEW → CHECK → COMMIT → ADVANCE**. Phas
 anderson/
 ├── .claude/
 │   ├── agents/                # subagent specs (frontmatter + body); 15 roles + _shared/executor_contract.md
-│   ├── commands/              # [Phase B] slash commands: /scaffold, /phase1, /phase2, /phase3, /render
+│   ├── commands/              # slash commands: /scaffold, /phase1, /phase2, /phase3, /render
 │   ├── settings.json          # permission allowlist
-│   └── profiles/balanced.json # [Phase E] documented model mix
+│   └── profiles/balanced.json # documented model mix
 ├── CLAUDE.md                  # root orchestrator — read by the main `claude` session at repo root
 ├── Makefile                   # convenience targets — `make demo`, `make graph`, `make stats`, …
 ├── README.md
@@ -100,6 +100,12 @@ The main `claude` session loads the repo-root `CLAUDE.md` and acts as the
 orchestrator. There is no `cd` into a per-review directory; the slug is the
 single positional arg to every phase command.
 
+Codex support is a minimal wrapper over the same instruction graph. Claude Code
+remains the native full-pipeline runner; when using Codex, start at the repo
+root so Codex reads `AGENTS.md`, which delegates to `CLAUDE.md`,
+`.claude/commands/`, and `.claude/agents/`. There are no Codex-specific copies
+of the phase or agent instructions by design.
+
 ### 2. Scaffold and run
 
 In Claude Code, dispatch the slash commands:
@@ -133,13 +139,13 @@ globally for a session, set `CLAUDE_CODE_SUBAGENT_MODEL`.
 - **Phase 2 — Strategy & Check.** `strategist` → five **checker agents** in parallel — `checker_unreferenced`, `checker_ambiguous`, `checker_contradiction`, `checker_literature`, `checker_domain` — each examining every claim for its error category and writing its own section of `VERIFICATION.md` (verdicts `FLAGGED` / `CLEAR` / `INCONCLUSIVE`) → `graph_builder` (v2). Three-bot review (critical + constructive + arbiter).
 - **Phase 3 — Report.** `highlighter` (invokes `highlight_paper.py` or `highlight_text.py`), `graph_builder` (invokes `render_graph.py`), and `report_writer` (invokes `claim_stats.py` then writes `REPORT.md`) run in parallel. Three-bot review, then a human gate.
 
-### 4. Read the outputs
+### 3. Read the outputs
 
 Everything lands in `reviews/my-slug/phase3/outputs/`: `graph.final.json`,
 `graph.final.html`, `STATS.md`, `REPORT.md`, and the applicable highlighted
 paper output(s) for the input mode.
 
-## Verifying the rework end-to-end
+## Verifying end-to-end
 
 Two layers of verification.
 
