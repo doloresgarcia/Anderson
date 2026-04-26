@@ -2,7 +2,7 @@
 """Aggregate Anderson subagent token usage from saved transcripts.
 
 This is a post-hoc reporter. It reads `usage.jsonl` records that the
-SubagentStop hook (`.claude/hooks/usage_log.py`, Phase D) appends under
+SubagentStop hook (`.claude/hooks/usage_log.py`) appends under
 `reviews/<slug>/phase<N>/agents/<role>/usage.jsonl`, then opens the
 referenced subagent transcript JSONL files (under
 `~/.claude/projects/<project>/<sessionId>/subagents/agent-<agentId>.jsonl`)

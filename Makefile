@@ -85,7 +85,7 @@ usage:
 
 # One-shot pre-PR sanity check. Does not exercise the LLM pipeline —
 # that requires a real `claude` session at the repo root (see README §
-# "Verifying the rework end-to-end").
+# "Verifying end-to-end").
 #
 # Forces a fresh demo build (not a no-op against stale outputs), asserts
 # both jsonschema and PyMuPDF (fitz) are importable so that

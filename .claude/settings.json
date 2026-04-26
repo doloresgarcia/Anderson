@@ -51,10 +51,7 @@
       "Edit(README.md)",
       "Edit(CLAUDE.md)",
       "Write(.mcp.json)",
-      "Edit(.mcp.json)",
-      "Write(PLAN_workflow_rework.md)",
-      "Edit(PLAN_workflow_rework.md)",
-      "Write(PLAN_REVIEW.md)"
+      "Edit(.mcp.json)"
     ],
     "deny": [
       "Bash(rm -rf /:*)",
